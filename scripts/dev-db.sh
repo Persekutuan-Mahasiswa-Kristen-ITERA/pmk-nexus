@@ -107,6 +107,8 @@ start_stack() {
   # the local service key, and we never want that on screen or in a CI log.
   local log
   log="$(mktemp)"
+  # The log may hold the local service key: delete it even if the script is interrupted (review L1).
+  trap 'rm -f "$log"' EXIT INT TERM
   echo "Starting containers (first run downloads images and can take several minutes)..."
   if ! supa start --ignore-health-check >"$log" 2>&1; then
     echo "supabase start failed. Last lines of its log:" >&2

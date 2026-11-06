@@ -123,3 +123,6 @@ pnpm build                # make sure a production build works
 | `ERR_PNPM_...` after pulling new code | Dependencies changed | Run `pnpm install` again. |
 
 If you are stuck, write down the exact error text and ask the tech lead; do not delete folders or reset databases to "try something".
+
+## Network note (security review I1)
+The local Supabase containers (NEXUS and PI-CORE) listen on all network interfaces, with default development passwords. They hold only fake test data, but do not run them on public Wi-Fi (campus hotspot, café). Stop them with `pnpm db:stop` when you are done.

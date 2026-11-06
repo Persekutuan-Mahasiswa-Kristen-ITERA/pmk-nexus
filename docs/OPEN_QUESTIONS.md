@@ -111,3 +111,14 @@ Spec: `docs/modules/auth-login.md` (draft, step 2). Each question has options an
 | E5 | Is the NEXUS login screen Indonesian only? | **[ANSWERED]** 2026-11-06: (a), D-016 | - | (a) Indonesian only; (b) Indonesian with an English switch like PI-CORE. Recommendation: **(a)**. |
 | E6 | Who checks the live Supabase Auth settings before go-live (sign-up disabled, token lifetime, rate limits, SMTP, CAPTCHA, exposed schemas)? Same check as B12. | [UNKNOWN] | P0 (before go-live) | (a) owner reads dashboard values into `docs/ops/`; (b) PI-CORE maintainer confirms; (c) skip and trust the repo. Recommendation: **(a)**. |
 | E7 | Login: cancel a hanging sign-in after 15 seconds and show the network message (design 4.3)? | [ASSUMPTION] not built in Phase 1; revisit if members report hangs | P2 | Supabase calls normally fail fast; a timeout adds code to maintain. |
+
+## F. Security follow-ups from the login review (2026-11-06)
+
+No CRITICAL or HIGH findings. M1 (data-based guard on the local seed and pgTAP file) and L1 (temp-log trap in `scripts/dev-db.sh`) are fixed and verified. Open items:
+
+| # | Item | Status | Priority | Notes |
+|---|---|---|---|---|
+| F1 | M2: add a Content-Security-Policy (start Report-Only, nonce from `src/proxy.ts`), plus HSTS on the production domain. Reason: auth cookies are readable by scripts (same as PI-CORE, required by the browser client), so any future XSS could steal a long-lived session. | [PLANNED] before go-live | P1 | Owner: devops + frontend. Most important before modules that render user text (letters, minutes). |
+| F2 | L2: every protected page and Server Action must call `getAccessState()` itself (layouts do not re-run on client navigation). Add a test or lint that fails when a route skips it. | [PLANNED] with the first module | P1 | Owner: backend + QA. |
+| F3 | L3: if PI-CORE ever breaks its `members` read policy, every user sees "Belum ada akses" and is signed out (fail closed, but noisy). | [ASSUMPTION] accepted risk | P2 | Re-check after every PI-CORE migration (schema inspector). |
+| F4 | I1: the local stacks (NEXUS and PI-CORE) publish ports on all network interfaces. They hold only fake data and default dev credentials. | [ASSUMPTION] accepted for local dev | P2 | Avoid running them on public Wi-Fi; noted in `docs/ops/local-setup.md`. |

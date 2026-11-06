@@ -36,6 +36,18 @@ begin
 end
 $$;
 
+-- Data guard (security review M1): the flag above only proves intent. A real project (hosted, shared with
+-- PI-CORE) always holds real members, so stop if ANY account or member has an email outside the fake
+-- test domains. Checked before anything is written.
+do $$
+begin
+  if exists (select 1 from auth.users u where u.email is null or u.email !~* '@(example\.test|nexus\.test)$')
+     or exists (select 1 from public.members m where m.email is not null and m.email !~* '@(example\.test|nexus\.test)$') then
+    raise exception 'nexus_access_control.test.sql: found a non-test email address, so this is NOT a throwaway local database. Nothing was written.';
+  end if;
+end
+$$;
+
 create extension if not exists pgtap with schema extensions;
 -- no_plan: expected total is documented in tests/README.md (update it when adding tests).
 select no_plan();
