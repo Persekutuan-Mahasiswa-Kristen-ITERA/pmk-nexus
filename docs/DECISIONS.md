@@ -144,3 +144,11 @@ Status tags: **[DECIDED]** final, **[ASSUMPTION]** needs owner confirmation.
   - New strings in design section 2.8 ("Memeriksa akunmu...", "Kata sandimu belum berubah. Ganti di PI-CORE dulu, lalu coba lagi.", error body second sentence, "Masih terjadi gangguan." for screen readers).
 - **Not approved (not asked):** showing the signed-in email on the No-access screen. Not built.
 - **Still open:** real logo file (C12); the design uses an empty 28 px crest slot. PI-CORE has `public/brand/pmk-logo-192.png`; not reused until the owner decides.
+
+## D-018 NEXUS gets its own local Supabase stack [DECIDED]
+- **Date:** 2026-11-06
+- **What:** For local development and end-to-end tests, NEXUS runs its own local Supabase stack (own `project_id` and ports, separate from PI-CORE's 54321-54329). PI-CORE's migrations are applied to it READ-ONLY from `/home/fycode/Documents/pi-core-v2/supabase/migrations/` (not copied into NEXUS), then the NEXUS migrations, then local-only test accounts. `nexus` is exposed in NEXUS's own local `config.toml`. PI-CORE's repo and stack stay untouched.
+- **Why:** PI-CORE's local config does not expose `nexus`, and NEXUS must never edit the PI-CORE repo. Testing directly on the hosted shared project was rejected (a mistake would hit PI-CORE's real data).
+- **Trade-off:** more RAM when both stacks run (laptop has 14 GB); stop PI-CORE's stack while testing NEXUS if needed. Supabase CLI pinned to PI-CORE's version (2.122.0).
+- **Rule kept:** never `supabase db push`, `migration repair`, or `db reset --linked` from NEXUS (B36). The local stack is never linked to the hosted project.
+- **Answers:** `OPEN_QUESTIONS.md` B32 (option b, now).

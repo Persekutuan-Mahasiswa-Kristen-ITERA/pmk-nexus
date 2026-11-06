@@ -81,7 +81,7 @@ Since 2026-11-05, B3, B4, B6, B7, B8, B9, B17, B18, B19, B22, B23 are answered a
 | B29 | Only one holder of an approval key and it is their own request? | **[ANSWERED]** locked; wait for a second holder, hint on screen(D-012) | P2 | |
 | B30 | PI-CORE roles without a `key` cannot be targeted by role rules. Allow by role id? | **[ANSWERED]** no; use position/unit rules(D-012) | P2 | |
 | B31 | Before running the seed on production: check real position/unit names first with a read-only query? | [ASSUMPTION] yes, read-only check first | P0 (before applying) | Seed stops with an error if a name is missing. Query in `supabase/README.md`. |
-| B32 | Local development for NEXUS (PI-CORE's local config does not expose `nexus`): (a) ask PI-CORE maintainer to add it; (b) NEXUS gets its own local config + read-only copy of PI-CORE migrations; (c) test with psql only for now. | [ASSUMPTION] (c) now, (b) when frontend starts | P1 | |
+| B32 | Local development for NEXUS (PI-CORE's local config does not expose `nexus`): (a) ask PI-CORE maintainer to add it; (b) NEXUS gets its own local config + read-only copy of PI-CORE migrations; (c) test with psql only for now. | **[ANSWERED]** 2026-11-06: (b), D-018 | - | |
 | B33 | Mark "every active member" rule changes as self-benefit (the admin is also a member)? | [ASSUMPTION] yes | P2 | |
 | B34 | Allow enable/disable of a rule directly in the SQL editor (emergency), logged with no actor? | [ASSUMPTION] yes | P2 | Still logged; the log cannot be edited. |
 | B35 | Inactive org units: a rule pointing to an inactive unit matches nobody, but an assignment inside an inactive unit still counts. | [ASSUMPTION] confirm | P2 | Spec section 5 and E21 read differently; both implemented this way. |
