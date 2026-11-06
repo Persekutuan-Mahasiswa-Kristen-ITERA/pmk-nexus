@@ -2,7 +2,7 @@
 
 > Reference document for the PMK-NEXUS project. Written in English for the AI assistant. The project owner communicates in Indonesian.
 > Status legend: **[DECIDED]** = final decision, **[ASSUMPTION]** = needs confirmation, **[PLANNED]** = future work, **[UNKNOWN]** = information still missing.
-> Last updated: 2026-11-05 (sections 2, 3, 4, 7, 8 updated with the verified PI-CORE schema and owner decisions; see `docs/DECISIONS.md`).
+> Last updated: 2026-11-06 (section 6 replaced by the Stitch design, D-014; section 8 item 12 answered). Earlier: 2026-11-05 (sections 2, 3, 4, 7, 8, verified PI-CORE schema).
 
 ---
 
@@ -146,7 +146,7 @@ Rules:
 
 ## 5. Phase 1 Features
 
-Based on the Figma designs (mobile screens).
+Based on the original Figma screens; visual design now follows Stitch (section 6, D-014).
 
 ### 5.1 Dashboard
 - Finance card: current balance (placeholder in design: Rp 999,999,999)
@@ -171,7 +171,7 @@ Form fields: Date, Meeting Title, Topic, Minutes Content, Decision, and "Upload 
 - Tabs/buttons: Incoming Letters (Surat Masuk) and Outgoing Letters (Surat Keluar).
 - Each item shows: letter number (e.g. `PMK/NEX/SM/2026/001`), counterpart party (e.g. "Direktorat Jenderal Pajak"), subject (Perihal, e.g. "Permohonan Verifikasi Berkas").
 - Also needed: archive of letter files, and a **letter request flow** (members request, secretary processes).
-- **Gap:** the letter request flow is not yet in the Figma design. Propose a screen if needed.
+- **Gap:** the letter request flow is not in the Stitch or Figma design. Propose a screen if needed.
 - **[ASSUMPTION]** Numbering format: `PMK/NEX/<type>/<year>/<sequence>`. `SM` appears to mean Surat Masuk. Confirm the code for outgoing letters (e.g. `SK`) and the exact rules.
 
 ### 5.6 Inventory and Item Management (Manajemen & Inventaris Barang)
@@ -181,38 +181,50 @@ Form fields: Date, Meeting Title, Topic, Minutes Content, Decision, and "Upload 
 
 ### Not in Phase 1
 - Program of work (progja) management.
-- Login page design (login is via PI-CORE; no screen exists in Figma yet).
+- Login page design (login is via PI-CORE; no NEXUS login screen exists in Stitch or Figma yet; it is designed in step 2, see `docs/modules/auth-login.md`).
 
 ---
 
 ## 6. UI/UX Design Spec
 
-Design is made in Figma with **Android Large** frames (mobile-first).
+**[DECIDED 2026-11-06, D-014] Design source = the Stitch redesign** "PMK-NEXUS Dashboard Redesign" (design system "Executive Heritage Modern"). Snapshot: `docs/design/stitch/` (`design-system.md` for exact tokens, `screens.md` and `html/` per screen). It replaces the original Figma description (dark curved header, dark drawer, pill buttons, approximate palette), which is superseded.
+
+Mobile-first, 390 px wide screens.
 
 **Layout**
-- Top header: dark brown, curved bottom edge, with hamburger menu (left), PMK logo (center), notification bell (right).
-- Under the header: a rounded pill with the text "PMK-NEXUS", then a large page title.
-- Side menu (Frame 31, dark brown background, white text): Dashboard, Data Anggota, Finance, Notulensi Rapat, Surat Menyurat, Manajemen & Inventaris Barang.
+- Top app bar: 64 px, solid walnut brown, **flat bottom edge** (no curve, no gradient). Hamburger (left), PMK crest/logo with serif "PMK ITERA" (center), bell with gold dot (right).
+- Page title in Playfair Display under the app bar.
+- Side drawer: **light** background, dark text, active item filled dark brown with white text. Items: Dashboard, Data Anggota, Finance, Notulensi Rapat, Surat Menyurat, Manajemen & Inventaris Barang.
 
-**Color palette (approximate, read from screenshot)**
+**Color palette (exact, from Stitch)**
 
-| Name | Hex (approx.) |
-|---|---|
-| Dark gold | `#C9A227` |
-| Light gold | `#E8C766` |
-| Dark brown | `#5A3E1B` |
-| Cream / ivory | `#F5F3EA` |
+| Name | Hex | Use |
+|---|---|---|
+| Primary (walnut brown) | `#62431F` | App bar, primary buttons, active nav |
+| Secondary (ivory) | `#F0E9DC` | Table header rows, ghost buttons |
+| Tertiary (burnished gold) | `#C59A27` | Badges, metric indicators, notification dot |
+| Text (espresso) | `#2C1E11` | Main text and icons |
+| Canvas | `#FBF8F3` | Page background [ASSUMPTION: Stitch HTML uses `#fff8f5`; design notes win] |
+| Card | `#FFFFFF` | Cards, 1 px border `#EADFCF` |
 
-Use exact hex values from Figma when provided by the owner.
+Status, border, and input colors: see `docs/design/stitch/design-system.md`. Colors live in one theme file (`src/app/globals.css`). Note: PI-CORE uses `#5A3E1B` / `#C9A227`; NEXUS deliberately follows Stitch (accepted trade-off, D-014).
+
+**Typography**
+- Headings: **Playfair Display** (serif). Body, data, forms, navigation: **Plus Jakarta Sans**.
+- Money and counts use tabular numbers.
 
 **Style**
-- Rounded cards with thin brown outlines; soft cream backgrounds.
-- Bold, wide serif/display font for page titles and "PMK-NEXUS" pill.
-- Tables with alternating row colors; thin gold underlines under card headings.
-- Pill-shaped dark brown buttons with light text.
-- Form inputs: rounded outlined fields on cream background.
+- Cards: white, 12 px radius, thin warm border, very soft shadow.
+- Buttons and inputs: **8 px radius**. Primary button brown with white text; secondary outline; ghost ivory.
+- Pills only for status chips and filter tags.
+- Tables: ivory header row with uppercase labels, zebra rows, horizontal dividers only, "Halaman 1 dari 5" pagination.
+- Inputs: min height 44 px, stacked bold labels, brown focus ring.
 
-**Rule:** Follow the existing design. If a change is proposed, explain the reason first.
+**Content caution:** Stitch screens contain filler that is not decided (member statuses Cuti/Alumni/Pembina, "+ Tambah Anggota", "H-3" borrowing rule, meeting statuses). Do not build them without the owner's confirmation (`docs/OPEN_QUESTIONS.md` section C).
+
+**Missing screens:** login (Stitch has none for NEXUS; PI-CORE's Stitch project has "Masuk PMK ITERA", see C13), letter request flow, borrowing request flow.
+
+**Rule:** Follow the Stitch design. If a change is proposed, explain the reason first and wait for approval.
 
 ---
 
@@ -239,12 +251,12 @@ The full, current list lives in `docs/OPEN_QUESTIONS.md`. Summary:
 4. [ ] Exact letter numbering rules (including outgoing letters and yearly reset).
 5. [~] List of PMK departments and organizational structure. PI-CORE seeds them (section 2); owner to confirm they match reality.
 6. [ ] Sample official letter formats.
-7. [ ] Exact Figma color codes and fonts.
+7. [x] Exact color codes and fonts: from Stitch (D-014).
 8. [ ] Design for login page, letter request flow, and borrowing request flow.
 9. [ ] Definition of "Inventory Status 80%" on the dashboard (e.g. share of items in good condition?).
 10. [~] Definition of member "Status" (active/inactive?) in Member Data. PI-CORE stores only active/inactive; owner to confirm.
 11. [x] Who is "the Secretary" for Letters and Minutes. Answered 2026-11-05 (D-008).
-12. [ ] Design source: original Figma or the Stitch redesign (`docs/design/stitch/comparison.md`)?
+12. [x] Design source: Stitch redesign. Answered 2026-11-06 (D-014).
 
 ---
 

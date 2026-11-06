@@ -26,7 +26,7 @@ The owner wants you to ask whenever something is unclear or blocked.
 - If something **important** is ambiguous, **stop and ask**. Keep it to **one short question at a time**, with 2-4 concrete options and your recommendation.
 - If something is minor, state your assumption in one line, continue, and record it in `docs/OPEN_QUESTIONS.md` as an [ASSUMPTION].
 - If you hit a blocker (missing file, error you cannot fix, unclear requirement), **say so immediately** and ask. Do not guess or silently work around it.
-- Never invent facts about PI-CORE, the Figma design, PMK's departments, or letter rules.
+- Never invent facts about PI-CORE, the design (Stitch, D-014), PMK's departments, or letter rules.
 
 ## 4. Fixed Architecture Decisions
 
@@ -86,8 +86,9 @@ Dashboard, Member Data (read-only), Finance, Meeting Minutes, Letters (incoming/
 
 ## 8. UI/UX
 
-- Mobile-first (Android Large frames). Follow the existing Figma design and the palette and style in the context document (dark brown header with curved edge, cream backgrounds, gold accents, pill buttons, rounded cards).
-- Do not invent exact hex codes or fonts. Ask the owner for Figma values; until then use the approximate palette and keep colors in one theme file (Tailwind config / CSS variables) so they are easy to change.
+- Mobile-first (390 px screens). Follow the **Stitch design** (`docs/DECISIONS.md` D-014; snapshot in `docs/design/stitch/`, design system "Executive Heritage Modern"): flat walnut-brown app bar, light side drawer, ivory canvas, gold accents, 8 px buttons and inputs, 12 px cards, pills only for status chips and filter tags. The original Figma description is superseded.
+- Use the exact hex values and fonts from `docs/design/stitch/design-system.md` (Playfair Display for headings, Plus Jakarta Sans for body, data, and forms). Do not invent other values. Keep all colors in one theme file (CSS variables in `src/app/globals.css`) so they are easy to change.
+- Do not copy Stitch filler content (e.g. extra member statuses, "+ Tambah Anggota", "H-3") without the owner's confirmation; see `docs/OPEN_QUESTIONS.md` section C.
 - If you propose a design change, **explain the reason first** and wait for approval.
 - Missing screens to flag and propose (wireframe in words first): **login**, **letter request flow**, **borrowing request flow**.
 
@@ -155,7 +156,7 @@ Keep these files current as you work:
 2. Exact letter numbering rules (outgoing code such as `SK`, yearly reset, who assigns numbers).
 3. List of PMK departments and organizational structure.
 4. Sample official letter formats.
-5. Exact Figma colors and fonts.
+5. Exact colors and fonts. (Answered 2026-11-06: from Stitch, D-014.)
 6. Designs for login, letter request flow, and borrowing request flow.
 7. Meaning of "Inventory Status 80%" (for example, share of items in good condition).
 8. Meaning of member "Status" in Member Data (active/inactive?).
@@ -182,7 +183,7 @@ The owner has installed skills for design quality and "anti-slop" (avoiding gene
 1. At the start of each session, check which skills are installed (look in `.claude/skills/` and `~/.claude/skills/`). Tell the owner the exact names you found, and record them in `docs/DECISIONS.md`.
 2. For **any UI, layout, copy, or visual work**, you MUST use the installed design/taste skill and the anti-slop skills. Read the skill first, then build.
 3. Before calling UI work done, do a quick self-check against the anti-slop skills (generic gradients, filler text, default-looking components, inconsistent spacing) and fix what you find.
-4. Skills never override the Figma design or the palette in the context document. If a skill conflicts with the design, ask the owner.
+4. Skills never override the Stitch design (D-014) or the palette in the context document. If a skill conflicts with the design, ask the owner.
 5. If an expected skill is missing or does not load, say so right away instead of silently continuing without it.
 
 ## 18. Sub-agents (the "IT department")
