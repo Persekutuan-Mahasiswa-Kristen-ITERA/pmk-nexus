@@ -9,6 +9,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // pdfkit loads its font data and fontkit at run time; bundling it breaks those loads (D-020).
+  serverExternalPackages: ["pdfkit"],
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },

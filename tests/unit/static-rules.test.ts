@@ -68,8 +68,9 @@ describe("AR1 / AUTH-03 / AUTH-25: no sign-up, reset, or password-change routes"
     .filter((f) => /\/(page|route)\.tsx?$/.test(f))
     .map((f) => rel(f).replace(/^src\/app/, "").replace(/\/\([^)]+\)/g, "").replace(/\/(page|route)\.tsx?$/, "") || "/");
 
-  it("the only routes are /login and / (and nothing sign-up-like)", () => {
-    expect(routeDirs.sort()).toEqual(["/", "/login"]);
+  // Allow-list: every new page or route handler is added here on purpose (module specs in docs/modules/).
+  it("the only routes are the allow-listed ones (and nothing sign-up-like)", () => {
+    expect(routeDirs.sort()).toEqual(["/", "/api/member-data/export", "/login"]);
     for (const r of routeDirs) expect(r).not.toMatch(/sign-?up|register|invite|reset|forgot|password|change|account|admin/i);
   });
 

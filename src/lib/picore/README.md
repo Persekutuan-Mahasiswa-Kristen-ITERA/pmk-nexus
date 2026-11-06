@@ -9,6 +9,7 @@ This includes the `nexus` RPCs that read PI-CORE tables on the caller's behalf (
 | File | Exports | Reads | Used by |
 |---|---|---|---|
 | `context.ts` | `readMyContext`, `readPasswordChangePending`, `readMyPermissions`, type `PicoreRead<T>` | `nexus.my_context()`, `nexus.my_password_change_pending()`, `nexus.my_permissions()` | `src/lib/auth/session.ts` only (AUTH-41) |
+| `member-data.ts` | `readMemberList`, `readMemberUnitOptions`, `readActiveMemberCount`, `exportMemberRows`, `readMemberExportLog`, `mapMemberDataError` | `nexus.member_data_list()`, `member_data_unit_options()`, `member_data_active_count()`, `member_data_export()` (VOLATILE, writes the export log; call once per export), `member_data_export_log_list()` | `src/modules/member-data/server/` only. Types come from `src/modules/member-data/types.ts` |
 
 ## Rules for code in this folder
 
@@ -17,3 +18,4 @@ This includes the `nexus` RPCs that read PI-CORE tables on the caller's behalf (
 3. Map snake_case rows to the camelCase types in `src/lib/auth/types.ts` (or the module's `types.ts`).
 4. Log only the function name and the error code. Never tokens, user ids, emails, or row data.
 5. Never read email, phone, NIM, NIP, or any other column the `nexus` functions do not return (D-010, L4).
+6. Map database errors to the module's error codes, trusting only the documented hints (`permission_required` -> forbidden, known 22023 hints -> invalid input with the field). Anything else is "unavailable" (fail closed); never pass a database message on.
