@@ -1,6 +1,6 @@
 # Member Data / Data Anggota (module spec)
 
-> Status: **Ready for owner approval.** Revision 2 (2026-11-06): the owner answered M1-M8 (section 10); recorded as D-019 in `docs/DECISIONS.md`. Step 1 of `CLAUDE.md` section 9.
+> Status: **Implemented 2026-11-07 (not yet on hosted).** Built and tested on the local stack only; the migration `20261106200000_nexus_member_data.sql` is not applied to the hosted project (the owner applies it, `supabase/README.md` section 2 step 7). See section 12 "Implementation". Revision 2 (2026-11-06): the owner answered M1-M8 (section 10); recorded as D-019 in `docs/DECISIONS.md`. Step 1 of `CLAUDE.md` section 9.
 > Sources: `CLAUDE.md` (4, 5, 6, 8, 11), `docs/PMK-NEXUS-context.md` (2-5, 5.2), `docs/DECISIONS.md` (D-007, D-010, D-011, D-013, D-014, D-019), `docs/OPEN_QUESTIONS.md` (A8, B9, B10, B18, C4, C5), `docs/modules/access-control.md` (rev. 2: keys `member_data.view` / `member_data.export`, L1, L4, L12, R11, R15, A-n1), `docs/modules/auth-login.md`, `docs/picore/schema-report.md`, Stitch screens 03 and 04.
 > No code, no SQL, no visual design. Tags: **[ASSUMPTION]** = my guess, still needs the owner (A-MD1 to A-MD14, section 8). **[UNKNOWN]** = no source. **M1-M8** = the questions of section 10 (all answered).
 
@@ -37,7 +37,7 @@ Rights come from permission keys (access-control rev. 2), never from a person.
 | `member_data.view` | Open Data Anggota; see the list; Dashboard "Members" count | Role `bph` (rule D12: Ketua Umum, Sekretaris Jenderal, Sekretaris Umum 1/2, Bendahara Umum 1/2) **and** role `kepala_departemen` (new rule D32: Kepala Departemen and Kepala Biro), both active period, scope "all" |
 | `member_data.export` | "Ekspor" button and the export endpoint (needs `view`, R15) | Role `bph` only (rule D13, unchanged). Department/bureau heads cannot export |
 
-Rule D32 is **not yet in the migrations**. The database engineer writes it later. It is a sensitive key, so it needs a written reason (L12, D-013).
+Rule D32 is added by migration `20261106200000_nexus_member_data.sql` (not yet applied to the hosted project). It is a sensitive key, so it needs a written reason (L12, D-013).
 
 | Actor | Open list | Dashboard count | Export | Read export log | Notes |
 |---|---|---|---|---|---|
@@ -341,7 +341,7 @@ All answered by the owner on 2026-11-06. Recorded as D-019. Chosen option marked
 ## 11. Notes for other documents and unresolved points
 
 **Resolved on 2026-11-06 (documents updated):**
-1. Access-control B9 option (c) "all active members" is marked blocked by L12; B9 answered as option (b); rule D32 added to the default table (row count 31 to 32); L4 and the catalog text mention the "Pembina" marker. Done in `docs/modules/access-control.md`.
+1. Access-control B9 option (c) "all active members" is marked blocked by L12; B9 answered as option (b); rules D32 and D33 added to the default table (row count 31 to 33); L4 and the catalog text mention the "Pembina" marker. Done in `docs/modules/access-control.md`.
 2. D-010 field list widened to include `member_type`: recorded in D-019.
 3. Context 5.2 now says "Unit / Jabatan"; context section 2 wording "1 bureau -> 16 divisions" fixed; Context 5.1 and section 8 item 10 updated.
 4. A8, B9, B10 and C4 answered in `docs/OPEN_QUESTIONS.md`; A-MD assumptions added there.
@@ -352,3 +352,31 @@ All answered by the owner on 2026-11-06. Recorded as D-019. Chosen option marked
 2. **A screen to read the export log** (A-MD14) is not designed. Without it BPH cannot actually read the log. Needs the UX designer and an owner decision.
 3. **`deactivated_at`** is part of A8's idea of status, but access-control 7.1 says it is never read; the module cannot show "inactive since".
 4. Existing text in access-control that conflicts with L12 and was NOT changed (outside this module's scope): AC-55, AC-56 and E20 still describe granting sensitive keys to "every active member" as allowed, while L12 (D-013) rejects it in the database.
+
+---
+
+## 12. Implementation (added 2026-11-07)
+
+The rules above are unchanged. This section only says where things live. Developer details: `src/modules/member-data/README.md`.
+
+**Status.** Built, tested and committed on the local stack. NOT applied to the hosted project. Not built: the Dashboard "Members" card (the Dashboard module comes last; the count function exists) and a screen to read the export log (A-MD14; read it through the SQL editor for now).
+
+| Part | Where |
+|---|---|
+| Migration (permissions, default rules D32/D33, export log table, functions) | `supabase/migrations/20261106200000_nexus_member_data.sql` |
+| PI-CORE access (only place that calls the RPCs, D-010) | `src/lib/picore/member-data.ts` |
+| Contract (zod schemas, types, error union) | `src/modules/member-data/types.ts` |
+| Server logic (permission check, list, options, count, log list, page-address parsing, export handler, file builder) | `src/modules/member-data/server/` (`access.ts`, `queries.ts`, `params.ts`, `export.ts`, `export-file.ts`, `validation.ts`) |
+| Screens | `src/modules/member-data/ui/` and page `src/app/(app)/data-anggota/page.tsx` (+ `loading.tsx`), route `/data-anggota` |
+| Drawer item (D-021) | `src/components/shell/nav.ts`, `nav-drawer.tsx` |
+| File writers (CSV, Excel, PDF; shared by future modules, D-020) | `src/lib/export/` (`csv.ts`, `xlsx.ts`, `pdf.ts`, `datetime.ts`, `fonts/` = Plus Jakarta Sans TTF, OFL) |
+| Export route | `POST /api/member-data/export` in `src/app/api/member-data/export/route.ts`. Other methods answer 405, cross-site 403, no session 401 |
+
+**Database functions** (schema `nexus`, called as RPC):
+`member_data_list`, `member_data_unit_options`, `member_data_active_count`, `member_data_export` (writes the export-log row in the same transaction as it returns the rows), `member_data_export_log_list`. Private helpers start with an underscore and are not callable by the API.
+
+**Tests.** Unit: `tests/unit/member-data-contract.test.ts`, `member-data-static-rules.test.ts`, `member-export-handler.test.ts`, `member-export-body-cap.test.ts`, `export-files.test.ts`, `nav-and-cn.test.ts`. E2E: `tests/e2e/data-anggota*.spec.ts` (list, export, period, desktop). Database: `supabase/tests/nexus_member_data.test.sql`. Plan, persona matrix, manual checklist and run record: `docs/qa/member-data.md`.
+
+**Dependencies added.** `write-excel-file` 4.1.1 and `pdfkit` 0.20.2 (listed in `serverExternalPackages` in `next.config.ts`). The `cn` package needs Node 22 or newer, so Vercel must run Node 22+.
+
+**Known limits, accepted by the owner** (`docs/OPEN_QUESTIONS.md` F5-F7): no export rate limit in Phase 1 (F5); the same-origin check relies on Vercel's forwarded-host header (F6); the local e2e tests write to the local database only (F7). The export log is append-only and is not pruned (see `supabase/README.md` section 6).

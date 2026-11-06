@@ -2,7 +2,7 @@
 
 > Reference document for the PMK-NEXUS project. Written in English for the AI assistant. The project owner communicates in Indonesian.
 > Status legend: **[DECIDED]** = final decision, **[ASSUMPTION]** = needs confirmation, **[PLANNED]** = future work, **[UNKNOWN]** = information still missing.
-> Last updated: 2026-11-06 (sections 2, 4, 5.1, 5.2 and 8 updated for Member Data, D-019; section 6 replaced by the Stitch design, D-014; section 8 item 12 answered). Earlier: 2026-11-05 (sections 2, 3, 4, 7, 8, verified PI-CORE schema).
+> Last updated: 2026-11-07 (section 5.2 marked implemented on the local stack). Earlier: 2026-11-06 (sections 2, 4, 5.1, 5.2 and 8 updated for Member Data, D-019; section 6 replaced by the Stitch design, D-014; section 8 item 12 answered). Earlier: 2026-11-05 (sections 2, 3, 4, 7, 8, verified PI-CORE schema).
 
 ---
 
@@ -155,11 +155,11 @@ Based on the original Figma screens; visual design now follows Stitch (section 6
 - Members: member count (from PI-CORE): all members with `is_active = true`, students and lecturers. Shown only to users with `member_data.view` (D-019).
 - Inventory Status: percentage (e.g. 80%)
 
-### 5.2 Member Data (Data Anggota) [DECIDED 2026-11-06, D-019]
-Full spec: `docs/modules/member-data.md`.
+### 5.2 Member Data (Data Anggota) [DECIDED 2026-11-06, D-019] [IMPLEMENTED 2026-11-07, local stack only]
+Full spec: `docs/modules/member-data.md` (section 12 lists where the code lives). Built and tested locally; the migration is not yet applied to the hosted project. Not built: the Dashboard "Members" card and a screen to read the export log.
 - Read-only view of PI-CORE (no add, edit, or delete; no row detail screen).
 - Table columns: No, Nama Lengkap (lecturers carry a small "Pembina" marker), Unit / Jabatan (the member's PRIMARY active-period assignment: line 1 unit, with a division written after its department; line 2 position; "-" when none), Status (Aktif / Nonaktif from `members.is_active`).
-- Primary assignment = lowest `positions.rank` [ASSUMPTION: tie-break by unit `sort_order`, then name].
+- Primary assignment = lowest `positions.rank`; tie-break by top-level unit order first (a division uses its parent department's `sort_order`), then division order, unit name, position name [DECIDED 2026-11-06, A-MD8].
 - Search: name only (never NIM, email, phone). Filters: Unit (matches any active-period assignment [ASSUMPTION]) and Status (default Aktif; Nonaktif and Semua selectable). Pagination (Prev, 1, 2, 3, Next), server side.
 - Always the active period. Shows every member, with or without an assignment.
 - Access: view = role `bph` and role `kepala_departemen` (Kepala Departemen and Kepala Biro); export (Excel, CSV, PDF through one "Ekspor" button) = BPH only. Every export is logged in an append-only table (who, when, format, filters; no PII).

@@ -57,6 +57,8 @@ All accounts use the same dev password: **`NexusLocal2026`**. Emails end in `@ne
 | `kabiro@nexus.test` | Kepala Biro, Biro Kewirausahaan | Member Data view (rule D32), no export. |
 | `pembina@nexus.test` | Lecturer (`member_type = 'lecturer'`), no assignment | Listed with the "Pembina" marker; limited access. |
 
+The seed is re-run by every `pnpm db:migrate` (and `scripts/dev-db.sh migrate`), so the accounts and the bulk members below are restored if they are missing. It is safe to run more than once. Not seeded yet (so you cannot test these by logging in): a System Admin who is also BPH, a Sekretaris Departemen, Operations staff with a login, and a student with a login but no assignment.
+
 Also seeded: 40 login-less members `Bulk Anggota 01`-`40` (`bulkNN@nexus.test`, no password, cannot sign in): 10 Staff (Bulk 11 holds Staff Musik + Staff Logistik and shows Musik, the tie-break case), 3 inactive (05, 21, 37), 2 lecturers (13, 29). With the default Aktif filter, Data Anggota shows 45 members on 3 pages.
 
 Never use these emails or the password anywhere except this local stack. The seed file refuses to run unless `nexus.allow_local_seed=yes` is set, which only the local script does.
@@ -98,7 +100,7 @@ RAM tip (measured 2026-11-06): the NEXUS stack uses about 250 MB (5 containers: 
 
 1. `pnpm install` (downloads dependencies; only needed the first time or after `package.json` changes).
 2. `pnpm dev` (starts the app on port **3100**).
-3. Open http://localhost:3100. For now you should see the text "PMK-NEXUS".
+3. Open http://localhost:3100 and sign in with a test account. To try Member Data, sign in as `ketum@nexus.test` and open "Data Anggota" in the side menu (`/data-anggota`).
 4. Stop with `Ctrl+C`.
 
 Port 3100 is used because PI-CORE itself uses 3000. The NEXUS stack's login settings (`supabase/config.toml`) allow redirects to `http://localhost:3100`.
@@ -124,7 +126,7 @@ pnpm build                # make sure a production build works
 | Login or data calls fail later with "Invalid API key" | Wrong or empty key in `.env.local` | Re-copy the key from `supabase status`. Restart `pnpm dev` after editing `.env.local`. |
 | Change in `.env.local` has no effect | Next.js reads env files only at startup | Stop and start `pnpm dev` again. |
 | `pnpm: command not found` | pnpm not installed | `npm install -g pnpm@10`. |
-| Wrong Node version errors | Node older than 20 | Install Node 24 and reopen the terminal. |
+| Wrong Node version errors | Node older than 22 (the `cn` package needs 22 or newer) | Install Node 24 and reopen the terminal. |
 | `ERR_PNPM_...` after pulling new code | Dependencies changed | Run `pnpm install` again. |
 
 If you are stuck, write down the exact error text and ask the tech lead; do not delete folders or reset databases to "try something".

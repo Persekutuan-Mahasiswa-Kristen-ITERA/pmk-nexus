@@ -1,7 +1,7 @@
 # QA: Member Data / Data Anggota
 
 Spec: `docs/modules/member-data.md` (criteria MD-01..MD-41, persona matrix in section 7). Decisions: D-019, D-020, D-021. Assumptions: `docs/OPEN_QUESTIONS.md` section G (A-MD1..A-MD19).
-Owner of this file: QA (`nexus-qa-tester`). Last updated 2026-11-07. Format follows `docs/qa/auth-login.md`.
+Owner of this file: QA (`nexus-qa-tester`). Last updated 2026-11-07 (BUG-MD-01 and BUG-MD-02 fixed, final run record added by the analyst). Format follows `docs/qa/auth-login.md`.
 
 ## 1. How to run the automated tests
 
@@ -32,6 +32,7 @@ The export log is append-only: every export test ADDS rows and cannot remove the
 | `tests/unit/member-data-contract.test.ts` | zod schemas, lenient page-address parsing, `mapMemberDataError`, capability derivation, URL builder, pagination window, counter text. |
 | `tests/unit/export-files.test.ts` | CSV writer (BOM, CRLF, RFC 4180, formula prefix, lone "-"), Asia/Jakarta dates, XLSX never writes formulas, the three file builders. |
 | `tests/unit/member-export-handler.test.ts` | Export route handler with a mocked database client: methods, CSRF, 401/403/503, 400 with field, one RPC with exact arguments, headers, stripped columns, fail-closed answers. |
+| `tests/unit/member-export-body-cap.test.ts` | Export body size cap, including a chunked body without `Content-Length` (app-layer review LOW 1, fixed in 247681e). |
 | `tests/unit/nav-and-cn.test.ts` | `buildNavData` per D-021 for each persona type, `isActiveHref`, `cn()` Stitch text sizes (reads the real tokens in `globals.css`). |
 | `tests/unit/member-data-static-rules.test.ts` | Source rules: RPC names only in `src/lib/picore/member-data.ts` (AUTH-41 style), no private schema, no personal field names, read-only, no cache, no file storage, POST-only export, server-only guards. |
 | `tests/e2e/data-anggota.spec.ts` (mobile) | Personas and drawer, forbidden screen, HTML leak checks, list, pagination, search, filters, Back, content rows, PII scan, 390 px layout, drawer accessibility. |
@@ -121,7 +122,7 @@ Blob downloads behave differently on phones, and Playwright's Chromium cannot sh
 - [ ] The "Tidak punya akses" screen: heading read on load; "Kembali ke Dashboard" focusable.
 
 ### 6.3 Reduced motion and zoom
-- [ ] iOS "Reduce Motion" / Android "Remove animations" ON: the drawer should open without sliding (BUG-MD-02 is open: it still slides).
+- [ ] iOS "Reduce Motion" / Android "Remove animations" ON: the drawer opens without sliding and its veil does not fade (BUG-MD-02 is fixed and covered by an E2E test with `reducedMotion`; confirm on a real phone).
 - [ ] Browser zoom 200 percent on desktop: no overlap, filters stack or stay usable.
 
 ### 6.4 Hosted pre-go-live checks
@@ -193,19 +194,32 @@ Totals: 41 criteria. Automated: 35 (27 fully, 8 with a limit: MD-01, 03, 05, 13,
 
 ## 8. Results and known issues
 
-See the run record at the end. Bug ids are QA's; owners are the engineers named.
+See the run record at the end. Bug ids are QA's; owners are the engineers named. No bug is open.
 
-| ID | Severity | Owner | Issue | Test marker |
-|---|---|---|---|---|
-| BUG-MD-01 | Low | backend | `INVALID_INPUT_HINTS` is a plain object, so a database hint named like an inherited property (`constructor`, `toString`, `__proto__`) maps to `invalid_input` with a function as `field` instead of `unavailable`. Only a hostile or buggy database could send such a hint, and the effect is a wrong error code, so Low. `src/lib/picore/member-data.ts:204` (map) and `:224` (lookup). Fix: use `Object.hasOwn(INVALID_INPUT_HINTS, hint)` or a `Map`. | `it.fails` in `tests/unit/member-data-contract.test.ts` ("BUG-MD-01"). |
-| BUG-MD-02 | Low (accessibility) | frontend | The drawer ignores `prefers-reduced-motion`: it still slides in (`animation-name: enter`, 0.2 s) and its veil still fades, although the classes include `motion-reduce:animate-none`. `data-[state=open]:animate-in` is more specific than `motion-reduce:animate-none`, so the first wins. `src/components/shell/nav-drawer.tsx:37` (overlay) and `:50-51` (content). Fix: put the reduce variant on the same selector, for example `motion-reduce:data-[state=open]:animate-none motion-reduce:data-[state=closed]:animate-none`. | `test.fail()` in `data-anggota.spec.ts` ("BUG-MD-02"). |
+| ID | Severity | Owner | Issue | Status | Test |
+|---|---|---|---|---|---|
+| BUG-MD-01 | Low | backend | `INVALID_INPUT_HINTS` was a plain object, so a database hint named like an inherited property (`constructor`, `toString`, `__proto__`) mapped to `invalid_input` with a function as `field` instead of `unavailable`. Only a hostile or buggy database could send such a hint, so Low. In `src/lib/picore/member-data.ts`. | **FIXED** in 247681e (2026-11-07). | Now an ordinary test in `tests/unit/member-data-contract.test.ts` ("BUG-MD-01: prototype keys are not treated as hints"); the `it.fails` marker is gone. |
+| BUG-MD-02 | Low (accessibility) | frontend | The drawer ignored `prefers-reduced-motion`: it still slid in and its veil still faded, because `data-[state=open]:animate-in` was more specific than `motion-reduce:animate-none`. In `src/components/shell/nav-drawer.tsx`. | **FIXED** in 247681e (2026-11-07). | Now an ordinary test in `tests/e2e/data-anggota.spec.ts` ("BUG-MD-02: with prefers-reduced-motion the drawer and its veil do not animate"); the `test.fail()` marker is gone and the Playwright config sets `reducedMotion: "reduce"`. |
+
+Findings of the reviews that were fixed in the same commit (247681e): app-layer review LOW 1 (a chunked export body without `Content-Length` is now size-capped) and LOW 5 (the proxy now answers an anonymous request to any `/api/*` path with 401 JSON `{"error":{"code":"unauthenticated"}}` instead of a login redirect). Because of LOW 5, an anonymous GET of `/api/member-data/export` now returns 401, not a redirect and not 405; a signed-in GET still returns 405 and never exports. The E2E test that expected the old answer was updated.
 
 Observations that are not bugs (decisions for the owner or notes):
-- OBS-1 (Info): an authorised BPH user can create unlimited log rows by exporting repeatedly, and the log has no delete. There is no rate limit on the export route. Consider a per-user limit (for example 30 per hour) before go-live, or accept the risk.
+- OBS-1 (Info): an authorised BPH user can create unlimited log rows by exporting repeatedly, and the log has no delete. There is no rate limit on the export route. Owner decision 2026-11-07: accepted for Phase 1 (`OPEN_QUESTIONS.md` F5); a per-user limit (for example 30 per hour) is the planned fix if needed. Cleanup of the log is owner-approved only (`supabase/README.md` section 6).
 - OBS-2 (Info): if the file cannot be built after the log row was written, the log shows an export that produced no file (the handler says so in a comment). Accepted by design; a monitoring note.
 - OBS-3 (Info): disabled "Prev"/"Next" use `role="link" aria-disabled="true"` on a span. Check the wording with a screen reader (checklist 6.2).
 - OBS-4 (Info): 401 from the export button navigates to `/login?reason=session_ended&next=...`; a signed-in visitor on `/login` is sent back to `next` (AUTH-32). With a really ended session this is the desired path; verified only with a mocked 401.
 - OBS-5 (Info): while the page streams in, the layout's loading shell (`LoadingShell`, which has its own `<main>`) and the page's `<main>` are both in the DOM for a moment; the shell is replaced when the page arrives. Tests use `getByRole("main")` for this reason.
 
 ## Run record
-- 2026-11-07 (QA, local stack, production build): `pnpm test` 13 files, 443 passed + 1 expected failure (`it.fails`, BUG-MD-01) = 444 tests (earlier 8 files, 242 tests; Member Data added 5 files and about 200 tests). `pnpm build` clean, `tsc --noEmit` and `eslint tests` clean. `pnpm test:e2e`: 176 tests, 175 passed (including 1 expected failure, `test.fail()`, BUG-MD-02), 1 skipped (the opt-in outage test `fault.spec.ts`), 0 failed, 7.8 minutes. Of the 176, the new Member Data specs are 90 (38 + 41 + 8 + 3). Seed data verified after the run: 49 members (45 active), period 2026/2027 active, 18 assignments, grants restored, no leftover `qa-tmp` member, no leftover constraint.
+- 2026-11-07 (QA, local stack, production build), FIRST run, before the fixes: `pnpm test` 13 files, 443 passed + 1 expected failure (`it.fails`, BUG-MD-01) = 444 tests (earlier 8 files, 242 tests; Member Data added 5 files and about 200 tests). `pnpm build` clean, `tsc --noEmit` and `eslint tests` clean. `pnpm test:e2e`: 176 tests, 175 passed (including 1 expected failure, `test.fail()`, BUG-MD-02), 1 skipped (the opt-in outage test `fault.spec.ts`), 0 failed, 7.8 minutes. Of the 176, the new Member Data specs are 90 (38 + 41 + 8 + 3). Seed data verified after the run: 49 members (45 active), period 2026/2027 active, 18 assignments, grants restored, no leftover `qa-tmp` member, no leftover constraint.
+- 2026-11-07, FINAL run after commit 247681e (fixes for BUG-MD-01, BUG-MD-02, app-review LOW 1 and LOW 5), recorded from the tech lead's verification:
+
+| Suite | Result |
+|---|---|
+| Unit (Vitest) | 14 files, 446 passed, 0 expected failures |
+| E2E (Playwright) | 175 passed, 1 skipped (opt-in outage test `fault.spec.ts`), 0 failed. The full run first gave 174 passed + 1 failure caused by the LOW 5 change (the old answer for an anonymous `/api/*` request); that test was updated and its spec re-run on its own: 65 passed. Then a complete re-run of the whole suite: 175 passed, 1 skipped, 0 failed, 7.6 min (2026-11-07) |
+| pgTAP (throwaway container, not the shared local stack) | 244 of 244 access control, 198 of 198 Member Data |
+
+Reviews: database review has no CRITICAL, HIGH or MEDIUM finding after fixes. App-layer review is PASS with LOW findings only: LOW 1 and LOW 5 fixed; LOW 2 (rate limit) accepted as F5; LOW 3 is the CSP, already F1; LOW 4 (Vercel forwarded-host) accepted as F6.
+
+Still open (manual, section 6): real-phone download checks, screen-reader pass, hosted pre-go-live checks. Persona gaps that need more seed accounts: admin with a BPH position, Sekretaris Departemen, Operations staff with a login, a student with a login and no assignment.

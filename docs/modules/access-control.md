@@ -1,7 +1,7 @@
 # Access Control (cross-cutting module spec)
 
 > Status: **APPROVED** by the owner on 2026-11-05 (D-012). Revision 2, configurable model (D-011).
-> Amended 2026-11-06 (D-019, owner OK): default rule D32 added (`member_data.view` for role `kepala_departemen`), 31 -> 33 default rules; new sensitive key `member_data.view_export_log` with rule D33 for role `bph` (owner 2026-11-06); B9 answered as option (b); Member Data shows a "Pembina" marker (member type). The seed migration does not contain D32/D33 or the new key yet; the database engineer adds it later.
+> Amended 2026-11-06 (D-019, owner OK): default rule D32 added (`member_data.view` for role `kepala_departemen`), 31 -> 33 default rules; new sensitive key `member_data.view_export_log` with rule D33 for role `bph` (owner 2026-11-06); B9 answered as option (b); Member Data shows a "Pembina" marker (member type). D32, D33 and the new key are added by migration `20261106200000_nexus_member_data.sql` (not yet applied to the hosted project).
 > Sources: `CLAUDE.md` (sections 4-7, 11), `docs/PMK-NEXUS-context.md` (section 4: the access table is now only the DEFAULT rule set), `docs/picore/schema-report.md`, `docs/DECISIONS.md` (D-007 to D-011), `docs/OPEN_QUESTIONS.md` (B, B-bis, C).
 > No SQL or code here. Tags: **D-0xx** = owner decision, **[A-Bx]** = [ASSUMPTION] tied to open question Bx, **[A-n]** = [ASSUMPTION] without its own question (section 11), **L1-L11** = locked rule (section 4).
 
@@ -135,8 +135,8 @@ Scope is "all" unless stated. Subjects: `role:bph` means S1 with key `bph`, and 
 | D29 | same unit subject as D28 | `inventory.export` | all | G6 export |
 | D30 | same unit subject as D28 | `borrowing.approve` | all | G6 approve, mark borrowed/returned |
 | D31 | same unit subject as D28 | `borrowing.export` | all | G6 export |
-| D32 | role `kepala_departemen` | `member_data.view` | all | B9 (b), owner 2026-11-06, D-019. Covers Kepala Departemen and Kepala Biro. Sensitive key: the seed needs a written reason (L12). **Added after the first migration; not yet in `supabase/migrations/`** |
-| D33 | role `bph` | `member_data.view_export_log` | all | D-019 M8, owner 2026-11-06. Sensitive key (L12). **Not yet in `supabase/migrations/`** |
+| D32 | role `kepala_departemen` | `member_data.view` | all | B9 (b), owner 2026-11-06, D-019. Covers Kepala Departemen and Kepala Biro. Sensitive key: the seed needs a written reason (L12). Added by migration `20261106200000_nexus_member_data.sql` |
+| D33 | role `bph` | `member_data.view_export_log` | all | D-019 M8, owner 2026-11-06. Sensitive key (L12). Added by migration `20261106200000_nexus_member_data.sql` |
 
 **Row count: 33** (1 baseline, 14 for `bph`, 9 for the three BPH secretary positions, 2 for `bendahara`, 2 for `sekretaris`, 4 for Operations, 1 for `kepala_departemen`).
 

@@ -169,6 +169,7 @@ Status tags: **[DECIDED]** final, **[ASSUMPTION]** needs owner confirmation.
 - **Why:** Department and bureau heads need the directory to coordinate their units, while the list stays read-only and free of sensitive fields. One primary assignment keeps rows short on a 390 px screen and counts people, not assignments. Export is the riskiest action (every name in one file), so it stays BPH-only and leaves a trace.
 - **Impact:** `docs/modules/access-control.md` amended (D32, row count 32, B9 answered, L4 and catalog text mention the marker, AC-70/71, export log listed in 7.2). The export log is the only NEXUS data stored for this module; NEXUS still keeps no member list. Not yet designed: the screen to read the export log (`docs/modules/member-data.md` section 11).
 - **Answers:** `OPEN_QUESTIONS.md` A8, B9, B10, C4.
+- **Implemented:** 3303fd3 (database), e108973 (backend), 9f4808a (page and drawer), 2026-11-07, local stack only; not yet applied to the hosted project.
 
 ## D-020 Export libraries: write-excel-file + pdfkit [DECIDED]
 - **Date:** 2026-11-06
@@ -176,10 +177,12 @@ Status tags: **[DECIDED]** final, **[ASSUMPTION]** needs owner confirmation.
 - **Why:** Both are small, MIT-licensed, and actively maintained (npm releases in 2026). They give a real downloaded file on every phone, including iPhones, where "print to PDF" is awkward. `exceljs` was rejected: last release 2023 and many transitive dependencies. Browser print-to-PDF was rejected: awkward on iOS and output differs per browser.
 - **Trade-off:** two new dependencies; `pdfkit` reads its font data files at run time, so Next.js needs it listed in `serverExternalPackages`.
 - **Owner:** chosen 2026-11-06.
+- **Implemented:** e108973 (export route and file writers), 2026-11-07. `pdfkit` is in `serverExternalPackages`; PDF fonts are in `src/lib/export/fonts/`.
 
 ## D-021 Drawer shows only built modules the user may open [DECIDED]
 - **Date:** 2026-11-06
 - **What:** The side drawer (Stitch, D-014) lists a module only when (1) the module is built and (2) the user holds that module's view permission (e.g. Data Anggota needs `member_data.view`). Order and icons follow Stitch. Unbuilt modules are not shown at all (no "Segera hadir" items). Dashboard is always shown to an active member.
 - **Why:** No menu item leads to an empty or forbidden page; new modules appear by themselves when they ship. Hiding is UI only; every page still checks access on the server (F2) and RLS applies.
 - **Owner:** chosen 2026-11-06 (alternatives rejected: all 6 items with disabled ones; no drawer yet).
+- **Implemented:** 9f4808a, 2026-11-07 (`src/components/shell/`).
 
