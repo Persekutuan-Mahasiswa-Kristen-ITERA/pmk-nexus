@@ -1,6 +1,6 @@
 # PMK-NEXUS Open Questions and Active Assumptions
 
-Last updated: 2026-11-05.
+Last updated: 2026-11-06 (Member Data answers, D-019; section G added).
 Tags: **[UNKNOWN]** no answer yet, **[ASSUMPTION]** working guess that needs confirmation, **[ANSWERED]** resolved (move the decision to `DECISIONS.md`).
 Priority: **P0** blocks the next step, **P1** blocks a specific module, **P2** can wait.
 
@@ -17,7 +17,7 @@ Priority: **P0** blocks the next step, **P1** blocks a specific module, **P2** c
 | A5 | Exact Figma colors and fonts | [UNKNOWN] | P1 (UI) | Stitch has exact values (see section C), but they differ from the context doc. Which design wins? |
 | A6 | Designs for login, letter request flow, borrowing request flow | [UNKNOWN] | P1 | See section C for what Stitch contains. PI-CORE's Stitch project has login screens ("Masuk PMK ITERA") that could be reused. |
 | A7 | Meaning of "Inventory Status 80%" | [UNKNOWN] | P2 (Dashboard) | Stitch labels it "Barang Siap Pakai" (items ready to use). |
-| A8 | Meaning of member "Status" in Member Data | **Likely answered** | P1 (Member Data) | PI-CORE has only `members.is_active` (active/inactive) + `deactivated_at`. Owner to confirm. |
+| A8 | Meaning of member "Status" in Member Data | **[ANSWERED]** 2026-11-06 (D-019, M1) | - | Aktif / Nonaktif from `members.is_active`. Filter defaults to Aktif. |
 
 ## B. PI-CORE schema (from `docs/picore/schema-report.md`)
 
@@ -31,8 +31,8 @@ Priority: **P0** blocks the next step, **P1** blocks a specific module, **P2** c
 | B6 | "BPH view all" = everyone holding role `bph` (Ketua Umum, Sekjen, Sekum 1/2, Bendahara Umum 1/2)? | [ASSUMPTION] yes | P1 | |
 | B7 | Committee (panitia): needed in NEXUS? PI-CORE has no such role. | [UNKNOWN] | P2 | Context doc lists "Committee" as a role. |
 | B8 | Regular member (G7) = EVERY active member (baseline rights; officers get more on top). What do they see? Spec recommends: own requests + read-only inventory catalog + dashboard cards they may open. | [ASSUMPTION] | P1 | PI-CORE has no "anggota" role. See `docs/modules/access-control.md`. |
-| B9 | Member Data: which roles may see the member list, and which fields (name, department, status; never email/phone/NIM/NIP)? | [UNKNOWN] | P1 (Member Data) | PI-CORE deliberately hides the directory from regular members. NEXUS would expose it through a SECURITY DEFINER function. |
-| B10 | "Department" column when a member has several assignments: show all, or one primary (lowest `rank`)? | [UNKNOWN] | P1 (Member Data) | |
+| B9 | Member Data: which roles may see the member list, and which fields (name, department, status; never email/phone/NIM/NIP)? | **[ANSWERED]** 2026-11-06 (D-019, M2) | - | View: role `bph` + role `kepala_departemen` (new default rule D32, needs a written reason, L12); export: BPH only. "All active members" is blocked by L12. Fields: name, main unit/position, active/inactive, "Pembina" marker. Migration for D32 still to be written. |
+| B10 | "Department" column when a member has several assignments: show all, or one primary (lowest `rank`)? | **[ANSWERED]** 2026-11-06 (D-019, M3) | - | One primary (lowest `positions.rank`); column "Unit / Jabatan". Tie-break and filter behavior: assumptions A-MD8, A-MD9 (section G). |
 | B11 | How does NEXUS read PI-CORE data it cannot see through RLS? | **[ANSWERED]** 2026-11-05 | - | Own restricted SECURITY DEFINER functions in schema `nexus`; no sensitive fields. See `DECISIONS.md` D-010. |
 | B12 | Hosted Supabase: is schema `nexus` added to "Exposed schemas"? (2026-11-05: currently exposed = `public`, `graphql_public`; nexus not yet, add only after migrations.) Is sign-up disabled on the hosted project (not only in local `config.toml`)? | [UNKNOWN] | P0 (before first migration) | Changing exposed schemas touches the shared project. Sign-up: `enable_signup = false` pushed and verified on 2026-11-01 per PI-CORE `docs/OPERATIONS.md` (re-check live before go-live). |
 | B13 | Does production already have the 2026/2027 period and assignments filled in? | [UNKNOWN] | P1 | Seed data is local only. |
@@ -56,8 +56,8 @@ Details in `docs/design/stitch/comparison.md`.
 | C1 | Which design is the source of truth: the original Figma (context doc section 6) or the Stitch redesign? | **[ANSWERED]** 2026-11-06: Stitch (D-014) | - | Stitch changes: flat header (no curve), light drawer (not dark), 8 px buttons (not pills), different hex values. |
 | C2 | If Stitch: adopt its exact hex values (`#62431F`, `#C59A27`, `#FFF8F5`...) even though PI-CORE uses `#5A3E1B` / `#C9A227`? | **[ANSWERED]** 2026-11-06: yes, Stitch hex (D-014) | - | Canvas: [ASSUMPTION] `#FBF8F3` (design notes) instead of `#fff8f5` (generated HTML). |
 | C3 | Fonts: Playfair Display + Plus Jakarta Sans OK? | **[ANSWERED]** 2026-11-06: yes (D-014) | - | |
-| C4 | Member status values: Stitch shows Aktif / Cuti / Alumni / Pembina, PI-CORE has only active/inactive. Show only Aktif / Nonaktif? | [ASSUMPTION] only Aktif / Nonaktif | P1 | NEXUS cannot invent statuses it does not store. |
-| C5 | Remove "+ Tambah Anggota" from Data Anggota (read-only rule)? | [ASSUMPTION] remove | P1 | Members are managed in PI-CORE. |
+| C4 | Member status values: Stitch shows Aktif / Cuti / Alumni / Pembina, PI-CORE has only active/inactive. Show only Aktif / Nonaktif? | **[ANSWERED]** 2026-11-06: only Aktif / Nonaktif (D-019, M1) | - | "Pembina" is shown as a marker for lecturers (M6), not as a status. |
+| C5 | Remove "+ Tambah Anggota" from Data Anggota (read-only rule)? | [ASSUMPTION] remove (the Member Data spec already removes it) | P1 | Members are managed in PI-CORE. Not asked separately; follows the read-only decision. |
 | C6 | Outgoing letter code `SK` (seen in Stitch `PMK/NEX/SK/2026/012`): correct? | [UNKNOWN] | P1 (Letters) | Same as A2. |
 | C7 | Borrowing rule "H-3 kegiatan" (request at least 3 days before the event): real rule or Stitch filler? | [UNKNOWN] | P1 (Inventory) | |
 | C8 | Meeting status (Selesai / Terjadwal / Mendatang) on the Dashboard: do meetings need a schedule/status field? | [UNKNOWN] | P2 | Not in context doc. |
@@ -69,7 +69,7 @@ Details in `docs/design/stitch/comparison.md`.
 
 ## B-bis. Effect of D-011 (configurable access)
 
-Since 2026-11-05, B3, B4, B6, B7, B8, B9, B17, B18, B19, B22, B23 are answered as **defaults** (the recommendation in `docs/modules/access-control.md`), changeable by the System Admin. B20 and B21 are **locked rules** (not configurable), with the recommended answer. B15 (lecturers): default = regular member; can be widened by a rule only if a rule can target them (they hold no assignments, so not possible) [ASSUMPTION].
+Since 2026-11-05, B3, B4, B6, B7, B8, B9, B17, B18, B19, B22, B23 are answered as **defaults** (the recommendation in `docs/modules/access-control.md`), changeable by the System Admin. B20 and B21 are **locked rules** (not configurable), with the recommended answer. (Exception: B9 was answered by the owner on 2026-11-06 as option (b), see D-019.) B15 (lecturers): default = regular member; can be widened by a rule only if a rule can target them (they hold no assignments, so not possible) [ASSUMPTION].
 
 | # | Question | Status | Priority | Notes |
 |---|---|---|---|---|
@@ -122,3 +122,24 @@ No CRITICAL or HIGH findings. M1 (data-based guard on the local seed and pgTAP f
 | F2 | L2: every protected page and Server Action must call `getAccessState()` itself (layouts do not re-run on client navigation). Add a test or lint that fails when a route skips it. | [PLANNED] with the first module | P1 | Owner: backend + QA. |
 | F3 | L3: if PI-CORE ever breaks its `members` read policy, every user sees "Belum ada akses" and is signed out (fail closed, but noisy). | [ASSUMPTION] accepted risk | P2 | Re-check after every PI-CORE migration (schema inspector). |
 | F4 | I1: the local stacks (NEXUS and PI-CORE) publish ports on all network interfaces. They hold only fake data and default dev credentials. | [ASSUMPTION] accepted for local dev | P2 | Avoid running them on public Wi-Fi; noted in `docs/ops/local-setup.md`. |
+
+## G. Member Data assumptions (2026-11-06)
+
+Spec: `docs/modules/member-data.md` section 8 (M1-M8 are answered, D-019). These are the details the owner did not decide; they stay [ASSUMPTION] until confirmed.
+
+| # | Assumption | Status | Priority |
+|---|---|---|---|
+| A-MD1 | Page size 20; name A-Z sort; no sort controls; search, filters and page kept in the page address. | [ASSUMPTION] | P2 |
+| A-MD2 | Unit filter = top-level unit (BPH, department, bureau); divisions fold into their department. Extra filter value "Tanpa jabatan" (no assignment) proposed; needs UX and owner OK. | [ASSUMPTION] | P2 |
+| A-MD3 | A deactivated member's unit/position shows what PI-CORE still records for the active period. | [ASSUMPTION] | P2 |
+| A-MD4 | Deactivated org units are not offered in the filter, but their members still appear. | [ASSUMPTION] | P2 |
+| A-MD5 | Export = all rows matching the current filters, same information as the screen; period label and date in the header; file made on the server, not stored; in exports the "Pembina" marker is its own column and unit and position are separate columns. | [ASSUMPTION] | P2 |
+| A-MD6 | No link from a row to the member in PI-CORE. | [ASSUMPTION] | P2 |
+| A-MD7 | Interface strings in the spec (empty, error, search placeholder) are proposals. | [ASSUMPTION] | P2 |
+| A-MD8 | Primary-assignment tie-break: lower `org_units.sort_order`, then unit name A-Z (owner-given), then position name A-Z (added as last resort). | [ASSUMPTION] | P1 |
+| A-MD9 | The unit filter matches ANY active-period assignment, not only the primary one. A row may show a different unit than the filter chosen. | [ASSUMPTION] | P1 |
+| A-MD10 | Export log readers. | **[ANSWERED]** 2026-11-06 | - | System Admin (fixed) + key `member_data.view_export_log`, default rule D33 for `bph` (D-019). |
+| A-MD11 | Export log stores unit id, status, and "search used yes/no", plus the active period id. It does NOT store the search text (a typed email or NIM would become PII in the log). | [ASSUMPTION] | P1 |
+| A-MD12 | If the export log row cannot be written, the export is refused. | [ASSUMPTION] | P2 |
+| A-MD13 | Department/bureau heads see the full member list (scope "all"), not only their own unit. Follows from M2 (b) and the catalog. | [ASSUMPTION] | P2 |
+| A-MD14 | No screen to read the export log is designed yet; without one, BPH cannot read it. Needs a UX design and owner decision. | [UNKNOWN] | P1 |

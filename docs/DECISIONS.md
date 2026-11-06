@@ -153,3 +153,19 @@ Status tags: **[DECIDED]** final, **[ASSUMPTION]** needs owner confirmation.
 - **Trade-off:** more RAM when both stacks run (laptop has 14 GB); stop PI-CORE's stack while testing NEXUS if needed. Supabase CLI pinned to PI-CORE's version (2.122.0).
 - **Rule kept:** never `supabase db push`, `migration repair`, or `db reset --linked` from NEXUS (B36). The local stack is never linked to the hosted project.
 - **Answers:** `OPEN_QUESTIONS.md` B32 (option b, now).
+
+## D-019 Member Data module rules [DECIDED]
+- **Date:** 2026-11-06
+- **What:** Owner answers M1-M8 for `docs/modules/member-data.md`:
+  - M1: status = Aktif / Nonaktif from `members.is_active`. The list shows everyone; the Status filter defaults to Aktif, with Nonaktif and Semua selectable. (Answers A8 and C4.)
+  - M2 (answers B9): `member_data.view` goes to role `bph` AND role `kepala_departemen` (Kepala Departemen and Kepala Biro), scope "all". This is a new default rule D32 (default rules 31 -> 33 together with D33 below); it is sensitive, so the seed needs a written reason (L12). `member_data.export` stays BPH only (D13). "All active members" stays blocked by L12. The migration for D32 is not written yet.
+  - M3 (answers B10): one PRIMARY assignment per member = lowest `positions.rank`. Column title "Unit / Jabatan": line 1 = unit (a division is written after its department, "Departemen Operasional · Logistik"), line 2 = position; no assignment = "-". Unit filter matches ANY active-period assignment [ASSUMPTION A-MD9]. Tie-break: lower `org_units.sort_order`, then unit name A-Z [ASSUMPTION A-MD8].
+  - M4: no row detail view; the Stitch hint is removed.
+  - M5: one "Ekspor" button with a menu of Excel, CSV, PDF; visible only with `member_data.export`.
+  - M5b: the Dashboard "Members" count = all members with `is_active = true` (students and lecturers); visible only with `member_data.view`; equals the list total under the default filter.
+  - M6: lecturers (`member_type = 'lecturer'`) are listed with a small marker "Pembina". This widens the D-010 field list (name, units, positions, active/inactive) to also include `member_type`, which access-control 7.1 already allowed. Email, phone, NIM, NIP stay forbidden (L4).
+  - M7: active period only; no period selector.
+  - M8: every export is logged in an append-only NEXUS table: who (`members.id`), when, format, filters used. No update, no delete, no PII. Readers: System Admin (fixed) + BPH through a new sensitive catalog key `member_data.view_export_log` and default rule D33 (owner, 2026-11-06; keys 20 -> 21).
+- **Why:** Department and bureau heads need the directory to coordinate their units, while the list stays read-only and free of sensitive fields. One primary assignment keeps rows short on a 390 px screen and counts people, not assignments. Export is the riskiest action (every name in one file), so it stays BPH-only and leaves a trace.
+- **Impact:** `docs/modules/access-control.md` amended (D32, row count 32, B9 answered, L4 and catalog text mention the marker, AC-70/71, export log listed in 7.2). The export log is the only NEXUS data stored for this module; NEXUS still keeps no member list. Not yet designed: the screen to read the export log (`docs/modules/member-data.md` section 11).
+- **Answers:** `OPEN_QUESTIONS.md` A8, B9, B10, C4.

@@ -2,7 +2,7 @@
 
 > Reference document for the PMK-NEXUS project. Written in English for the AI assistant. The project owner communicates in Indonesian.
 > Status legend: **[DECIDED]** = final decision, **[ASSUMPTION]** = needs confirmation, **[PLANNED]** = future work, **[UNKNOWN]** = information still missing.
-> Last updated: 2026-11-06 (section 6 replaced by the Stitch design, D-014; section 8 item 12 answered). Earlier: 2026-11-05 (sections 2, 3, 4, 7, 8, verified PI-CORE schema).
+> Last updated: 2026-11-06 (sections 2, 4, 5.1, 5.2 and 8 updated for Member Data, D-019; section 6 replaced by the Stitch design, D-014; section 8 item 12 answered). Earlier: 2026-11-05 (sections 2, 3, 4, 7, 8, verified PI-CORE schema).
 
 ---
 
@@ -57,7 +57,7 @@ Source: PI-CORE repo `/home/fycode/Documents/pi-core-v2`, migrations folder (5 m
 | Concept | How PI-CORE really stores it |
 |---|---|
 | Member | Table `public.members`. Linked to login by `user_id` -> `auth.users`. Has `access_level`, `is_active`, `member_type` (`student` / `lecturer`), plus sensitive fields `email`, `phone`, `nim`, `nip`. |
-| Org unit (new) | Table `public.org_units`, a tree: root `PMK ITERA` -> `BPH PMK ITERA`, 7 departments, 1 bureau (`Biro Kewirausahaan`) -> 16 divisions. Types: `organization`, `bph`, `department`, `bureau`, `division`. No stable key column; units are identified by name. |
+| Org unit (new) | Table `public.org_units`, a tree: root `PMK ITERA` -> `BPH PMK ITERA`, 7 departments, 1 bureau (`Biro Kewirausahaan`); 16 divisions sit under the 7 departments (the bureau has no divisions). Types: `organization`, `bph`, `department`, `bureau`, `division`. No stable key column; units are identified by name. |
 | Position | Table `public.positions`. A title tied to an org unit TYPE (e.g. Ketua Umum for `bph`, Kepala Departemen for `department`, Staff for `division`), with a `rank`. No link to a single role. |
 | Role | Table `public.roles`. A capability bundle with a stable `key`: `organization_admin`, `bph`, `bendahara`, `kepala_departemen`, `sekretaris`, `kepala_divisi`, `staff`. Linked many-to-many to positions through `public.position_roles`. There is **no** Committee (panitia), regular member (anggota), or "Operations" role. |
 | Period | Table `public.periods`. Label like `2026/2027`. `is_active = true` for at most one row (enforced by the database). Switched only by admin RPC `public.set_active_period()`. |
@@ -129,7 +129,8 @@ Access is computed from the user's **assignments in the active period** of PI-CO
 | BPH Secretary | Positions Sekretaris Jenderal, Sekretaris Umum 1 / 2 (they carry `bph` + `organization_admin`, not `sekretaris`) | Manage ALL Letters (incl. numbering, archive, letter requests) and ALL Meeting Minutes | **[DECIDED]** D-008; identified through the NEXUS mapping table (D-009) |
 | Department / bureau secretary | Role `sekretaris` (Sekretaris Departemen, Sekretaris Biro) | Manage Meeting Minutes of their OWN org unit only; submit letter requests like other members | **[DECIDED]** D-008; reading rights [ASSUMPTION] B17 |
 | Operations Department Head and staff | Active-period assignment in org unit `Departemen Operasional` or its divisions `Logistik` / `Akomodasi` (Kepala Departemen, Sekretaris Departemen?, Kepala Divisi, Staff). No "Operations" role exists. | Manage Inventory and Borrowing | Which units count: **[DECIDED]** via the NEXUS mapping table (D-009). Which positions inside them: [ASSUMPTION] B4 |
-| BPH (board) | Role `bph` (Ketua Umum, Sekretaris Jenderal, Sekretaris Umum 1 / 2, Bendahara Umum 1 / 2) | View all modules | [ASSUMPTION] B6 |
+| BPH (board) | Role `bph` (Ketua Umum, Sekretaris Jenderal, Sekretaris Umum 1 / 2, Bendahara Umum 1 / 2) | View all modules (incl. Member Data view and export) | [ASSUMPTION] B6; Member Data part **[DECIDED]** D-019 |
+| Department / bureau heads | Role `kepala_departemen` (Kepala Departemen, Kepala Biro) | View the Member Data list (no export) | **[DECIDED]** D-019 (default rule D32) |
 | Staff, regular members | Any active member: with role `staff` / `kepala_divisi` / others not listed above, or with no assignment at all in the active period | Limited access; can request item borrowing and letters | [ASSUMPTION] B8 |
 | Committee (panitia) | Not in PI-CORE | n/a | **[UNKNOWN]** B7 |
 | Lecturers (pembina) | `member_type = 'lecturer'`; cannot hold assignments | n/a | **[UNKNOWN]** B15 |
@@ -151,13 +152,18 @@ Based on the original Figma screens; visual design now follows Stitch (section 6
 ### 5.1 Dashboard
 - Finance card: current balance (placeholder in design: Rp 999,999,999)
 - Recent Meetings: latest meetings list (e.g. "Rapat Koordinasi 2026-07-17")
-- Members: member count (from PI-CORE)
+- Members: member count (from PI-CORE): all members with `is_active = true`, students and lecturers. Shown only to users with `member_data.view` (D-019).
 - Inventory Status: percentage (e.g. 80%)
 
-### 5.2 Member Data (Data Anggota)
-- Read-only view of PI-CORE.
-- Table columns: No, Name, Department, Status.
-- Filters: Department, Status. Pagination (Prev, 1, 2, 3, Next).
+### 5.2 Member Data (Data Anggota) [DECIDED 2026-11-06, D-019]
+Full spec: `docs/modules/member-data.md`.
+- Read-only view of PI-CORE (no add, edit, or delete; no row detail screen).
+- Table columns: No, Nama Lengkap (lecturers carry a small "Pembina" marker), Unit / Jabatan (the member's PRIMARY active-period assignment: line 1 unit, with a division written after its department; line 2 position; "-" when none), Status (Aktif / Nonaktif from `members.is_active`).
+- Primary assignment = lowest `positions.rank` [ASSUMPTION: tie-break by unit `sort_order`, then name].
+- Search: name only (never NIM, email, phone). Filters: Unit (matches any active-period assignment [ASSUMPTION]) and Status (default Aktif; Nonaktif and Semua selectable). Pagination (Prev, 1, 2, 3, Next), server side.
+- Always the active period. Shows every member, with or without an assignment.
+- Access: view = role `bph` and role `kepala_departemen` (Kepala Departemen and Kepala Biro); export (Excel, CSV, PDF through one "Ekspor" button) = BPH only. Every export is logged in an append-only table (who, when, format, filters; no PII).
+- Never shown: email, phone, NIM, NIP.
 
 ### 5.3 Finance
 - Total Income (Total Pemasukan), Total Expenses (Total Pengeluaran), Total Balance (Total Saldo).
@@ -254,7 +260,7 @@ The full, current list lives in `docs/OPEN_QUESTIONS.md`. Summary:
 7. [x] Exact color codes and fonts: from Stitch (D-014).
 8. [ ] Design for login page, letter request flow, and borrowing request flow.
 9. [ ] Definition of "Inventory Status 80%" on the dashboard (e.g. share of items in good condition?).
-10. [~] Definition of member "Status" (active/inactive?) in Member Data. PI-CORE stores only active/inactive; owner to confirm.
+10. [x] Definition of member "Status" in Member Data: Aktif / Nonaktif from `members.is_active`. Answered 2026-11-06 (D-019).
 11. [x] Who is "the Secretary" for Letters and Minutes. Answered 2026-11-05 (D-008).
 12. [x] Design source: Stitch redesign. Answered 2026-11-06 (D-014).
 

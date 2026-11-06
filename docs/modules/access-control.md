@@ -1,6 +1,7 @@
 # Access Control (cross-cutting module spec)
 
 > Status: **APPROVED** by the owner on 2026-11-05 (D-012). Revision 2, configurable model (D-011).
+> Amended 2026-11-06 (D-019, owner OK): default rule D32 added (`member_data.view` for role `kepala_departemen`), 31 -> 33 default rules; new sensitive key `member_data.view_export_log` with rule D33 for role `bph` (owner 2026-11-06); B9 answered as option (b); Member Data shows a "Pembina" marker (member type). The seed migration does not contain D32/D33 or the new key yet; the database engineer adds it later.
 > Sources: `CLAUDE.md` (sections 4-7, 11), `docs/PMK-NEXUS-context.md` (section 4: the access table is now only the DEFAULT rule set), `docs/picore/schema-report.md`, `docs/DECISIONS.md` (D-007 to D-011), `docs/OPEN_QUESTIONS.md` (B, B-bis, C).
 > No SQL or code here. Tags: **D-0xx** = owner decision, **[A-Bx]** = [ASSUMPTION] tied to open question Bx, **[A-n]** = [ASSUMPTION] without its own question (section 11), **L1-L11** = locked rule (section 4).
 
@@ -32,7 +33,7 @@
 
 ### 2.1 Permission catalog (stable keys)
 
-Keys are fixed in code and never renamed. The admin chooses from this list; the admin cannot invent keys. 20 keys cover Phase 1.
+Keys are fixed in code and never renamed. The admin chooses from this list; the admin cannot invent keys. 21 keys cover Phase 1.
 
 | Key | What it unlocks | Scopes allowed | Sensitive |
 |---|---|---|---|
@@ -53,8 +54,9 @@ Keys are fixed in code and never renamed. The admin chooses from this list; the 
 | `borrowing.view_all` | See everybody's borrowing requests (own are always visible, L9) | all | No |
 | `borrowing.approve` | Approve/reject requests and mark items borrowed/returned. Includes view_all. Never own requests (L6) [A-n7] | all | No |
 | `borrowing.export` | Export borrowing | all | No |
-| `member_data.view` | See the Member Data list: name, unit, position (active period), active/inactive. Never email, phone, NIM, NIP (L4) | all | **Yes** |
+| `member_data.view` | See the Member Data list: name, main unit and position (active period), active/inactive, and a "Pembina" marker for lecturers (member type). Never email, phone, NIM, NIP (L4). Also unlocks the Dashboard Members count | all | **Yes** |
 | `member_data.export` | Export that same list | all | **Yes** |
+| `member_data.view_export_log` | Read the Member Data export log (who exported, when, format, filters). The System Admin always reads it as a fixed right (L3) | all | **Yes** |
 | `access_rules.view_log` | Read the access-rule change log (B24) | all | No |
 
 Scope meaning:
@@ -94,7 +96,7 @@ Notes:
 
 ## 3. Default rule set
 
-This is the set seeded at setup. It reproduces the revision 1 recommendations exactly (owner accepted them as defaults; none was changed). The admin can disable or add rules afterwards.
+This is the set seeded at setup. It reproduces the revision 1 recommendations (owner accepted them as defaults), with one addition on 2026-11-06: D32, from the owner's answer to B9 (D-019). The admin can disable or add rules afterwards.
 
 **Seeding rule.** Positions and units are looked up BY NAME once, at setup, and stored as IDs (D-009). Roles are stored by key. If a lookup fails (name differs in production, A3), setup must stop and report it; it must not skip silently. After setup nothing matches by name.
 
@@ -113,8 +115,8 @@ Scope is "all" unless stated. Subjects: `role:bph` means S1 with key `bph`, and 
 | D09 | role `bph` | `inventory.export` | all | G2 export |
 | D10 | role `bph` | `borrowing.view_all` | all | G2 views all borrowing |
 | D11 | role `bph` | `borrowing.export` | all | G2 export |
-| D12 | role `bph` | `member_data.view` | all | B9 (a): BPH only |
-| D13 | role `bph` | `member_data.export` | all | B9 (a) |
+| D12 | role `bph` | `member_data.view` | all | B9 (b): BPH (D32 adds department/bureau heads) |
+| D13 | role `bph` | `member_data.export` | all | B9 (b): export stays BPH only |
 | D14 | role `bph` | `access_rules.view_log` | all | B24 |
 | D15 | position Sekretaris Jenderal | `letters.manage` | all | G3 (D-008) |
 | D16 | position Sekretaris Jenderal | `letter_requests.process` | all | G3 |
@@ -133,8 +135,10 @@ Scope is "all" unless stated. Subjects: `role:bph` means S1 with key `bph`, and 
 | D29 | same unit subject as D28 | `inventory.export` | all | G6 export |
 | D30 | same unit subject as D28 | `borrowing.approve` | all | G6 approve, mark borrowed/returned |
 | D31 | same unit subject as D28 | `borrowing.export` | all | G6 export |
+| D32 | role `kepala_departemen` | `member_data.view` | all | B9 (b), owner 2026-11-06, D-019. Covers Kepala Departemen and Kepala Biro. Sensitive key: the seed needs a written reason (L12). **Added after the first migration; not yet in `supabase/migrations/`** |
+| D33 | role `bph` | `member_data.view_export_log` | all | D-019 M8, owner 2026-11-06. Sensitive key (L12). **Not yet in `supabase/migrations/`** |
 
-**Row count: 31** (1 baseline, 13 for `bph`, 9 for the three BPH secretary positions, 2 for `bendahara`, 2 for `sekretaris`, 4 for Operations).
+**Row count: 33** (1 baseline, 14 for `bph`, 9 for the three BPH secretary positions, 2 for `bendahara`, 2 for `sekretaris`, 4 for Operations, 1 for `kepala_departemen`).
 
 Differences from revision 1, for the record:
 - Revision 1 listed Operations units one by one (Operasional, Logistik, Akomodasi, no automatic children). D28-D31 use one unit with "include child units", which gives the same result today and also covers a division added later. If the owner prefers exact listing, replace D28-D31 with 12 rows (3 units x 4 permissions).
@@ -152,7 +156,7 @@ Enforced in server code AND RLS, independent of what the rules table contains. *
 | L1 | Inactive member, unlinked Auth user, or no session = no access at all. Checked first, on every request, inside every permission helper (a still-valid token is not enough). No rule can grant anything to such a user. | D-011, D3 |
 | L2 | System Admin comes ONLY from `members.access_level` in (`admin`, `super_admin`) of an active member. No rule, position, or role can create or remove it. NEXUS never calls `private.is_admin()` and never reads `roles.grants_admin`. | D-007 |
 | L3 | A System Admin always has the settings screen, the rules editor, and the change log, whatever the rules say. This prevents locking the system out. | D-011 |
-| L4 | Email, phone, NIM, NIP, `must_change_password`, `audit_log`, `org_settings` are never read or returned by NEXUS. Member Data shows only name, unit, position, active/inactive. No catalog key can widen this. **Single exception (D-015):** one dedicated `nexus` function may read the CALLER's own `must_change_password` and return it as one boolean; it never answers about another member. | D-010, D-015 |
+| L4 | Email, phone, NIM, NIP, `must_change_password`, `audit_log`, `org_settings` are never read or returned by NEXUS. Member Data shows only name, unit, position, active/inactive, and a "Pembina" marker for lecturers (member type, D-019). No catalog key can widen this. **Single exception (D-015):** one dedicated `nexus` function may read the CALLER's own `must_change_password` and return it as one boolean; it never answers about another member. | D-010, D-015 |
 | L5 | No permanent delete anywhere, including rules (disable instead) and the change log (append-only). Archive or void replaces delete. | CLAUDE.md 6.5 |
 | L6 | Nobody approves their own request: letter request processing and borrowing approval are blocked when the processor is the requester (matched on `members.id`). | B21 (locked) |
 | L7 | Records of a non-active period are read-only for everyone, except open items (pending letter requests, borrowings not yet returned), which stay actionable by whoever holds `letter_requests.process` / `borrowing.approve` now. Finance corrections go into the active period. | A-n6 |
@@ -235,6 +239,7 @@ Functions answer in this shape (design level): "who am I" = member id, System Ad
 | **Access rule change log** | Per entry: rule id, action, actor `members.id`, actor name snapshot, timestamp, before (rule content), after (rule content), note. Append-only. Read by the System Admin and `access_rules.view_log` holders. PI-CORE's audit trigger does not cover NEXUS tables, so NEXUS keeps this log itself. |
 | **Default rule seed** | Section 3, written once at setup. |
 | **On every record** | `members.id` of the creator (and the subject for requests), `period_id`, created/updated timestamps. Foreign keys to PI-CORE tables are the database engineer's call; recommendation: plain id values without FK, so NEXUS can never block a PI-CORE change. |
+| **Member Data export log** | Append-only: exporter `members.id`, time, format, filters used (unit id, status, search used yes/no), active period id. No PII, no search text, no exported rows. No update, no delete. Readers: System Admin + BPH through key `member_data.view_export_log` (rule D33, owner 2026-11-06). Details: that spec, section 4.2 (D-019). |
 | **Meeting minutes** | Also `org_unit_id` (needed for "own unit" scope, D-008). |
 | **Letters, requests, borrowing, finance** | `period_id`. Inventory items are not tied to a period [A-n5]. |
 
@@ -263,7 +268,7 @@ Functions answer in this shape (design level): "who am I" = member id, System Ad
 | E17 | Two rules overlap (e.g. `role:bph` and a position rule give the same permission) | Fine, union (R2). Disabling one does not remove access granted by the other. The screen should show this when a rule is disabled but the user still has access through another rule [A-n10]. |
 | E18 | Admin is also an officer (e.g. `super_admin` who is Bendahara) | Gets rule-based rights for their position like anyone, in addition to admin rights. Self-benefiting rule changes: see known risk (section 4) and B28. |
 | E19 | A new division is created under Departemen Operasional | Covered at once by D28-D31 because of include-child-units [A-B26]. If the flag is off, it is not covered. |
-| E20 | Rule with a sensitive key given to "every active member" | Allowed after the strong warning and confirmation; logged. Everyone (including the admin and lecturers) can then see that data. |
+| E20 | Rule with a sensitive key given to "every active member" | Rejected by the database (L12, D-013). The screen explains that sensitive and power keys need a role, position, or unit subject and a written reason. |
 | E21 | Unit deactivated in PI-CORE (`is_active = false`) but old assignments exist | Matching continues from assignments as PI-CORE reports them [A-n11]; the screen warns. |
 | E22 | Rule changed while a user has a page open | Their next request uses the new rules; an open page fails on its next action with a clear message. |
 
@@ -372,9 +377,9 @@ All ACs assume the default rule set (section 3) unless stated. Test personas use
 - AC-52 When P-ADMIN adds an enabled rule (e.g. position Staff in unit Pubdok gets `inventory.manage`), P-STAFF-PUB can use that permission on their next request, with no logout or deploy.
 - AC-53 When P-ADMIN disables that rule, P-STAFF-PUB loses the permission on the next request; enabling it again restores it. The rule stays in the list after disabling.
 - AC-54 A rule that points to a deleted or unknown position, unit, or role key grants nothing to anyone, and the rules screen shows a stale-ID warning on that rule.
-- AC-55 No configured rule can give access to an inactive or unlinked member: with a baseline rule granting `finance.view` to every active member, P-INACTIVE and P-UNLINKED still get nothing.
-- AC-56 No configured rule can expose email, phone, NIM, or NIP: with `member_data.view` and `member_data.export` granted to every active member, responses and exports still contain none of these fields.
-- AC-57 No configured rule can enable self-approval: with `borrowing.approve` and `letter_requests.process` granted to every active member, a user still cannot approve their own request.
+- AC-55 No configured rule can give access to an inactive or unlinked member: with the baseline rule D01 (`inventory.view` for every active member) and a rule granting `finance.view` to role `staff` (with a written reason), P-INACTIVE and P-UNLINKED still get nothing.
+- AC-56 No configured rule can expose email, phone, NIM, or NIP: with `member_data.view` and `member_data.export` granted to role `staff` (with a written reason), responses and exports still contain none of these fields.
+- AC-57 No configured rule can enable self-approval: with `borrowing.approve` and `letter_requests.process` granted to role `staff` (with a written reason), a user still cannot approve their own request.
 - AC-58 No configured rule can make a closed-period record editable: a rule granting `finance.manage` does not let anyone edit a transaction of a non-active period.
 - AC-59 Every rule add, disable, and enable creates a log entry with who, when, and the full rule before and after; log entries cannot be edited or deleted, even by P-ADMIN.
 - AC-60 P-KETUM (BPH) can read the change log and cannot add, disable, or enable a rule. P-PLAIN cannot read the log.
@@ -387,6 +392,8 @@ All ACs assume the default rule set (section 3) unless stated. Test personas use
 - AC-67 A rule with "own unit" scope gives access only to records of the unit of the matching assignment.
 - AC-68 P-ADMIN-BEND receives Finance rights through their Treasurer position while P-ADMIN (no assignments) does not; being admin alone adds no business rights.
 - AC-69 If every rule is disabled, P-ADMIN can still open the rules screen and the log (L3), and members still have own-request rights (L9).
+- AC-70 (D32, D-019) P-KADEP-OPS and a Kepala Biro can open the Member Data list and see the Dashboard Members count, and cannot export it; P-SEKDEP and P-STAFF-LOG cannot see Member Data.
+- AC-71 (D-019) With rules D12 and D32 both disabled, no BPH member or department head can open Member Data. Granting `member_data.view` to "every active member" is rejected (L12). Full Member Data criteria: `docs/modules/member-data.md` section 9.
 
 ---
 
@@ -401,7 +408,7 @@ Status key: **default chosen, configurable (D-011)** = the answer is only the st
 | B6 | Does "BPH views all modules" include Finance for all six BPH positions? | (a) Yes. (b) Finance only Ketua Umum + Treasurer. (c) Everything except Finance. | (a). **Default chosen, configurable (D-011)**: D02-D03. Sensitive, flagged to the owner. |
 | B7 | Is a committee (panitia) member a separate group? | (a) No, regular member. (b) Add a committee list. | (a). **Default chosen, configurable (D-011)**: PI-CORE has no committee role; only baseline rules can reach them. |
 | B8 | What does a regular member see? | (a) Own requests + read-only catalog + Dashboard without business cards. (b) No catalog. (c) Own requests only. | (a). **Default chosen, configurable (D-011)**: D01 is the only baseline rule; own requests are locked (L9). |
-| B9 | Who may see Member Data? | (a) BPH only. (b) BPH + department heads. (c) All active members. Fields always name, unit, position, status. | (a). **Default chosen, configurable (D-011)**: D12-D13. |
+| B9 | Who may see Member Data? | (a) BPH only. (b) BPH + department/bureau heads (role `kepala_departemen`). (c) All active members: **blocked by locked rule L12 (D-013)**, not possible. Fields always name, unit, position, status (+ "Pembina" marker). | **[ANSWERED 2026-11-06: (b), D-019]** View: BPH (D12) + `kepala_departemen` (D32). Export: BPH only (D13). Configurable (D-011). |
 | B15 | What can a lecturer (pembina) do? | (a) Baseline only. (b) Baseline plus read-only oversight. (c) No access. | (a). Lecturers hold no assignments, so only baseline rules can reach them. If the owner wants pembina oversight, add a baseline rule (which would then apply to all members) or give the pembina `access_level` admin (settings only). Ask the owner whether pembina should oversee. |
 | B17 | May department/bureau secretaries read letters or minutes of other units? | (a) Own unit's minutes only; no register. (b) Also the register. (c) Also all minutes. | (a). **Default chosen, configurable (D-011)**: D26-D27. |
 | B18 | Should System Admin see business data? | (a) No. (b) Member Data only. (c) All like BPH. | (a). **Default chosen, configurable (D-011)** in the sense that the admin can add rules, with the known risk in section 4. |
