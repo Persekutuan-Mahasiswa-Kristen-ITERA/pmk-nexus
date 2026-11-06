@@ -186,3 +186,27 @@ Status tags: **[DECIDED]** final, **[ASSUMPTION]** needs owner confirmation.
 - **Owner:** chosen 2026-11-06 (alternatives rejected: all 6 items with disabled ones; no drawer yet).
 - **Implemented:** 9f4808a, 2026-11-07 (`src/components/shell/`).
 
+## D-022 Inventory and Borrowing module rules [DECIDED]
+- **Date:** 2026-11-07
+- **What:** Owner answers IB1-IB15 for `docs/modules/inventory-borrowing.md`:
+  - IB1 (d): hybrid items. Each item is individually tracked (one row per unit, own condition) or quantity-based (a count per condition); Ops picks the mode when creating it. The mode cannot change once the item has borrowing history [ASSUMPTION A-IB25].
+  - IB2 (b): only the Operations heads (Kepala Departemen Operasional and the Kepala Divisi of its divisions) approve, reject and extend. Any Operations holder hands items over and takes them back. L6 blocks only approve, reject and extend of your own request; recording your own handover and return is allowed (the history shows who recorded it).
+  - IB3 (a): one catalog for everything PMK owns, managed by Operations.
+  - IB4 (a): no lead time (Stitch's "H-3" is filler, answers C7).
+  - IB5 (c): no maximum duration; the heads may extend the end date with a note [A-IB26].
+  - IB6 (a): stock is held from approval onward; pending requests hold nothing.
+  - IB7 (a): the requester may cancel after approval and before pick-up, with a reason.
+  - IB8 (b): a good return is a tick with an optional note; a damaged or lost return needs a note AND a photo. No deposit tracking.
+  - IB9 (a): no catalog photos. Photos exist only as evidence for damaged or lost returns: resized in the browser, private bucket, never purged.
+  - IB10 (b): categories and locations are lists Ops maintains (add, rename, deactivate), starting empty. Conditions are fixed: Baik, Perlu servis, Rusak; only Baik is lendable; a lost unit is a write-off, not a condition.
+  - IB11 (c): automatic code `INV-0001`, one sequence, never reused, assigned by the database: one code per unit for tracked items, one per item for quantity items [A-IB27].
+  - IB12 (d): no percentage on the Dashboard card; it shows counts (for example units in good condition, on loan, needing service). Answers CLAUDE.md Q7 / A7: the Stitch "80%" is dropped (design deviation approved by the owner).
+  - IB13 (c): exports are logged now (append-only, no PII, like Member Data); the screen to read the log comes later with the Member Data log screen (A-MD14).
+  - IB14 (a): in-app status only; contact happens outside NEXUS.
+  - IB15 (b): Ops may record a request for an outside party (organisation name and contact person name only); the recording Ops member is the requester of record [A-IB28].
+- **Access-control changes (amendment 2026-11-07, `docs/modules/access-control.md`):** `borrowing.approve` now means approve, reject, extend. New key `borrowing.handle` (handover, return, cancel before pick-up on behalf, correction, outside-party requests; includes view_all; power key under L12; not subject to L6). Keys 21 -> 22. Default rule D30 is retired; new rules D34 (Kepala Departemen Operasional approves), D35 (Kepala Divisi approves, child units included), D36 (every Operations holder gets `borrowing.handle`). Active default rules 33 -> 35. L6 narrowed, L9 widened (cancel until pick-up), L12 lists `*.handle`, A-n7 superseded, B4 answered.
+- **Why:** The owner wants decisions by the heads but daily work (lending and taking back) by everyone in Operations, one catalog for all items, no invented limits, and no dashboard figure whose meaning nobody can define. Hybrid tracking lets expensive items have a history per unit while cables and stands stay a simple count.
+- **Risks and trade-offs:** (1) A holder can falsely record their own return; mitigated only by the append-only history. (2) With heads only as approvers (at most three by default), a head's own request needs another head (B29): if one head is in office, it waits. (3) The migration is NOT written yet; until it is, the database still follows the old D30. (4) Evidence photos are never purged, so they count against the free-tier storage; they are resized and only for damaged or lost items.
+- **Owner:** answered 2026-11-07. Spec status: ready for owner approval.
+- **Answers:** `OPEN_QUESTIONS.md` A7, B4, C7 (and adds section H).
+

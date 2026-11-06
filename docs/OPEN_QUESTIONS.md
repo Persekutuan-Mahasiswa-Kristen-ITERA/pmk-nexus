@@ -1,6 +1,6 @@
 # PMK-NEXUS Open Questions and Active Assumptions
 
-Last updated: 2026-11-06 (Member Data answers, D-019; section G added).
+Last updated: 2026-11-07 (Inventory and Borrowing answers IB1-IB15, D-022; A7, B4, C7 answered; section H added). Earlier: 2026-11-06 (Member Data answers, D-019; section G added).
 Tags: **[UNKNOWN]** no answer yet, **[ASSUMPTION]** working guess that needs confirmation, **[ANSWERED]** resolved (move the decision to `DECISIONS.md`).
 Priority: **P0** blocks the next step, **P1** blocks a specific module, **P2** can wait.
 
@@ -16,7 +16,7 @@ Priority: **P0** blocks the next step, **P1** blocks a specific module, **P2** c
 | A4 | Sample official letter formats | [UNKNOWN] | P1 (Letters) | |
 | A5 | Exact Figma colors and fonts | [UNKNOWN] | P1 (UI) | Stitch has exact values (see section C), but they differ from the context doc. Which design wins? |
 | A6 | Designs for login, letter request flow, borrowing request flow | [UNKNOWN] | P1 | See section C for what Stitch contains. PI-CORE's Stitch project has login screens ("Masuk PMK ITERA") that could be reused. |
-| A7 | Meaning of "Inventory Status 80%" | [UNKNOWN] | P2 (Dashboard) | Stitch labels it "Barang Siap Pakai" (items ready to use). |
+| A7 | Meaning of "Inventory Status 80%" (CLAUDE.md Q7) | **[ANSWERED]** 2026-11-07 (D-022, IB12 option d) | - | No percentage. The Dashboard card shows counts (units in good condition, on loan, needing service; exact wording at design time, A-IB32). The Stitch "80%" is dropped, a design deviation the owner approved. |
 | A8 | Meaning of member "Status" in Member Data | **[ANSWERED]** 2026-11-06 (D-019, M1) | - | Aktif / Nonaktif from `members.is_active`. Filter defaults to Aktif. |
 
 ## B. PI-CORE schema (from `docs/picore/schema-report.md`)
@@ -26,7 +26,7 @@ Priority: **P0** blocks the next step, **P1** blocks a specific module, **P2** c
 | B1 | Who is "System Admin" in NEXUS? | **[ANSWERED]** 2026-11-05 | - | Only manually appointed `access_level` `admin` or `super_admin`. Positions never grant it. See `DECISIONS.md` D-007. |
 | B2 | Who manages Letters and Meeting Minutes? | **[ANSWERED]** 2026-11-05 | - | BPH secretaries: everything. Department/bureau secretaries: only their own unit's minutes. See `DECISIONS.md` D-008. |
 | B3 | Treasurer = only Bendahara Umum 1/2 (role `bendahara`)? | [ASSUMPTION] yes | P1 (Finance) | No department-level treasurers exist in PI-CORE. |
-| B4 | "Operations Department Head and staff" = Kepala Departemen of `Departemen Operasional` + Kepala Divisi + Staff of its divisions `Logistik` and `Akomodasi` (+ Sekretaris Departemen?) | [ASSUMPTION] | P1 (Inventory) | There is no "Operations" role; NEXUS must match the org unit. |
+| B4 | "Operations Department Head and staff" = Kepala Departemen of `Departemen Operasional` + Kepala Divisi + Staff of its divisions `Logistik` and `Akomodasi` (+ Sekretaris Departemen?) | **[ANSWERED]** 2026-11-07 (D-022, IB2 option b) | - | Every position in the Operations units (including Sekretaris Departemen Operasional) manages inventory and records handover/return (`borrowing.handle`). Only Kepala Departemen and Kepala Divisi approve, reject, extend (`borrowing.approve`). Still to verify before applying: that the Kepala Divisi positions of Logistik and Akomodasi are filled in the real data. Migration not written yet. |
 | B5 | How to identify `Departemen Operasional` safely? | **[ANSWERED]** 2026-11-05 | - | NEXUS-side settings table storing PI-CORE org unit IDs. See `DECISIONS.md` D-009. |
 | B6 | "BPH view all" = everyone holding role `bph` (Ketua Umum, Sekjen, Sekum 1/2, Bendahara Umum 1/2)? | [ASSUMPTION] yes | P1 | |
 | B7 | Committee (panitia): needed in NEXUS? PI-CORE has no such role. | [UNKNOWN] | P2 | Context doc lists "Committee" as a role. |
@@ -59,7 +59,7 @@ Details in `docs/design/stitch/comparison.md`.
 | C4 | Member status values: Stitch shows Aktif / Cuti / Alumni / Pembina, PI-CORE has only active/inactive. Show only Aktif / Nonaktif? | **[ANSWERED]** 2026-11-06: only Aktif / Nonaktif (D-019, M1) | - | "Pembina" is shown as a marker for lecturers (M6), not as a status. |
 | C5 | Remove "+ Tambah Anggota" from Data Anggota (read-only rule)? | [ASSUMPTION] remove (the Member Data spec already removes it) | P1 | Members are managed in PI-CORE. Not asked separately; follows the read-only decision. |
 | C6 | Outgoing letter code `SK` (seen in Stitch `PMK/NEX/SK/2026/012`): correct? | [UNKNOWN] | P1 (Letters) | Same as A2. |
-| C7 | Borrowing rule "H-3 kegiatan" (request at least 3 days before the event): real rule or Stitch filler? | [UNKNOWN] | P1 (Inventory) | |
+| C7 | Borrowing rule "H-3 kegiatan" (request at least 3 days before the event): real rule or Stitch filler? | **[ANSWERED]** 2026-11-07 (D-022, IB4 option a) | - | Filler. No lead time. The Stitch notice (and "Koordinator Logistik") is not adopted. |
 | C8 | Meeting status (Selesai / Terjadwal / Mendatang) on the Dashboard: do meetings need a schedule/status field? | [UNKNOWN] | P2 | Not in context doc. |
 | C9 | Minutes attachments: PDF/DOCX, max 10 MB? | [ASSUMPTION] yes | P2 | Watch Supabase free-tier storage (1 GB). |
 | C10 | Dashboard "Surat Menyurat" card (not in context doc): keep? | [UNKNOWN] | P2 | |
@@ -151,3 +151,39 @@ Spec: `docs/modules/member-data.md` section 8 (M1-M8 are answered, D-019). These
 | A-MD17 | "Keluar" appears both on the Dashboard placeholder and in the drawer footer; remove the Dashboard one when the Dashboard module is built. Drawer header subtitle "Institut Teknologi Sumatera" (Stitch), Stitch tagline dropped. | [ASSUMPTION] | P2 |
 | A-MD18 | Export meta line wording "Diekspor YYYY-MM-DD HH:mm WIB" and "Periode {label}" in XLSX/PDF. | [ASSUMPTION] | P2 |
 | A-MD19 | Result box above the table is labelled "Hasil" (follows the filters), not Stitch's "Total". | **[ANSWERED]** 2026-11-07 (owner) | - | |
+
+## H. Inventory and Borrowing assumptions (2026-11-07)
+
+Spec: `docs/modules/inventory-borrowing.md` section 10 (IB1-IB15 are answered, D-022). These are the details the owner did not decide; they stay [ASSUMPTION] until confirmed. Answered and no longer assumptions: A-IB1 (own handover and return allowed, IB2), A-IB4 (one catalog, IB3), A-IB9 (cancel after approval, IB7), A-IB10 (extension, IB5 and A-IB26), A-IB13 and A-IB23 (conditions, IB10), A-IB17 (outside parties, IB15 and A-IB28), A-IB19 (stock held from approval, IB6).
+
+| # | Assumption | Status | Priority |
+|---|---|---|---|
+| A-IB2 | `inventory.manage` also covers the category and location lists. | [ASSUMPTION] | P2 |
+| A-IB3 | Lecturers may browse and request like every active member (L9, B15 stays open). | [ASSUMPTION] | P2 |
+| A-IB5 | Archived items and units are hidden from members and request forms; visible to managers by filter. | [ASSUMPTION] | P2 |
+| A-IB6 | Every stock or condition change writes a history row; a write-off or lost unit needs a note. | [ASSUMPTION] | P1 |
+| A-IB7 | A submitted request cannot be edited; cancel and resubmit. | [ASSUMPTION] | P2 |
+| A-IB8 | Handover cannot be recorded before the request's start date. | [ASSUMPTION] | P2 |
+| A-IB11 | The queue has a "Belum selesai (semua periode)" filter and an open-loans export for period handover (belongs in the new-period guide). | [ASSUMPTION] | P1 |
+| A-IB12 | Export header shows period label and export date in WIB, like Member Data. | [ASSUMPTION] | P2 |
+| A-IB14 | A head may approve a lower quantity per line, with a note. | [ASSUMPTION] | P2 |
+| A-IB15 | One reasoned correction exists: Dikembalikan back to Dipinjam, by a `borrowing.handle` holder. | **[ANSWERED]** 2026-11-07: owner approved with the spec | - |
+| A-IB16 | Progja can later link to a request by id without a rewrite. | [ASSUMPTION] | P2 |
+| A-IB18 | Date ranges are inclusive; an item returned on day D is free from D+1. | [ASSUMPTION] | P1 |
+| A-IB20 | Page size 20. | [ASSUMPTION] | P2 |
+| A-IB21 | Drawer badge and Dashboard line for waiting approvals are proposals for the Dashboard module. | [ASSUMPTION] | P2 |
+| A-IB22 | Members cannot export their own requests. | [ASSUMPTION] | P2 |
+| A-IB24 | The request reference is system generated; format chosen at build time (not a letter number). | [ASSUMPTION] | P2 |
+| A-IB25 | The tracking mode of an item (individual or counted) cannot change once it has borrowing history; create a new item instead. | [ASSUMPTION] | P1 |
+| A-IB26 | Extending is an approve-type action: needs `borrowing.approve` (heads), is blocked on your own loan (L6), is checked against availability like a new approval, and is logged in an extension history. | [ASSUMPTION] | P1 |
+| A-IB27 | Code `INV-0001`: one sequence, never reused, assigned by the database; per unit for tracked items, per item for counted items; archived and lost items keep their code; numbers beyond 9999 just grow. | [ASSUMPTION] | P1 |
+| A-IB28 | Outside-party request stores organisation name and contact person name only (no phone or email); the Ops member who records it is the requester of record (so L6 blocks them from approving it); it then follows the normal approval by a head. | **[ANSWERED]** 2026-11-07: owner approved as written (D-022) | - |
+| A-IB29 | For individually tracked items the requester picks the item and a quantity; stock is reserved by quantity at approval; the Operations member chooses the specific units (by INV code) at handover. | **[ANSWERED]** 2026-11-07: owner approved with the spec | - |
+| A-IB30 | A damaged return states the resulting condition (Perlu servis or Rusak). A lost unit is a write-off: the unit stays in history with status Hilang and its code; for counted items the total drops. | **[ANSWERED]** 2026-11-07: owner approved with the spec | - |
+| A-IB31 | Evidence photos: 1 to 3 per damaged or lost line, resized in the browser to a long side of about 1280 px (about 1 MB each at most); private bucket; viewable by `borrowing.view_all` holders and the requester; never purged. | [ASSUMPTION] | P1 |
+| A-IB32 | Dashboard card counts: units in Baik (including those on loan), units on loan now, units in Perlu servis; archived and lost excluded; Rusak not on the card; exact wording at design time. | [ASSUMPTION] | P2 |
+| A-IB33 | Export log: one append-only row per successful export of the catalog or of borrowing (module, who, when, format, filters, period; no PII). Whether it shares the Member Data table is the database engineer's call. Until the log screen exists it is readable only through the database. | [ASSUMPTION] | P2 |
+| A-IB34 | A `borrowing.handle` holder may cancel an approved request that was not picked up (reason required), for example when the requester is deactivated. A Diajukan request of a deactivated member is rejected by a head with a note. | [ASSUMPTION] | P2 |
+| A-IB35 | Any head of the Operations unit may approve any request (not only for their own division). | **[ANSWERED]** 2026-11-07: owner approved with the spec | - |
+| A-IB36 | The new key `borrowing.handle` is treated like `borrowing.approve` in the catalog: not grantable to "every active member", written reason required (L12). Whether the `is_sensitive` flag is also set is left to the database engineer. | [ASSUMPTION] | P1 |
+

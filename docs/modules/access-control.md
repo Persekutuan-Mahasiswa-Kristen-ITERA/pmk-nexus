@@ -2,6 +2,7 @@
 
 > Status: **APPROVED** by the owner on 2026-11-05 (D-012). Revision 2, configurable model (D-011).
 > Amended 2026-11-06 (D-019, owner OK): default rule D32 added (`member_data.view` for role `kepala_departemen`), 31 -> 33 default rules; new sensitive key `member_data.view_export_log` with rule D33 for role `bph` (owner 2026-11-06); B9 answered as option (b); Member Data shows a "Pembina" marker (member type). D32, D33 and the new key are added by migration `20261106200000_nexus_member_data.sql` (not yet applied to the hosted project).
+> Amended 2026-11-07 (D-022, owner OK, Inventory and Borrowing): new key `borrowing.handle` (handover, return, outside-party requests; keys 21 -> 22); `borrowing.approve` now means approve, reject and extend only; default rule D30 (whole Operations unit approves) is retired and replaced by D34 and D35 (only the heads approve) plus D36 (every Operations holder gets `borrowing.handle`); active default rules 33 -> 35; L6 now covers only approve, reject and extend; L9 widened (cancel until pick-up); L12 also lists `*.handle`; B4 and B29 updated. **The migration for these changes is NOT written yet.** The existing migrations (`20261105100000`, `20261105100100`) still seed the old D30 and have no `borrowing.handle`; until the new migration exists, the database still follows the pre-amendment rules.
 > Sources: `CLAUDE.md` (sections 4-7, 11), `docs/PMK-NEXUS-context.md` (section 4: the access table is now only the DEFAULT rule set), `docs/picore/schema-report.md`, `docs/DECISIONS.md` (D-007 to D-011), `docs/OPEN_QUESTIONS.md` (B, B-bis, C).
 > No SQL or code here. Tags: **D-0xx** = owner decision, **[A-Bx]** = [ASSUMPTION] tied to open question Bx, **[A-n]** = [ASSUMPTION] without its own question (section 11), **L1-L11** = locked rule (section 4).
 
@@ -33,7 +34,7 @@
 
 ### 2.1 Permission catalog (stable keys)
 
-Keys are fixed in code and never renamed. The admin chooses from this list; the admin cannot invent keys. 21 keys cover Phase 1.
+Keys are fixed in code and never renamed. The admin chooses from this list; the admin cannot invent keys. 22 keys cover Phase 1 (21 until the 2026-11-07 amendment, which added `borrowing.handle`).
 
 | Key | What it unlocks | Scopes allowed | Sensitive |
 |---|---|---|---|
@@ -52,7 +53,8 @@ Keys are fixed in code and never renamed. The admin chooses from this list; the 
 | `inventory.manage` | Create, edit, archive items. Includes view | all | No |
 | `inventory.export` | Export inventory | all | No |
 | `borrowing.view_all` | See everybody's borrowing requests (own are always visible, L9) | all | No |
-| `borrowing.approve` | Approve/reject requests and mark items borrowed/returned. Includes view_all. Never own requests (L6) [A-n7] | all | No |
+| `borrowing.approve` | Approve or reject a request, and extend the end date of an approved or borrowed request. Includes view_all. Never on own requests (L6). Power key (L12) [A-n7 amended 2026-11-07, D-022] | all | No (power key) |
+| `borrowing.handle` | **New 2026-11-07 (D-022).** Record the handover (pick-up), record the return (good, damaged or lost, with note and photo for damaged/lost), cancel an approved request that was not picked up (reason required), correct a wrong handover/return (reason required), record a request on behalf of an outside party. Includes view_all. NOT limited by L6 (the owner allows recording your own handover and return; the history shows who recorded it). Power key (L12): never to "every active member", written reason required | all | No (power key) |
 | `borrowing.export` | Export borrowing | all | No |
 | `member_data.view` | See the Member Data list: name, main unit and position (active period), active/inactive, and a "Pembina" marker for lecturers (member type). Never email, phone, NIM, NIP (L4). Also unlocks the Dashboard Members count | all | **Yes** |
 | `member_data.export` | Export that same list | all | **Yes** |
@@ -133,17 +135,23 @@ Scope is "all" unless stated. Subjects: `role:bph` means S1 with key `bph`, and 
 | D27 | role `sekretaris` | `minutes.export` | own unit | G5 export [A-n2] |
 | D28 | unit Departemen Operasional, include child units ON, any position | `inventory.manage` | all | G6 (D-009, B4): Operasional + Logistik + Akomodasi |
 | D29 | same unit subject as D28 | `inventory.export` | all | G6 export |
-| D30 | same unit subject as D28 | `borrowing.approve` | all | G6 approve, mark borrowed/returned |
+| D30 | same unit subject as D28 | `borrowing.approve` | all | **RETIRED 2026-11-07 (D-022).** Was: whole Operations unit approves and marks borrowed/returned. Replaced by D34-D36. The migration disables this row (kept in the list and the log, A-n8); it is not edited in place |
 | D31 | same unit subject as D28 | `borrowing.export` | all | G6 export |
 | D32 | role `kepala_departemen` | `member_data.view` | all | B9 (b), owner 2026-11-06, D-019. Covers Kepala Departemen and Kepala Biro. Sensitive key: the seed needs a written reason (L12). Added by migration `20261106200000_nexus_member_data.sql` |
 | D33 | role `bph` | `member_data.view_export_log` | all | D-019 M8, owner 2026-11-06. Sensitive key (L12). Added by migration `20261106200000_nexus_member_data.sql` |
+| D34 | unit Departemen Operasional, include child units ON, **position limit: Kepala Departemen** | `borrowing.approve` | all | IB2 (b), owner 2026-11-07, D-022. Only the department head approves, rejects and extends. Power key: written reason (L12). **Migration not written yet** |
+| D35 | unit Departemen Operasional, include child units ON, **position limit: Kepala Divisi** | `borrowing.approve` | all | IB2 (b), D-022. Kepala Divisi of Logistik and Akomodasi (and of any division added later, because of include-child-units). Written reason (L12). **Migration not written yet** |
+| D36 | same unit subject as D28 (any position) | `borrowing.handle` | all | IB2 (b), D-022. Every Operations holder (including the heads and Sekretaris Departemen Operasional) records handover and return and outside-party requests. Written reason (L12). **Migration not written yet** |
 
-**Row count: 33** (1 baseline, 14 for `bph`, 9 for the three BPH secretary positions, 2 for `bendahara`, 2 for `sekretaris`, 4 for Operations, 1 for `kepala_departemen`).
+**Row count: 35 active** (D30 is retired, so the table has 36 rows counting it): 1 baseline, 14 for `bph`, 9 for the three BPH secretary positions, 2 for `bendahara`, 2 for `sekretaris`, 6 for Operations (D28, D29, D31, D34, D35, D36), 1 for `kepala_departemen`. Before 2026-11-07 the count was 33.
+
+**Position names for D34/D35.** Checked against `docs/picore/schema-report.md` section 8 (2026-11-07): `Kepala Departemen` (unit type `department`, rank 40, unique per unit, role `kepala_departemen`) and `Kepala Divisi` (unit type `division`, rank 60, unique per unit, role `kepala_divisi`) exist in the PI-CORE seed. Positions are tied to a unit TYPE, so `Kepala Divisi` is one position row that can be held in Logistik and in Akomodasi. The schema report does not say whether the two divisions currently have a person in that position (assignments are data, not seed): this must be checked before applying (same read-only check as B31). If the seed lookup by name and unit type finds no row, setup stops and reports (seeding rule above).
 
 Differences from revision 1, for the record:
 - Revision 1 listed Operations units one by one (Operasional, Logistik, Akomodasi, no automatic children). D28-D31 use one unit with "include child units", which gives the same result today and also covers a division added later. If the owner prefers exact listing, replace D28-D31 with 12 rows (3 units x 4 permissions).
+- 2026-11-07 (D-022): D30 is retired. Approval is now two rows with a position limit (D34 Kepala Departemen, D35 Kepala Divisi), and a new key `borrowing.handle` goes to the whole Operations unit (D36). D28, D29, D31 are unchanged. Reason: only heads decide, but any Operations member can hand items over and take them back.
 - "G1 System Admin has no business data", "G7 own requests", and the self-approval block are not rows; they are fixed (sections 2.3 and 4).
-- BPH secretary and Operations are no longer special groups; they are just rows D15-D23 and D28-D31 (D-011).
+- BPH secretary and Operations are no longer special groups; they are just rows D15-D23 and D28-D31, from 2026-11-07 D28, D29, D31 and D34-D36 (D-011, D-022).
 
 ---
 
@@ -158,13 +166,13 @@ Enforced in server code AND RLS, independent of what the rules table contains. *
 | L3 | A System Admin always has the settings screen, the rules editor, and the change log, whatever the rules say. This prevents locking the system out. | D-011 |
 | L4 | Email, phone, NIM, NIP, `must_change_password`, `audit_log`, `org_settings` are never read or returned by NEXUS. Member Data shows only name, unit, position, active/inactive, and a "Pembina" marker for lecturers (member type, D-019). No catalog key can widen this. **Single exception (D-015):** one dedicated `nexus` function may read the CALLER's own `must_change_password` and return it as one boolean; it never answers about another member. | D-010, D-015 |
 | L5 | No permanent delete anywhere, including rules (disable instead) and the change log (append-only). Archive or void replaces delete. | CLAUDE.md 6.5 |
-| L6 | Nobody approves their own request: letter request processing and borrowing approval are blocked when the processor is the requester (matched on `members.id`). | B21 (locked) |
-| L7 | Records of a non-active period are read-only for everyone, except open items (pending letter requests, borrowings not yet returned), which stay actionable by whoever holds `letter_requests.process` / `borrowing.approve` now. Finance corrections go into the active period. | A-n6 |
+| L6 | Nobody approves their own request: letter request processing and borrowing approval are blocked when the processor is the requester (matched on `members.id`). **Amended 2026-11-07 (D-022):** for borrowing, L6 covers ONLY approve, reject and extend (`borrowing.approve`). Recording the handover or return of your own request (`borrowing.handle`) is allowed by the owner; the status history shows who recorded it. For an outside-party request recorded by an Operations member, that member is the requester of record, so L6 blocks them from approving it. | B21 (locked), D-022 |
+| L7 | Records of a non-active period are read-only for everyone, except open items (pending letter requests, borrowings not yet returned), which stay actionable by whoever holds `letter_requests.process` / `borrowing.approve` / `borrowing.handle` now (each for its own actions). Finance corrections go into the active period. | A-n6 |
 | L8 | Who may read old-period records = whoever currently holds the matching view right (or a right that includes it) in the active period. No special access for former officers. | B20 (locked) |
-| L9 | Every active member can submit letter requests and borrowing requests, see the status, number, and processor note of their OWN requests, and cancel their own request before it is processed. Not a rule; cannot be disabled. | D-011 |
+| L9 | Every active member can submit letter requests and borrowing requests, see the status, number, and processor note of their OWN requests, and cancel their own request before it is processed. **Widened 2026-11-07 (D-022) for borrowing:** the requester may cancel their own request until pick-up, that is while it is Diajukan or Disetujui; after approval a reason is required. Letter requests keep "before it is processed". Not a rule; cannot be disabled. | D-011, D-022 |
 | L10 | Rules apply only to roles, positions, org units, or "every active member". Never to an individual member. Rules resolve only against ACTIVE-period assignments. | D-011 |
 | L11 | Rules table and change log can be written only by the System Admin through the settings screen. No catalog key lets anyone else edit rules. Log rows can never be edited or deleted, even by the admin. Files stay in private buckets; file access follows the parent record's view right. | D-011, CLAUDE.md 11 |
-| L12 | Sensitive and power keys (`finance.*`, `member_data.*`, every `*.manage`, `*.approve`, `*.process`) can never be granted to the "every active member" subject; granting them to a role, position, or unit requires a non-empty written reason. Enforced in the database. | D-013 (security review W3) |
+| L12 | Sensitive and power keys (`finance.*`, `member_data.*`, every `*.manage`, `*.approve`, `*.process`, `*.handle`) can never be granted to the "every active member" subject; granting them to a role, position, or unit requires a non-empty written reason. Enforced in the database. | D-013 (security review W3) |
 
 Order of evaluation: L1 first, then fixed identities, then rules, then locked limiters (L4, L6, L7) on the result.
 
@@ -184,7 +192,7 @@ Only the System Admin sees this screen (L3, L11).
 | **Disable / enable** | A switch per rule. Takes effect on the holder's next request. Rules are never deleted (L5). A rule is not edited in place: to change scope or subject, disable it and add a new one, so history stays clean [A-n8]. |
 | **Sensitive warning** | Adding or enabling a rule with a sensitive key (`finance.*`, `member_data.*`) shows a warning and needs an explicit confirmation. Extra-strong wording when the subject is "every active member", an org unit, or a position outside BPH. No second approver in Phase 1 (B25). |
 | **Stale-ID warning** | A rule whose role key, position id, or unit id no longer exists in PI-CORE, or whose unit is deactivated (`org_units.is_active = false`), is flagged. It grants nothing while stale (R16). |
-| **"Nobody can use it" warning** | For `letters.manage`, `finance.manage`, `borrowing.approve` (and `letter_requests.process` [A-n9]): warn when NO holder exists in the active period (all matching rules disabled, stale, or their positions are vacant). Computed live, so it can appear after a period switch without any rule edit. Soft hint for `letter_requests.process` and `borrowing.approve` when only ONE holder exists, because that person cannot approve their own request (L6) [A-n9]. Only counts are shown, not names. |
+| **"Nobody can use it" warning** | For `letters.manage`, `finance.manage`, `borrowing.approve` (now only the Operations heads, D34/D35), `borrowing.handle` (D36) (and `letter_requests.process` [A-n9]): warn when NO holder exists in the active period (all matching rules disabled, stale, or their positions are vacant). Computed live, so it can appear after a period switch without any rule edit. Soft hint for `letter_requests.process` and `borrowing.approve` when only ONE holder exists, because that person cannot approve their own request (L6) [A-n9]. Only counts are shown, not names. |
 | **Change log** | Every add, disable, enable (and seed or restore-defaults action, B28) writes one row: rule id, action, who (`members.id` + name at that time), when, full rule content BEFORE and AFTER (empty before on add), optional note. Append-only (L11). Readable by the System Admin and by holders of `access_rules.view_log` (B24). BPH can read the log but not the rule editor. |
 | **Locked rules** | Shown on the screen as a read-only list ("these always apply") so the admin knows what cannot be changed. |
 
@@ -208,7 +216,7 @@ Only the System Admin sees this screen (L3, L11).
 | R12 | **Scope of "own".** "Own requests" and "own unit" are matched on stable ids (`members.id`, `org_unit_id`), never `user_id` or email. |
 | R13 | **One rule, one grant.** A rule grants exactly one permission to exactly one subject. Bundles ("act as Treasurer") are not a feature; the default set simply contains several rows. |
 | R14 | **Locked wins.** See section 4: a configured rule can never override a locked rule. |
-| R15 | **Implications.** `*.manage` includes `*.view` of the same scope. `letter_requests.process` includes `letter_requests.view_all`. `borrowing.approve` includes `borrowing.view_all`. An export key works only where the user can also view the same data (export never exceeds view). Nothing else is implied. [A-B27] |
+| R15 | **Implications.** `*.manage` includes `*.view` of the same scope. `letter_requests.process` includes `letter_requests.view_all`. `borrowing.approve` and `borrowing.handle` each include `borrowing.view_all` (neither includes the other). An export key works only where the user can also view the same data (export never exceeds view). Nothing else is implied. [A-B27] |
 | R16 | **Stale or disabled rules grant nothing.** A rule pointing to a missing role key, position, or unit never matches and never falls back to a name. |
 
 ---
@@ -250,24 +258,24 @@ Functions answer in this shape (design level): "who am I" = member id, System Ad
 | # | Case | Expected behavior |
 |---|---|---|
 | E1 | User holds Treasurer and Department Secretary assignments (P-BEND-SEK) | Union of D02-D14 (via `bph`), D24-D25, D26-D27. Finance full, minutes of all units viewable, minutes edit only in the secretary's unit. Letter processing stays denied. |
-| E2 | Operations staff who is also BPH secretary (P-OPS-BPH) | Union of D28-D31 (via Logistik), D02-D14 and D15-D23 (Sekum 2 carries `bph`). Manages inventory/borrowing, all letters and minutes, views everything. |
+| E2 | Operations staff who is also BPH secretary (P-OPS-BPH) | Union of D28, D29, D31, D36 (via Logistik), D02-D14 and D15-D23 (Sekum 2 carries `bph`). Manages inventory, records handover and return, all letters and minutes, views everything. Does not approve borrowing (Staff is not a head). |
 | E3 | A position or unit referenced by a rule is deleted in PI-CORE and recreated (new id) | The old rule matches nobody and grants nothing (R16). Screen flags it as stale. The admin adds a new rule for the new id and disables the stale one. A stale rule for letters/finance/borrowing triggers the "nobody can use it" warning if no other rule covers it. |
 | E4 | No active period | See R11. Officers lose rule-based access (S1-S3) until a period is activated, including reading existing records. Baseline rules (D01) and the admin screen still work. [A-n4] |
 | E5 | Member deactivated mid-session | Next request = No access (L1). Open pages fail with a "no access" message. Their records remain. |
 | E6 | Officer from a previous period tries to edit old data | No assignment now = baseline only = denied. Current officer = record is read-only (L7); correction goes in the active period. |
 | E7 | Regular member with no assignment | Baseline: own requests, inventory catalog (D01), Dashboard cards they may open. Nothing else unless the admin adds a baseline rule. |
-| E8 | Period switches while a borrowing is "borrowed" or a letter request is pending | Open items stay actionable by the current `borrowing.approve` / `letter_requests.process` holders (L7). Other edits stay blocked. |
+| E8 | Period switches while a borrowing is "borrowed" or a letter request is pending | Open items stay actionable by the current `borrowing.approve` (approve, reject, extend) / `borrowing.handle` (handover, return) / `letter_requests.process` holders (L7). Other edits stay blocked. |
 | E9 | Person holds the same rule-matching position in two units (two `sekretaris` assignments) | "Own unit" scope = both units (R2). |
 | E10 | Position holder replaced mid-period | Old holder loses access on their next request; successor gets it as soon as PI-CORE records the assignment. Rules are not touched. |
 | E11 | Auth user not linked to a member, or member deactivated | No access (L1). One combined message for both cases (D-016): "Akunmu belum bisa dipakai di NEXUS. Hubungi admin PMK ITERA." |
 | E12 | Lecturer logs in | Baseline only (R6) [A-B15]. |
 | E13 | System Admin's `access_level` is lowered while on the rules screen | Next request is denied (R3). |
-| E14 | Requester is also the processor | Blocked by L6 even if a rule grants the permission. If only one holder exists, a second holder is needed (PI-CORE can add an assignment). |
-| E15 | No active-period holder for `letters.manage`, `finance.manage`, or `borrowing.approve` (vacant position or all rules disabled) | That module cannot be managed. The admin cannot manage it either (L2, R7). The admin sees the "nobody can use it" warning and can add or enable a rule that covers a position that IS filled. |
+| E14 | Requester is also the processor | Blocked by L6 even if a rule grants the permission (approve, reject and extend only for borrowing; recording your own handover or return is allowed, D-022). If only one holder exists, a second holder is needed (PI-CORE can add an assignment). For borrowing the approvers are now only the Operations heads (at most three by default: Kepala Departemen, Kepala Divisi Logistik, Kepala Divisi Akomodasi), so a head's own request needs another head. |
+| E15 | No active-period holder for `letters.manage`, `finance.manage`, `borrowing.approve` or `borrowing.handle` (vacant position or all rules disabled) | That module cannot be managed. The admin cannot manage it either (L2, R7). The admin sees the "nobody can use it" warning and can add or enable a rule that covers a position that IS filled. |
 | E16 | Admin disables all rules or the rules table is empty | Baseline-only world: only L9 own requests remain, plus the locked admin screen (L3). No lock-out. Section 3 can re-seed; see B28. |
 | E17 | Two rules overlap (e.g. `role:bph` and a position rule give the same permission) | Fine, union (R2). Disabling one does not remove access granted by the other. The screen should show this when a rule is disabled but the user still has access through another rule [A-n10]. |
 | E18 | Admin is also an officer (e.g. `super_admin` who is Bendahara) | Gets rule-based rights for their position like anyone, in addition to admin rights. Self-benefiting rule changes: see known risk (section 4) and B28. |
-| E19 | A new division is created under Departemen Operasional | Covered at once by D28-D31 because of include-child-units [A-B26]. If the flag is off, it is not covered. |
+| E19 | A new division is created under Departemen Operasional | Covered at once by D28, D29, D31, D34, D35 and D36 because of include-child-units [A-B26]: its Kepala Divisi can approve and every holder in it can handle. If the flag is off, it is not covered. |
 | E20 | Rule with a sensitive key given to "every active member" | Rejected by the database (L12, D-013). The screen explains that sensitive and power keys need a role, position, or unit subject and a written reason. |
 | E21 | Unit deactivated in PI-CORE (`is_active = false`) but old assignments exist | Matching continues from assignments as PI-CORE reports them [A-n11]; the screen warns. |
 | E22 | Rule changed while a user has a page open | Their next request uses the new rules; an open page fails on its next action with a clear message. |
@@ -329,11 +337,11 @@ All ACs assume the default rule set (section 3) unless stated. Test personas use
 - AC-20 P-SEKDEP cannot view Finance or Member Data.
 - AC-21 A user with Sekretaris Departemen in two units can edit minutes of both and of no other unit.
 
-**Operations (rules D28-D31)**
-- AC-22 P-STAFF-LOG, P-KADEP-OPS, and a Staff in Akomodasi can create, edit, and archive inventory items, approve or reject borrowing requests of others, and mark items borrowed and returned.
+**Operations (rules D28, D29, D31, D34-D36; D30 retired)**
+- AC-22 (amended 2026-11-07, D-022) P-STAFF-LOG, P-KADEP-OPS, a Staff in Akomodasi and a Sekretaris Departemen in Operasional can create, edit, and archive inventory items, record handover and return, and record an outside-party request (D28, D36). Only P-KADEP-OPS and a Kepala Divisi in Logistik or Akomodasi can approve, reject or extend borrowing requests of others (D34, D35); P-STAFF-LOG (Staff) cannot approve, reject or extend.
 - AC-23 P-STAFF-PUB (not in the unit) cannot create or edit inventory items and cannot approve borrowing requests.
-- AC-24 P-STAFF-LOG cannot approve their own borrowing request.
-- AC-25 If rules D28-D31 (or only D30) are disabled, the affected holders lose the matching permission on their next request.
+- AC-24 (amended) P-KADEP-OPS and a Kepala Divisi cannot approve, reject or extend their own borrowing request (L6); P-STAFF-LOG CAN record handover and return of their own request (D-022).
+- AC-25 If rules D28, D29, D31 or D34-D36 are disabled, the affected holders lose the matching permission on their next request.
 - AC-26 P-STAFF-LOG cannot view Finance, the letter register, or minutes.
 
 **Regular member (baseline D01 and L9)**
@@ -350,7 +358,7 @@ All ACs assume the default rule set (section 3) unless stated. Test personas use
 
 **Combining**
 - AC-35 P-BEND-SEK can edit finance, edit minutes of Departemen Internal, view minutes of every unit, and cannot edit minutes of another unit.
-- AC-36 P-OPS-BPH can approve borrowing, process letter requests, and view all modules.
+- AC-36 (amended) P-OPS-BPH (Staff in Logistik + Sekretaris Umum 2) can record handover and return (D36), process letter requests, and view all modules; they cannot approve borrowing (Staff is not a head).
 - AC-37 Removing one of two assignments removes only that assignment's rights on the next request.
 
 **Period change**
@@ -358,7 +366,7 @@ All ACs assume the default rule set (section 3) unless stated. Test personas use
 - AC-39 After the switch, a user who is Bendahara Umum 1 in the new period can create finance transactions on their first request.
 - AC-40 P-OLD cannot view Finance, minutes, or the letter register after the switch.
 - AC-41 After the switch, a current treasurer can read finance transactions of the previous period but cannot edit or void them (L7, L8).
-- AC-42 A letter request still pending after the switch can be processed by a current `letter_requests.process` holder, and a borrowing still "borrowed" can be marked returned by a current `borrowing.approve` holder (L7).
+- AC-42 A letter request still pending after the switch can be processed by a current `letter_requests.process` holder, and a borrowing still "borrowed" can be marked returned by a current `borrowing.handle` holder (L7; approving or extending needs a current `borrowing.approve` holder).
 - AC-43 With no active period, officers get baseline rights only and creating a period-based record is rejected with a clear message. P-ADMIN can still open settings.
 
 **Deactivation**
@@ -379,14 +387,14 @@ All ACs assume the default rule set (section 3) unless stated. Test personas use
 - AC-54 A rule that points to a deleted or unknown position, unit, or role key grants nothing to anyone, and the rules screen shows a stale-ID warning on that rule.
 - AC-55 No configured rule can give access to an inactive or unlinked member: with the baseline rule D01 (`inventory.view` for every active member) and a rule granting `finance.view` to role `staff` (with a written reason), P-INACTIVE and P-UNLINKED still get nothing.
 - AC-56 No configured rule can expose email, phone, NIM, or NIP: with `member_data.view` and `member_data.export` granted to role `staff` (with a written reason), responses and exports still contain none of these fields.
-- AC-57 No configured rule can enable self-approval: with `borrowing.approve` and `letter_requests.process` granted to role `staff` (with a written reason), a user still cannot approve their own request.
+- AC-57 No configured rule can enable self-approval: with `borrowing.approve` and `letter_requests.process` granted to role `staff` (with a written reason), a user still cannot approve, reject or extend their own request. (`borrowing.handle` is deliberately not self-blocked, D-022.)
 - AC-58 No configured rule can make a closed-period record editable: a rule granting `finance.manage` does not let anyone edit a transaction of a non-active period.
 - AC-59 Every rule add, disable, and enable creates a log entry with who, when, and the full rule before and after; log entries cannot be edited or deleted, even by P-ADMIN.
 - AC-60 P-KETUM (BPH) can read the change log and cannot add, disable, or enable a rule. P-PLAIN cannot read the log.
 - AC-61 There is no way to create a rule for an individual member: the API rejects a rule whose subject is a member id or email, and the screen offers only role, position, org unit, and every active member.
 - AC-62 The screen rejects scope "own unit" on any permission that does not allow it (e.g. `finance.view`) and on a baseline rule.
 - AC-63 Adding or enabling a rule with a sensitive key (`finance.*`, `member_data.*`) shows a warning and requires confirmation before it is saved.
-- AC-64 If no active-period holder has `letters.manage`, `finance.manage`, or `borrowing.approve`, the screen shows a warning, and the warning appears after a period switch even if no rule was edited.
+- AC-64 If no active-period holder has `letters.manage`, `finance.manage`, `borrowing.approve` or `borrowing.handle`, the screen shows a warning, and the warning appears after a period switch even if no rule was edited.
 - AC-65 A duplicate rule (same subject, permission, scope, and flags) is rejected.
 - AC-66 An org-unit rule with include-child-units covers an assignment in a division of that unit; the same rule with the flag off does not [A-B26].
 - AC-67 A rule with "own unit" scope gives access only to records of the unit of the matching assignment.
@@ -394,6 +402,12 @@ All ACs assume the default rule set (section 3) unless stated. Test personas use
 - AC-69 If every rule is disabled, P-ADMIN can still open the rules screen and the log (L3), and members still have own-request rights (L9).
 - AC-70 (D32, D-019) P-KADEP-OPS and a Kepala Biro can open the Member Data list and see the Dashboard Members count, and cannot export it; P-SEKDEP and P-STAFF-LOG cannot see Member Data.
 - AC-71 (D-019) With rules D12 and D32 both disabled, no BPH member or department head can open Member Data. Granting `member_data.view` to "every active member" is rejected (L12). Full Member Data criteria: `docs/modules/member-data.md` section 9.
+- AC-72 (D-022) Granting `borrowing.handle` or `borrowing.approve` to "every active member", or to any subject without a written reason, is rejected by the database (L12).
+- AC-73 (D-022) With rules D34 and D35 enabled, only holders of Kepala Departemen in Departemen Operasional and Kepala Divisi in Logistik or Akomodasi hold `borrowing.approve`; a Staff, Sekretaris Departemen Operasional, and any member outside the unit do not.
+- AC-74 (D-022) With rule D36 enabled, every active-period holder of any position in Departemen Operasional, Logistik or Akomodasi holds `borrowing.handle`; a Staff in Pubdok does not.
+- AC-75 (D-022) A holder of `borrowing.handle` can record the handover and return of their own request, and the history row names them; no configured rule can make `borrowing.approve` skip L6.
+- AC-76 (D-022) A requester can cancel their own borrowing request while it is Diajukan or Disetujui (reason required after approval) and not after pick-up; another member cannot cancel it.
+- AC-77 (D-022) The permission catalog contains exactly 22 keys, and the default rule set has 35 active rows plus the retired, disabled D30. Full Inventory and Borrowing criteria: `docs/modules/inventory-borrowing.md` section 11.
 
 ---
 
@@ -404,7 +418,7 @@ Status key: **default chosen, configurable (D-011)** = the answer is only the st
 | Id | Question | Options | Recommendation / status |
 |---|---|---|---|
 | B3 | Is Treasurer only Bendahara Umum 1/2 (role `bendahara`)? | (a) Yes. (b) Also another position later. | (a). **Default chosen, configurable (D-011)**: rules D24-D25. |
-| B4 | Which positions inside the Operations units manage inventory and borrowing? | (a) Every assignment in the units. (b) Only Kepala, Kepala Divisi, Staff. (c) (b) plus Sekretaris Departemen. | (a). **Default chosen, configurable (D-011)**: rules D28-D31 (unit subject can add a position limit). |
+| B4 | Which positions inside the Operations units manage inventory and borrowing? | (a) Every assignment in the units. (b) Only Kepala, Kepala Divisi, Staff. (c) (b) plus Sekretaris Departemen. | **[ANSWERED 2026-11-07, D-022, with IB2 (b)]** Manage inventory, record handover/return (`borrowing.handle`), export: every assignment in the Operations units (D28, D29, D31, D36). Approve, reject, extend (`borrowing.approve`): only Kepala Departemen and Kepala Divisi (D34, D35). Configurable (D-011). |
 | B6 | Does "BPH views all modules" include Finance for all six BPH positions? | (a) Yes. (b) Finance only Ketua Umum + Treasurer. (c) Everything except Finance. | (a). **Default chosen, configurable (D-011)**: D02-D03. Sensitive, flagged to the owner. |
 | B7 | Is a committee (panitia) member a separate group? | (a) No, regular member. (b) Add a committee list. | (a). **Default chosen, configurable (D-011)**: PI-CORE has no committee role; only baseline rules can reach them. |
 | B8 | What does a regular member see? | (a) Own requests + read-only catalog + Dashboard without business cards. (b) No catalog. (c) Own requests only. | (a). **Default chosen, configurable (D-011)**: D01 is the only baseline rule; own requests are locked (L9). |
@@ -422,7 +436,7 @@ Status key: **default chosen, configurable (D-011)** = the answer is only the st
 | B26 | **New.** How do child units (divisions) work in rules? | (a) Include-child-units flag on unit subjects only; "own unit" scope is exactly one unit (B22 not configurable). (b) The flag plus a third scope value "own unit and its child units". (c) One shared flag for subject and scope. | (b) [ASSUMPTION used in this spec]. It keeps two clear ideas (who matches, which records) and makes B22 configurable. D-011 lists only two scopes, so (b) adds one value; owner to confirm. |
 | B27 | **New.** Do `manage` keys include `view`, and must export be granted separately? | (a) manage includes view; export works only where view exists. (b) Every key is independent; admin grants view and manage separately. | (a) [ASSUMPTION used in R15]. Fewer rows, fewer mistakes (a manager who cannot view is a bug). |
 | B28 | **New.** (1) Should there be a "restore missing defaults" action? (2) How are rule changes that benefit the admin's own positions treated? | (1)(a) Yes, re-adds missing default rows only, never deletes custom rules, logged. (b) No, re-seed via migration only. (2)(a) Allowed, only logged. (b) Allowed but marked "self-benefit" in the log so BPH sees it. (c) Blocked. | (1)(a). (2)(b): it reduces the D-007 weakening without blocking real cases like a pembina who is also an officer. |
-| B29 | **New.** What if the only holder(s) of an approval permission would approve their own request (one person holds `borrowing.approve`)? | (a) Locked: wait for a second holder; screen shows a hint. (b) Allow the admin to approve as emergency override, logged. | (a), same as B21. The hint is in section 5 [A-n9]. |
+| B29 | **New.** What if the only holder(s) of an approval permission would approve their own request (one person holds `borrowing.approve`)? | (a) Locked: wait for a second holder; screen shows a hint. (b) Allow the admin to approve as emergency override, logged. | (a), same as B21. The hint is in section 5 [A-n9]. 2026-11-07: this matters more now, because `borrowing.approve` is held only by the Operations heads (D34, D35), at most three people by default. If only one head is in office, their own request waits; the admin can add a rule for another position (logged, with a written reason). |
 | B30 | **New.** PI-CORE roles without a `key` cannot be targeted by role rules. Allow custom roles? | (a) No; ask the PI-CORE admin to give the role a key, or use a position/unit rule. (b) Allow selecting by role id. | (a), as in D-011 (role by `roles.key`). |
 
 ---
@@ -437,7 +451,7 @@ Status key: **default chosen, configurable (D-011)** = the answer is only the st
 | A-n4 | With no active period, S1-S3 rules match nothing and period-based records cannot be created. |
 | A-n5 | Inventory items are not period-scoped; finance, minutes, letters, requests, and borrowings are. |
 | A-n6 | Closing rule for non-active-period records (L7). |
-| A-n7 | `borrowing.approve` covers approve/reject AND marking borrowed/returned (one key instead of two, to keep the catalog short). |
+| A-n7 | **Superseded 2026-11-07 (D-022).** Was: `borrowing.approve` covers approve/reject AND marking borrowed/returned. Now two keys: `borrowing.approve` = approve, reject, extend (heads, L6 applies); `borrowing.handle` = handover, return, cancel-before-pick-up on behalf, correction, outside-party requests (every Operations holder, L6 does not apply). |
 | A-n8 | A rule is not edited in place; change = disable + add new. Keeps the log simple. |
 | A-n9 | "Nobody can use it" warning also covers `letter_requests.process`; a soft hint appears when only one holder of an approval key exists. |
 | A-n10 | When a rule is disabled but a user still has the permission through another rule, the screen says so (informational). |
@@ -451,7 +465,7 @@ Status key: **default chosen, configurable (D-011)** = the answer is only the st
 4. D-009 described the Operations mapping as units listed by ID, "with its divisions". This spec expresses it as one unit subject with include-child-units (B26). Equal today, different when a new division is added.
 5. `docs/OPEN_QUESTIONS.md` B8 defines a regular member as an active member WITHOUT an assignment. This spec treats every active member as baseline (also those with assignments). **Resolved 2026-11-05:** B8 aligned.
 6. `docs/PMK-NEXUS-context.md` section 8, item 11 ("Who is the Secretary?") is still open although D-008 and B2 answered it. **Resolved 2026-11-05:** item marked answered.
-7. Context section 4 says "Operations Department Head and staff" and lists "Sekretaris Departemen?" for Operations, overlapping the `sekretaris` rules. Unresolved until B4 is confirmed (default: any position in the unit).
+7. Context section 4 says "Operations Department Head and staff" and lists "Sekretaris Departemen?" for Operations, overlapping the `sekretaris` rules. **Resolved 2026-11-07 (B4, D-022):** every position in the Operations units manages inventory and handles loans (so Sekretaris Departemen Operasional is included); only the two head positions approve. Note that rule D26 (role `sekretaris`, minutes of their own unit) still applies to that person separately.
 8. Context section 5.1 puts a member count on the Dashboard for everyone, while B9 restricts Member Data. This spec shows the count only to `member_data.view` holders (A-n1).
 9. Context section 4 lists "Committee (panitia)" as an access row, but PI-CORE has no such role; committee people are baseline members (B7).
 10. `docs/OPEN_QUESTIONS.md` B-bis says B15 can be widened "only if a rule can target them". Confirmed here: only baseline rules can reach lecturers.

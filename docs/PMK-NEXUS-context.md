@@ -2,7 +2,7 @@
 
 > Reference document for the PMK-NEXUS project. Written in English for the AI assistant. The project owner communicates in Indonesian.
 > Status legend: **[DECIDED]** = final decision, **[ASSUMPTION]** = needs confirmation, **[PLANNED]** = future work, **[UNKNOWN]** = information still missing.
-> Last updated: 2026-11-07 (section 5.2 marked implemented on the local stack). Earlier: 2026-11-06 (sections 2, 4, 5.1, 5.2 and 8 updated for Member Data, D-019; section 6 replaced by the Stitch design, D-014; section 8 item 12 answered). Earlier: 2026-11-05 (sections 2, 3, 4, 7, 8, verified PI-CORE schema).
+> Last updated: 2026-11-07 (Inventory and Borrowing decided, D-022: sections 4, 5.1, 5.6, 6, 8 updated). Earlier: 2026-11-07 (section 5.2 marked implemented on the local stack). Earlier: 2026-11-06 (sections 2, 4, 5.1, 5.2 and 8 updated for Member Data, D-019; section 6 replaced by the Stitch design, D-014; section 8 item 12 answered). Earlier: 2026-11-05 (sections 2, 3, 4, 7, 8, verified PI-CORE schema).
 
 ---
 
@@ -128,7 +128,8 @@ Access is computed from the user's **assignments in the active period** of PI-CO
 | Treasurer (Bendahara) | Active-period assignment whose position carries role `bendahara` (Bendahara Umum 1 / 2) | Manage Finance | [ASSUMPTION] B3 |
 | BPH Secretary | Positions Sekretaris Jenderal, Sekretaris Umum 1 / 2 (they carry `bph` + `organization_admin`, not `sekretaris`) | Manage ALL Letters (incl. numbering, archive, letter requests) and ALL Meeting Minutes | **[DECIDED]** D-008; identified through the NEXUS mapping table (D-009) |
 | Department / bureau secretary | Role `sekretaris` (Sekretaris Departemen, Sekretaris Biro) | Manage Meeting Minutes of their OWN org unit only; submit letter requests like other members | **[DECIDED]** D-008; reading rights [ASSUMPTION] B17 |
-| Operations Department Head and staff | Active-period assignment in org unit `Departemen Operasional` or its divisions `Logistik` / `Akomodasi` (Kepala Departemen, Sekretaris Departemen?, Kepala Divisi, Staff). No "Operations" role exists. | Manage Inventory and Borrowing | Which units count: **[DECIDED]** via the NEXUS mapping table (D-009). Which positions inside them: [ASSUMPTION] B4 |
+| Operations (any position) | Active-period assignment in org unit `Departemen Operasional` or its divisions `Logistik` / `Akomodasi` (Kepala Departemen, Sekretaris Departemen, Kepala Divisi, Staff). No "Operations" role exists. | Manage Inventory; record borrowing handover and return and outside-party requests (`borrowing.handle`); export | **[DECIDED]** D-009 (units), D-022 (positions, B4 answered 2026-11-07) |
+| Operations heads (Kepala Departemen Operasional, Kepala Divisi of Logistik / Akomodasi) | Same unit, limited to those two position names | Approve, reject and extend borrowing (`borrowing.approve`); never on their own request (L6) | **[DECIDED]** D-022. Access-control rules D34, D35; the migration is not written yet |
 | BPH (board) | Role `bph` (Ketua Umum, Sekretaris Jenderal, Sekretaris Umum 1 / 2, Bendahara Umum 1 / 2) | View all modules (incl. Member Data view and export) | [ASSUMPTION] B6; Member Data part **[DECIDED]** D-019 |
 | Department / bureau heads | Role `kepala_departemen` (Kepala Departemen, Kepala Biro) | View the Member Data list (no export) | **[DECIDED]** D-019 (default rule D32) |
 | Staff, regular members | Any active member: with role `staff` / `kepala_divisi` / others not listed above, or with no assignment at all in the active period | Limited access; can request item borrowing and letters | [ASSUMPTION] B8 |
@@ -153,7 +154,7 @@ Based on the original Figma screens; visual design now follows Stitch (section 6
 - Finance card: current balance (placeholder in design: Rp 999,999,999)
 - Recent Meetings: latest meetings list (e.g. "Rapat Koordinasi 2026-07-17")
 - Members: member count (from PI-CORE): all members with `is_active = true`, students and lecturers. Shown only to users with `member_data.view` (D-019).
-- Inventory Status: percentage (e.g. 80%)
+- Inventory Status [DECIDED 2026-11-07, D-022]: NO percentage (the Stitch/Figma "80%" is dropped). The card shows counts, for example units in good condition, units on loan, units needing service (exact wording at design time). Shown to every active member (baseline `inventory.view`).
 
 ### 5.2 Member Data (Data Anggota) [DECIDED 2026-11-06, D-019] [IMPLEMENTED 2026-11-07, local stack only]
 Full spec: `docs/modules/member-data.md` (section 12 lists where the code lives). Built and tested locally; the migration is not yet applied to the hosted project. Not built: the Dashboard "Members" card and a screen to read the export log.
@@ -180,10 +181,11 @@ Form fields: Date, Meeting Title, Topic, Minutes Content, Decision, and "Upload 
 - **Gap:** the letter request flow is not in the Stitch or Figma design. Propose a screen if needed.
 - **[ASSUMPTION]** Numbering format: `PMK/NEX/<type>/<year>/<sequence>`. `SM` appears to mean Surat Masuk. Confirm the code for outgoing letters (e.g. `SK`) and the exact rules.
 
-### 5.6 Inventory and Item Management (Manajemen & Inventaris Barang)
-- **Borrowing (Manajemen Barang):** Item Name, Borrow Date, Status. Suggested statuses: requested, approved, borrowed, returned. Stock adjusts automatically. Also record the borrower.
-- **Inventory (Inventaris Barang):** Item Name, Quantity, Condition (e.g. "Baik"), Location (e.g. "OK 1").
-- Example row from design: Drum, 5 units, Good, OK 1; Drum borrowed on 12-05-2026.
+### 5.6 Inventory and Item Management (Manajemen & Inventaris Barang) [DECIDED 2026-11-07, D-022]
+Full spec: `docs/modules/inventory-borrowing.md` (status: ready for owner approval; nothing built yet). The sample values in the old Figma/Stitch design (Drum, "OK 1", H-3, "Koordinator Logistik") are filler.
+- **Catalog (Inventaris Barang):** one catalog for everything PMK owns, managed by Operations. Each item is either individually tracked (one row per unit with its own code and condition) or quantity-based (a count per condition); chosen when the item is created. Every unit (or counted item) gets an automatic code `INV-0001`. Categories and locations are lists Ops maintains. Conditions are fixed: Baik, Perlu servis, Rusak; only Baik is lendable. No catalog photos. Archive instead of delete. Every member can read the catalog and check availability by date.
+- **Borrowing (Peminjaman):** any active member requests (items, quantities, date range, purpose). Status path: Diajukan, Disetujui or Ditolak, Dipinjam, Dikembalikan (also Dibatalkan). Only the Operations heads approve, reject and extend (not their own, L6). Any Operations member records handover and return and may record a request for an outside party (organisation and contact person name only). Stock is held from approval. No lead time, no maximum duration. The requester may cancel until pick-up (reason after approval). A damaged or lost return needs a note and a photo (private storage, resized, never purged). "Terlambat" (overdue) is shown, not notified. In-app status only: no email or push.
+- Export (Excel, CSV, PDF) of the catalog and of borrowing; every export is logged.
 
 ### Not in Phase 1
 - Program of work (progja) management.
@@ -226,7 +228,7 @@ Status, border, and input colors: see `docs/design/stitch/design-system.md`. Col
 - Tables: ivory header row with uppercase labels, zebra rows, horizontal dividers only, "Halaman 1 dari 5" pagination.
 - Inputs: min height 44 px, stacked bold labels, brown focus ring.
 
-**Content caution:** Stitch screens contain filler that is not decided (member statuses Cuti/Alumni/Pembina, "+ Tambah Anggota", "H-3" borrowing rule, meeting statuses). Do not build them without the owner's confirmation (`docs/OPEN_QUESTIONS.md` section C).
+**Content caution:** Stitch screens contain filler that is not decided (member statuses Cuti/Alumni/Pembina, "+ Tambah Anggota", "H-3" borrowing rule (answered 2026-11-07: filler, no lead time), the inventory "80%" (dropped, D-022), meeting statuses). Do not build them without the owner's confirmation (`docs/OPEN_QUESTIONS.md` section C).
 
 **Missing screens:** login (Stitch has none for NEXUS; PI-CORE's Stitch project has "Masuk PMK ITERA", see C13), letter request flow, borrowing request flow.
 
@@ -259,7 +261,7 @@ The full, current list lives in `docs/OPEN_QUESTIONS.md`. Summary:
 6. [ ] Sample official letter formats.
 7. [x] Exact color codes and fonts: from Stitch (D-014).
 8. [ ] Design for login page, letter request flow, and borrowing request flow.
-9. [ ] Definition of "Inventory Status 80%" on the dashboard (e.g. share of items in good condition?).
+9. [x] Definition of "Inventory Status 80%" on the dashboard. Answered 2026-11-07 (D-022): no percentage, counts instead (CLAUDE.md section 14 Q7).
 10. [x] Definition of member "Status" in Member Data: Aktif / Nonaktif from `members.is_active`. Answered 2026-11-06 (D-019).
 11. [x] Who is "the Secretary" for Letters and Minutes. Answered 2026-11-05 (D-008).
 12. [x] Design source: Stitch redesign. Answered 2026-11-06 (D-014).
