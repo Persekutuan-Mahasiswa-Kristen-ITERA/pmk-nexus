@@ -148,7 +148,7 @@ Depends on E1. With the recommended option B:
 3. After a successful login the person goes to `/finance`.
 4. If they are signed in but lack the right, they get the "no permission" page of the access-control spec (not the No-access state), never the data.
 5. `next` is validated (section 8.5). Anything invalid becomes the home page.
-6. If the person lands in No access or password-pending, `next` is dropped.
+6. If the person lands in No access or password-pending, `next` is not followed any further: the status screen is shown at whatever address was requested, and no module data is rendered there (clarified 2026-11-06 after QA NOTE-2).
 
 ### F11. Logged in, but only baseline rights
 1. `my_context()` returns a row; `my_permissions()` returns only what baseline rules give (default: `inventory.view`) plus the fixed own-request rights (L9).

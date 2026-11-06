@@ -10,6 +10,9 @@ import { buttonClass, Spinner } from "@/components/ui/nx-button";
 import { Card } from "@/components/ui/status-card";
 import { TextField } from "@/components/ui/text-field";
 
+/** How long a sign-in may hang before the form gives up (design 4.3). */
+const SIGN_IN_TIMEOUT_MS = 15_000;
+
 // Final copy: docs/design/login.md 2.8. Keep in sync with the design, not with Supabase wording.
 const ERROR_COPY: Record<SignInErrorCode, { tone: AlertTone; icon: AlertIcon; text: string }> = {
   empty_fields: { tone: "error", icon: "error", text: "Isi email dan kata sandi kamu." },
@@ -70,10 +73,18 @@ export function LoginForm({ next, sessionEnded }: { next: string | null; session
     setInvalid(NONE_INVALID);
 
     let result: Awaited<ReturnType<typeof signInWithPassword>>;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
-      result = await signInWithPassword(email, password, next);
+      // A hanging network (weak campus Wi-Fi) must not lock the form forever: after 15 s show the
+      // network message and let the person try again (design 4.3, QA BUG-A2).
+      const timeout = new Promise<Awaited<ReturnType<typeof signInWithPassword>>>((resolve) => {
+        timer = setTimeout(() => resolve({ ok: false, error: "network" }), SIGN_IN_TIMEOUT_MS);
+      });
+      result = await Promise.race([signInWithPassword(email, password, next), timeout]);
     } catch {
       result = { ok: false, error: "server" };
+    } finally {
+      clearTimeout(timer);
     }
 
     if (result.ok) {
@@ -160,8 +171,7 @@ export function LoginForm({ next, sessionEnded }: { next: string | null; session
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                aria-pressed={showPassword}
-                aria-label="Tampilkan kata sandi"
+                aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
                 className="flex size-11 items-center justify-center rounded-md text-ink-body hover:bg-ivory focus-visible:outline-offset-0"
               >
                 {showPassword ? (

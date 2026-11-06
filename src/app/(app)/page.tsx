@@ -3,7 +3,19 @@ import { getAccessState } from "@/lib/auth/session";
 import { SignOutAction } from "@/components/auth/sign-out-action";
 import { AlertMessage } from "@/components/ui/alert-message";
 
-export const metadata: Metadata = { title: "Dashboard" };
+// The (app) layout may show a status screen instead of this page; the tab title follows it (QA NOTE-1).
+const STATUS_TITLES = {
+  anonymous: "Masuk",
+  error: "Terjadi gangguan",
+  no_access: "Belum ada akses",
+  password_pending: "Ganti kata sandi dulu",
+  member: "Dashboard",
+} as const;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const state = await getAccessState(); // cached per request: no extra database call
+  return { title: STATUS_TITLES[state.kind] };
+}
 
 /**
  * Placeholder for the Dashboard module (built last, CLAUDE.md section 9).

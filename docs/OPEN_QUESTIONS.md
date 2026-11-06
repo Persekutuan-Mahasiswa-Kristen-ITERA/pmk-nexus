@@ -110,7 +110,7 @@ Spec: `docs/modules/auth-login.md` (draft, step 2). Each question has options an
 | E4 | Should a deactivated member and an unlinked account see different messages after login? | **[ANSWERED]** 2026-11-06: (a), D-016 | - | (a) one combined "no access" message; (b) two messages (needs a function that reads inactive rows and reveals status). Recommendation: **(a)**. Changes wording of access-control E11 / AC-33. |
 | E5 | Is the NEXUS login screen Indonesian only? | **[ANSWERED]** 2026-11-06: (a), D-016 | - | (a) Indonesian only; (b) Indonesian with an English switch like PI-CORE. Recommendation: **(a)**. |
 | E6 | Who checks the live Supabase Auth settings before go-live (sign-up disabled, token lifetime, rate limits, SMTP, CAPTCHA, exposed schemas)? Same check as B12. | [UNKNOWN] | P0 (before go-live) | (a) owner reads dashboard values into `docs/ops/`; (b) PI-CORE maintainer confirms; (c) skip and trust the repo. Recommendation: **(a)**. |
-| E7 | Login: cancel a hanging sign-in after 15 seconds and show the network message (design 4.3)? | [ASSUMPTION] not built in Phase 1; revisit if members report hangs | P2 | Supabase calls normally fail fast; a timeout adds code to maintain. |
+| E7 | Login: cancel a hanging sign-in after 15 seconds and show the network message (design 4.3)? | **[ANSWERED]** 2026-11-06: built | - | The earlier assumption ("not needed") was wrong: QA BUG-A2 showed a hanging request locks the form forever. Timeout added in `src/app/login/login-form.tsx`. |
 
 ## F. Security follow-ups from the login review (2026-11-06)
 
