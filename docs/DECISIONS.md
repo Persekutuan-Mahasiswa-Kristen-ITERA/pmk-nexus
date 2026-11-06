@@ -143,6 +143,7 @@ Status tags: **[DECIDED]** final, **[ASSUMPTION]** needs owner confirmation.
   - Q3: "Buka PI-CORE" opens in a new tab, so "Sudah ganti? Muat ulang" stays open. Spec F6 updated.
   - New strings in design section 2.8 ("Memeriksa akunmu...", "Kata sandimu belum berubah. Ganti di PI-CORE dulu, lalu coba lagi.", error body second sentence, "Masih terjadi gangguan." for screen readers).
 - **Not approved (not asked):** showing the signed-in email on the No-access screen. Not built.
+- **Added 2026-11-06 (owner OK):** temporary Dashboard placeholder strings "Masuk sebagai {nama}.", the period line, "Belum ada periode aktif.", and a temporary "Keluar" button, until the Dashboard module and side drawer replace them.
 - **Still open:** real logo file (C12); the design uses an empty 28 px crest slot. PI-CORE has `public/brand/pmk-logo-192.png`; not reused until the owner decides.
 
 ## D-018 NEXUS gets its own local Supabase stack [DECIDED]
