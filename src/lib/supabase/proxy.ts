@@ -49,6 +49,14 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   // result (AUTH-30), which a redirect here would break.
   if (request.method !== "GET" && request.method !== "HEAD") return response;
 
+  // API routes are not pages: answer 401 instead of a login redirect that would land on a 405 later.
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    const denied = NextResponse.json({ error: { code: "unauthenticated" } }, { status: 401 });
+    response.cookies.getAll().forEach((cookie) => denied.cookies.set(cookie));
+    noStore(denied);
+    return denied;
+  }
+
   const redirect = NextResponse.redirect(loginUrl(request));
   // Keep cookie writes from the refresh attempt (e.g. deleting a revoked session).
   response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));

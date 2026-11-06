@@ -70,6 +70,35 @@ type ParsedBody = { ok: true; format: MemberExportFormat; filters: MemberListFil
  * an export must match the screen, so a bad value is refused instead of replaced by a default.
  * Empty q / unit = none; missing status = active.
  */
+/** Reads the body up to `max` bytes; null when it is larger or unreadable. Never buffers more than max + one chunk. */
+async function readCappedBody(request: Request, max: number): Promise<Uint8Array<ArrayBuffer> | null> {
+  if (!request.body) return new Uint8Array(new ArrayBuffer(0));
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > max) {
+        await reader.cancel().catch(() => undefined);
+        return null;
+      }
+      chunks.push(value);
+    }
+  } catch {
+    return null;
+  }
+  const out = new Uint8Array(new ArrayBuffer(total));
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return out;
+}
+
 export async function parseMemberExportBody(request: Request): Promise<ParsedBody> {
   const requestError = { ok: false as const, error: { code: "invalid_input" as const, field: "request" as const } };
   const type = (request.headers.get("content-type") ?? "").toLowerCase();
@@ -79,9 +108,13 @@ export async function parseMemberExportBody(request: Request): Promise<ParsedBod
   const length = Number(request.headers.get("content-length") ?? "0");
   if (!Number.isFinite(length) || length > MAX_BODY_BYTES) return requestError;
 
+  // Content-Length can be absent (chunked body), so the cap is also enforced while reading (review LOW 1).
+  const bytes = await readCappedBody(request, MAX_BODY_BYTES);
+  if (!bytes) return requestError;
+
   let form: FormData;
   try {
-    form = await request.formData();
+    form = await new Response(bytes, { headers: { "content-type": type } }).formData();
   } catch {
     return requestError;
   }

@@ -221,8 +221,10 @@ type PostgrestLikeError = { code?: string; hint?: string | null };
 export function mapMemberDataError(error: PostgrestLikeError): MemberDataError {
   if (error.code === "42501" && error.hint === "permission_required") return { code: "forbidden" };
   if (error.code === "22023" && typeof error.hint === "string") {
-    const field = INVALID_INPUT_HINTS[error.hint];
-    if (field) return { code: "invalid_input", field };
+    // Own keys only: "constructor" / "toString" must not resolve through the prototype (BUG-MD-01).
+    if (Object.hasOwn(INVALID_INPUT_HINTS, error.hint)) {
+      return { code: "invalid_input", field: INVALID_INPUT_HINTS[error.hint] };
+    }
   }
   return { code: "unavailable" };
 }

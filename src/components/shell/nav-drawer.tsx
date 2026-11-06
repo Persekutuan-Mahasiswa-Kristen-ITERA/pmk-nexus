@@ -34,7 +34,7 @@ export function NavDrawer({ nav }: { nav: NavData }) {
       </Dialog.Trigger>
       <Dialog.Portal>
         {/* Flat espresso veil, no blur: the drawer is the only raised surface (R-10). */}
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-ink/40 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 motion-reduce:animate-none" />
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-ink/40 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 motion-reduce:data-[state=open]:animate-none motion-reduce:data-[state=closed]:animate-none" />
         <Dialog.Content
           aria-describedby={undefined}
           onOpenAutoFocus={(event) => {
@@ -48,7 +48,8 @@ export function NavDrawer({ nav }: { nav: NavData }) {
             "fixed inset-y-0 left-0 z-50 flex w-72 max-w-[80vw] flex-col border-r border-surface-line bg-drawer shadow-elevation-2",
             "pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] focus:outline-none",
             "data-[state=open]:animate-in data-[state=open]:slide-in-from-left data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left",
-            "duration-200 motion-reduce:animate-none",
+            // The state variants are more specific than plain motion-reduce:animate-none (BUG-MD-02).
+            "duration-200 motion-reduce:data-[state=open]:animate-none motion-reduce:data-[state=closed]:animate-none",
           )}
         >
           <div className="flex items-center gap-3 border-b border-surface-line px-4 py-4">
