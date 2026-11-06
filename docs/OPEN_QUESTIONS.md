@@ -173,7 +173,7 @@ Spec: `docs/modules/inventory-borrowing.md` section 10 (IB1-IB15 are answered, D
 | A-IB20 | Page size 20. | [ASSUMPTION] | P2 |
 | A-IB21 | Drawer badge and Dashboard line for waiting approvals are proposals for the Dashboard module. | [ASSUMPTION] | P2 |
 | A-IB22 | Members cannot export their own requests. | [ASSUMPTION] | P2 |
-| A-IB24 | The request reference is system generated; format chosen at build time (not a letter number). | [ASSUMPTION] | P2 |
+| A-IB24 | Request reference format. | **[ANSWERED]** 2026-11-07: `PJM-0001`, one sequence, never reused (owner) | - |
 | A-IB25 | The tracking mode of an item (individual or counted) cannot change once it has borrowing history; create a new item instead. | [ASSUMPTION] | P1 |
 | A-IB26 | Extending is an approve-type action: needs `borrowing.approve` (heads), is blocked on your own loan (L6), is checked against availability like a new approval, and is logged in an extension history. | [ASSUMPTION] | P1 |
 | A-IB27 | Code `INV-0001`: one sequence, never reused, assigned by the database; per unit for tracked items, per item for counted items; archived and lost items keep their code; numbers beyond 9999 just grow. | [ASSUMPTION] | P1 |
@@ -186,4 +186,14 @@ Spec: `docs/modules/inventory-borrowing.md` section 10 (IB1-IB15 are answered, D
 | A-IB34 | A `borrowing.handle` holder may cancel an approved request that was not picked up (reason required), for example when the requester is deactivated. A Diajukan request of a deactivated member is rejected by a head with a note. | [ASSUMPTION] | P2 |
 | A-IB35 | Any head of the Operations unit may approve any request (not only for their own division). | **[ANSWERED]** 2026-11-07: owner approved with the spec | - |
 | A-IB36 | The new key `borrowing.handle` is treated like `borrowing.approve` in the catalog: not grantable to "every active member", written reason required (L12). Whether the `is_sensitive` flag is also set is left to the database engineer. | [ASSUMPTION] | P1 |
+| A-IB37 | Inventory module navigation: four route-based segments (Katalog, Peminjaman Saya, Antrean, Kelola Barang), role-aware; filter card folded on phones (design P1, P3). | [ASSUMPTION] | P2 |
+| A-IB38 | Item category and location are optional while the lists are new; one location per item, not per stock row (design P4, G1). | [ASSUMPTION] | P2 |
+| A-IB39 | Evidence photos upload when picked; uploaded files never attached to a saved return are not evidence and may be cleaned up (design P8, G5). | [ASSUMPTION] | P2 |
+| A-IB40 | Chip colours: Dikembalikan green (same tone as Disetujui); grey chip from Stitch 04 added to the theme (design P9). | [ASSUMPTION] | P2 |
+| A-IB41 | A damaged return line records ONE resulting condition (Perlu servis or Rusak); split the line if pieces differ (design P10, G11). | [ASSUMPTION] | P2 |
+| A-IB42 | Rejected or cancelled requests offer a prefilled "Ajukan lagi"; detail screen titled "Detail Pengajuan"; a confirm step before saving a return (design P11, P14, P15). | [ASSUMPTION] | P2 |
+| A-IB43 | Field length limits and maximum stock numbers are set by the database engineer and shown in copy as {max} (G4). | [ASSUMPTION] | P2 |
+| A-IB44 | Category and location lists sort A-Z; no reorder screen (G6). | [ASSUMPTION] | P2 |
+| A-IB45 | A written-off (Hilang) unit can be restored ("Ditemukan kembali") by a `borrowing.handle` holder through a reasoned correction (G7). | [ASSUMPTION] | P2 |
+| A-IB46 | The requester's timeline shows the names of the approver and the Ops members who recorded handover and return (G8). | [ASSUMPTION] | P2 |
 

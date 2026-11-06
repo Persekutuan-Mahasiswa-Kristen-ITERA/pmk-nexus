@@ -446,6 +446,10 @@ Personas: `docs/modules/access-control.md` section 9. Defaults D01, D09-D11, D28
 
 ---
 
+## 11b. Design decisions (2026-11-07)
+
+From the design review of `docs/design/inventory-borrowing.md` (section 23): stock changes only through reasoned dialogs (P6); request reference `PJM-0001` (one sequence, never reused, set by the database); optional "Tersedia pada tanggal" catalog filter backed by a bulk availability function; Dashboard card "{n} unit baik, {m} di antaranya sedang dipinjam" + "{k} perlu servis". Further design assumptions: A-IB37..A-IB46 (`docs/OPEN_QUESTIONS.md` section H). A-IB24 (request reference format) is answered by `PJM-0001`.
+
 ## 12. Questions and owner answers (record)
 
 All answered by the owner on 2026-11-07 (D-022). Each answer is tagged under its question; the options and my original recommendation are kept as the record.

@@ -208,5 +208,6 @@ Status tags: **[DECIDED]** final, **[ASSUMPTION]** needs owner confirmation.
 - **Why:** The owner wants decisions by the heads but daily work (lending and taking back) by everyone in Operations, one catalog for all items, no invented limits, and no dashboard figure whose meaning nobody can define. Hybrid tracking lets expensive items have a history per unit while cables and stands stay a simple count.
 - **Risks and trade-offs:** (1) A holder can falsely record their own return; mitigated only by the append-only history. (2) With heads only as approvers (at most three by default), a head's own request needs another head (B29): if one head is in office, it waits. (3) The migration is NOT written yet; until it is, the database still follows the old D30. (4) Evidence photos are never purged, so they count against the free-tier storage; they are resized and only for damaged or lost items.
 - **Owner:** answered 2026-11-07. Spec status: ready for owner approval.
+- **Design follow-up (2026-11-07, owner):** stock changes only through reasoned dialogs; request reference `PJM-0001`; optional date-availability filter in the catalog; Dashboard card "{n} unit baik, {m} di antaranya sedang dipinjam" + "{k} perlu servis". Design: `docs/design/inventory-borrowing.md` section 23.
 - **Answers:** `OPEN_QUESTIONS.md` A7, B4, C7 (and adds section H).
 
