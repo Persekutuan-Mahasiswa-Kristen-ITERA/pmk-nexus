@@ -53,6 +53,9 @@ All accounts use the same dev password: **`NexusLocal2026`**. Emails end in `@ne
 | `ketum@nexus.test` | BPH Ketua Umum | BPH access (view all modules). Not a System Admin. |
 | `bendahara@nexus.test` | Bendahara Umum 1 | Finance rights. |
 | `admin@nexus.test` | System Admin (`access_level = 'admin'`, no position) | Manages the system. |
+| `kadep@nexus.test` | Kepala Departemen, Departemen Operasional | Member Data view (rule D32), no export. |
+| `kabiro@nexus.test` | Kepala Biro, Biro Kewirausahaan | Member Data view (rule D32), no export. |
+| `pembina@nexus.test` | Lecturer (`member_type = 'lecturer'`), no assignment | Listed with the "Pembina" marker; limited access. |
 
 Never use these emails or the password anywhere except this local stack. The seed file refuses to run unless `nexus.allow_local_seed=yes` is set, which only the local script does.
 

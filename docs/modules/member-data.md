@@ -130,7 +130,7 @@ One row = one **member** (never one assignment, so counts and pages count people
 | Position, line 2 | "Unit / Jabatan", second line | `positions.name` of the primary assignment | |
 | Status | "Status" | `members.is_active` | true = "Aktif", false = "Nonaktif" (M1) |
 
-**Primary assignment (M3, B10).** Among the member's assignments in the active period (`assignments` joined to the `periods` row with `is_active`), the primary is the one whose position has the lowest `positions.rank` (lower = more senior). Tie-break [A-MD8]: lower `org_units.sort_order`, then unit name A-Z, then position name A-Z. A member with no assignment shows "-" for unit and position.
+**Primary assignment (M3, B10).** Among the member's assignments in the active period (`assignments` joined to the `periods` row with `is_active`), the primary is the one whose position has the lowest `positions.rank` (lower = more senior). Tie-break (owner 2026-11-06, A-MD8 option b): top-level unit order first (a division uses its parent department's `sort_order`), then the division's own `sort_order`, then unit name A-Z, then position name A-Z. Same order as the unit filter. A member with no assignment shows "-" for unit and position.
 
 Filter options: `org_units` (`id`, `name`, `type`, `parent_id`, `sort_order`, `is_active`).
 
@@ -154,7 +154,7 @@ Append-only table in schema `nexus`. One row per **successful** export (any form
 | Filters used | unit filter (org unit id or none), status filter (Aktif / Nonaktif / Semua), and whether a search term was used (yes/no) [A-MD11] |
 | Period | id of the active period at that moment [A-MD11] |
 
-Rules: no update and no delete for anyone, including the System Admin (L5, L11 spirit). Rows are written only by the export function, never by a direct insert. It stores **no PII**: no email, phone, NIM, NIP; no exported rows; no search text; no names (the reader's screen looks the exporter's name up at read time). Readers: the System Admin (fixed) and holders of `member_data.view_export_log` (default: BPH, rule D33). A deactivated exporter's rows stay. RLS enabled, default deny (CLAUDE.md 11).
+Scope: the log records **exports only**, not on-screen views. A `member_data.view` holder can page through the list without a log row; this is by design (view = see the list, export = the audited action). The log screen must say "Hanya mencatat ekspor" so nobody reads it as an access log (security review M1, 2026-11-06). Rules: no update and no delete for anyone, including the System Admin (L5, L11 spirit). Rows are written only by the export function, never by a direct insert. It stores **no PII**: no email, phone, NIM, NIP; no exported rows; no search text; no names (the reader's screen looks the exporter's name up at read time). Readers: the System Admin (fixed) and holders of `member_data.view_export_log` (default: BPH, rule D33). A deactivated exporter's rows stay. RLS enabled, default deny (CLAUDE.md 11).
 
 ---
 
@@ -237,7 +237,7 @@ All are [ASSUMPTION] until the owner confirms; they are also in `docs/OPEN_QUEST
 | A-MD5 | Export = all rows matching current filters, same information as the screen, with period label and date in the header; file generated on the server, not stored. In exports the marker is its own column "Pembina" (Ya/empty) and unit and position are separate columns. |
 | A-MD6 | No link from a row to PI-CORE. |
 | A-MD7 | Interface strings in section 3 are proposals. |
-| A-MD8 | Primary-assignment tie-break: lower `org_units.sort_order`, then unit name A-Z (owner-given), then position name A-Z (added by me, last resort). |
+| A-MD8 | ANSWERED 2026-11-06 (option b): top-level unit order first (division uses its parent department's `sort_order`), then division order, unit name, position name. Reason: PI-CORE division `sort_order` only counts within its department. |
 | A-MD9 | The unit filter matches ANY active-period assignment, not only the primary. |
 | A-MD10 | ANSWERED 2026-11-06: new sensitive key `member_data.view_export_log`, default rule D33 for role `bph`; System Admin reads it as a fixed right. |
 | A-MD11 | Export log filters = unit id, status, and whether a search term was used (yes/no); the search text itself is NOT stored (a typed email or NIM would become PII in the log). The log also stores the active period id. |
