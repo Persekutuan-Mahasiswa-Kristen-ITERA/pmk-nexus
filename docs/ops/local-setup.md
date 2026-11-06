@@ -57,6 +57,8 @@ All accounts use the same dev password: **`NexusLocal2026`**. Emails end in `@ne
 | `kabiro@nexus.test` | Kepala Biro, Biro Kewirausahaan | Member Data view (rule D32), no export. |
 | `pembina@nexus.test` | Lecturer (`member_type = 'lecturer'`), no assignment | Listed with the "Pembina" marker; limited access. |
 
+Also seeded: 40 login-less members `Bulk Anggota 01`-`40` (`bulkNN@nexus.test`, no password, cannot sign in): 10 Staff (Bulk 11 holds Staff Musik + Staff Logistik and shows Musik, the tie-break case), 3 inactive (05, 21, 37), 2 lecturers (13, 29). With the default Aktif filter, Data Anggota shows 45 members on 3 pages.
+
 Never use these emails or the password anywhere except this local stack. The seed file refuses to run unless `nexus.allow_local_seed=yes` is set, which only the local script does.
 
 ## 4. Create your `.env.local`

@@ -10,7 +10,8 @@
 --
 -- Safe to run more than once: rows that already exist are skipped, nothing is deleted.
 -- Every account has the same dev password (documented in docs/ops/local-setup.md), emails end in
--- @nexus.test so they can never be real people. PI-CORE triggers stay ON; this file works with them:
+-- @nexus.test so they can never be real people. Section 6 adds 40 "Bulk Anggota NN" member rows with
+-- NO login (for Member Data pagination/filter tests). PI-CORE triggers stay ON; this file works with them:
 --   * assignments are refused for inactive members, so the deactivated member is deactivated AFTER
 --     getting an assignment;
 --   * the first period ever created becomes the active one, so 2026/2027 is inserted first.
@@ -145,6 +146,91 @@ update public.members m
 set is_active = false
 from _persona p
 where p.deactivate and m.email = p.email and m.is_active;
+
+-- 6. Bulk members for Member Data pagination and filter tests (page size 20, so 3+ pages with the
+--    default "Aktif" filter). Member rows ONLY: no Auth user, no login (`user_id` is nullable in PI-CORE).
+--    Names "Bulk Anggota 01".."Bulk Anggota 40" sort together; emails bulkNN@nexus.test; NIM 1234510NN
+--    (personas use 12345000N, so no collision). Categories are spread over the numbers so every page
+--    shows a mix:
+--      Staff (10 members): 03 07 11 15 19 23 27 31 35 39; 11 holds TWO Staff seats (Musik + Logistik):
+--        equal rank, so the tie-break (top-level unit sort_order: Pelayanan Khusus 40 < Operasional 60)
+--        must show "Departemen Pelayanan Khusus · Musik", and the Operasional filter must still list 11.
+--      Inactive (3): 05 21 37.  Lecturers (2, no NIM, no assignment): 13 29.  Others (25): no assignment.
+create temp table _bulk (
+  n int primary key,
+  member_type text not null default 'student',
+  deactivate boolean not null default false
+) on commit drop;
+
+insert into _bulk (n) select g from generate_series(1, 40) g;
+update _bulk set deactivate = true where n in (5, 21, 37);
+update _bulk set member_type = 'lecturer' where n in (13, 29);
+
+insert into public.members (id, user_id, full_name, email, nim, access_level, must_change_password, member_type)
+select ('a3000000-0000-4000-8000-' || lpad(b.n::text, 12, '0'))::uuid,
+       null,
+       'Bulk Anggota ' || lpad(b.n::text, 2, '0'),
+       'bulk' || lpad(b.n::text, 2, '0') || '@nexus.test',
+       case when b.member_type = 'student' then '1234510' || lpad(b.n::text, 2, '0') end,
+       'member', false, b.member_type::public.member_type
+from _bulk b
+where not exists (select 1 from public.members m
+                  where m.email = 'bulk' || lpad(b.n::text, 2, '0') || '@nexus.test');
+
+-- Staff seats in the ACTIVE period. Units are looked up by real PI-CORE seed names (no hard-coded ids);
+-- only the non-unique "Staff" position is used, so no seat can clash with a persona or a test.
+create temp table _bulk_assignment (
+  n int not null,
+  unit_name text not null,
+  unit_type text not null
+) on commit drop;
+
+insert into _bulk_assignment values
+  (3,  'EO',                 'division'),
+  (7,  'Worship',            'division'),
+  (11, 'Musik',              'division'),
+  (11, 'Logistik',           'division'),
+  (15, 'Intra Kampus',       'division'),
+  (19, 'Art Interest',       'division'),
+  (23, 'Akomodasi',          'division'),
+  (27, 'Gospel Group',       'division'),
+  (31, 'Biro Kewirausahaan', 'bureau'),
+  (35, 'Doa',                'division'),
+  (39, 'Logistik',           'division');
+
+-- A renamed or missing unit would silently drop a seat; say so instead (warning only, so the
+-- personas above are still seeded).
+do $$
+declare
+  missing text;
+begin
+  select string_agg(distinct ba.unit_name, ', ') into missing
+  from _bulk_assignment ba
+  where not exists (select 1 from public.org_units ou
+                    where ou.name = ba.unit_name and ou.type::text = ba.unit_type and ou.is_active);
+  if missing is not null then
+    raise warning 'seed_test_accounts.sql: bulk Staff seats skipped, unit(s) not found: %', missing;
+  end if;
+end
+$$;
+
+insert into public.assignments (member_id, org_unit_id, position_id, period_id)
+select m.id, ou.id, po.id, pe.id
+from _bulk_assignment ba
+join public.members m on m.email = 'bulk' || lpad(ba.n::text, 2, '0') || '@nexus.test' and m.is_active
+join public.org_units ou on ou.name = ba.unit_name and ou.type::text = ba.unit_type and ou.is_active
+join public.positions po on po.name = 'Staff' and po.unit_type::text = ba.unit_type and not po.is_unique_per_unit
+join public.periods pe on pe.label = '2026/2027'
+where not exists (
+  select 1 from public.assignments a
+  where a.member_id = m.id and a.org_unit_id = ou.id and a.position_id = po.id and a.period_id = pe.id
+);
+
+-- Deactivate after the inserts, same as the personas (PI-CORE stamps deactivated_at).
+update public.members m
+set is_active = false
+from _bulk b
+where b.deactivate and m.email = 'bulk' || lpad(b.n::text, 2, '0') || '@nexus.test' and m.is_active;
 
 -- Summary (shown by psql so you see what exists).
 select p.email, p.full_name, coalesce(m.access_level::text, '(no member row)') as access_level,
