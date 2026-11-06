@@ -53,9 +53,9 @@ Details in `docs/design/stitch/comparison.md`.
 
 | # | Question | Status | Priority | Notes |
 |---|---|---|---|---|
-| C1 | Which design is the source of truth: the original Figma (context doc section 6) or the Stitch redesign? | [UNKNOWN] | P1 (before any UI) | Stitch changes: flat header (no curve), light drawer (not dark), 8 px buttons (not pills), different hex values. |
-| C2 | If Stitch: adopt its exact hex values (`#62431F`, `#C59A27`, `#FFF8F5`...) even though PI-CORE uses `#5A3E1B` / `#C9A227`? | [UNKNOWN] | P1 | Both apps share one login; matching colors may matter. |
-| C3 | Fonts: Playfair Display + Plus Jakarta Sans OK? | [UNKNOWN] | P1 | Context doc names no font. |
+| C1 | Which design is the source of truth: the original Figma (context doc section 6) or the Stitch redesign? | **[ANSWERED]** 2026-11-06: Stitch (D-014) | - | Stitch changes: flat header (no curve), light drawer (not dark), 8 px buttons (not pills), different hex values. |
+| C2 | If Stitch: adopt its exact hex values (`#62431F`, `#C59A27`, `#FFF8F5`...) even though PI-CORE uses `#5A3E1B` / `#C9A227`? | **[ANSWERED]** 2026-11-06: yes, Stitch hex (D-014) | - | Canvas: [ASSUMPTION] `#FBF8F3` (design notes) instead of `#fff8f5` (generated HTML). |
+| C3 | Fonts: Playfair Display + Plus Jakarta Sans OK? | **[ANSWERED]** 2026-11-06: yes (D-014) | - | |
 | C4 | Member status values: Stitch shows Aktif / Cuti / Alumni / Pembina, PI-CORE has only active/inactive. Show only Aktif / Nonaktif? | [ASSUMPTION] only Aktif / Nonaktif | P1 | NEXUS cannot invent statuses it does not store. |
 | C5 | Remove "+ Tambah Anggota" from Data Anggota (read-only rule)? | [ASSUMPTION] remove | P1 | Members are managed in PI-CORE. |
 | C6 | Outgoing letter code `SK` (seen in Stitch `PMK/NEX/SK/2026/012`): correct? | [UNKNOWN] | P1 (Letters) | Same as A2. |
@@ -97,3 +97,16 @@ Since 2026-11-05, B3, B4, B6, B7, B8, B9, B17, B18, B19, B22, B23 are answered a
 | D1 | PI-CORE repo = `/home/fycode/Documents/pi-core-v2` | [ASSUMPTION] |
 | D2 | Stitch project `projects/15744631264658346759` is the NEXUS design | [ASSUMPTION] |
 | D3 | Deactivated PI-CORE members get no NEXUS access at all | [ASSUMPTION] (PI-CORE already bans their Auth login) |
+
+## E. Login and connection
+
+Spec: `docs/modules/auth-login.md` (draft, step 2). Each question has options and a recommendation in the spec, section 11.
+
+| # | Question | Status | Priority | Options and recommendation |
+|---|---|---|---|---|
+| E1 | What does NEXUS do when a member still has a temporary password (`must_change_password = true`)? Needs an amendment of locked rule L4. | [UNKNOWN] | P0 (before the login build) | (a) ignore it; (b) read ONLY the caller's own flag through one narrow function, block the app, send the person to PI-CORE to change the password; (c) as (b) plus database-level denial. Recommendation: **(b)**. NEXUS cannot change the password itself (needs the service role). |
+| E2 | Where do password reset and password change happen? | [ASSUMPTION] (a) | P1 | (a) only in PI-CORE; NEXUS shows a note and a link (PI-CORE has no email delivery); (b) later, if the maintainer adds SMTP; (c) own NEXUS screen (not possible without the service role). Recommendation: **(a)** now. |
+| E3 | How long may a NEXUS session last? | [ASSUMPTION] (a) | P2 | (a) Supabase defaults, same as PI-CORE; (b) app-side idle limit (e.g. 7 days); (c) Supabase session time-box (shared setting, may need a paid plan). Recommendation: **(a)** for Phase 1, revisit when Finance holds real data. |
+| E4 | Should a deactivated member and an unlinked account see different messages after login? | [ASSUMPTION] (a) | P1 | (a) one combined "no access" message; (b) two messages (needs a function that reads inactive rows and reveals status). Recommendation: **(a)**. Changes wording of access-control E11 / AC-33. |
+| E5 | Is the NEXUS login screen Indonesian only? | [ASSUMPTION] (a) | P2 | (a) Indonesian only; (b) Indonesian with an English switch like PI-CORE. Recommendation: **(a)**. |
+| E6 | Who checks the live Supabase Auth settings before go-live (sign-up disabled, token lifetime, rate limits, SMTP, CAPTCHA, exposed schemas)? Same check as B12. | [UNKNOWN] | P0 (before go-live) | (a) owner reads dashboard values into `docs/ops/`; (b) PI-CORE maintainer confirms; (c) skip and trust the repo. Recommendation: **(a)**. |
