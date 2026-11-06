@@ -106,3 +106,13 @@ Status tags: **[DECIDED]** final, **[ASSUMPTION]** needs owner confirmation.
 - **What:** Security review finding W3. Permission keys `finance.*`, `member_data.*`, and every `*.manage`, `*.approve`, `*.process` key can NOT be granted to the "every active member" subject; the database rejects it (catalog flag + check in `add_access_rule` + trigger). They can still be granted to a role, position, or org unit, but a written reason (non-empty note) is required for sensitive keys. Every change stays in the log.
 - **Why:** The log alone only detects abuse after the fact; this prevents the most dangerous mistakes (e.g. "everyone manages Finance").
 - **Impact:** New locked rule (L12) in `docs/modules/access-control.md`; migration and tests updated.
+- **Verified:** pgTAP suite 225/225 passed on 2026-11-06 in a throwaway container (see `supabase/tests/README.md`).
+
+## D-014 Design source = Stitch redesign [DECIDED]
+- **Date:** 2026-11-06
+- **What:** The Stitch project "PMK-NEXUS Dashboard Redesign" (design system "Executive Heritage Modern", snapshot in `docs/design/stitch/`) is the design source of truth for NEXUS, replacing the original Figma description in context doc section 6. This adopts: flat app bar `#62431F` (no curved edge), light side drawer, 8 px buttons and inputs, 12 px cards, pills only for status chips and filter tags, Stitch hex values (primary `#62431F`, ivory `#F0E9DC`, gold `#C59A27`, text `#2C1E11`), fonts Playfair Display (headings) + Plus Jakarta Sans (body, data, forms).
+- **Why:** Owner's choice. Stitch is more complete (14 screens, exact colors, fonts, spacing, component rules) than the Figma description.
+- **Trade-off accepted:** colors differ slightly from PI-CORE (`#5A3E1B` / `#C9A227`), so the two apps that share one login will look related but not identical.
+- **Answers:** `OPEN_QUESTIONS.md` C1; also C2 (use Stitch hex) and C3 (fonts), since they follow from it; A5 (exact colors and fonts) for NEXUS.
+- **Still open:** canvas color mismatch inside Stitch (design notes `#FBF8F3` vs generated HTML `#fff8f5`); [ASSUMPTION] use `#FBF8F3` from the design notes. Stitch has no NEXUS login screen (C13). Content questions C4-C11 are not answered by this decision; Stitch filler content (e.g. statuses Cuti/Alumni, "+ Tambah Anggota", "H-3") is not adopted automatically.
+- **Pending doc updates (need owner OK):** `docs/PMK-NEXUS-context.md` section 6 and `CLAUDE.md` section 8 still describe the Figma style (curved header, pill buttons, approximate palette).
