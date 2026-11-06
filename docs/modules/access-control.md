@@ -254,7 +254,7 @@ Functions answer in this shape (design level): "who am I" = member id, System Ad
 | E8 | Period switches while a borrowing is "borrowed" or a letter request is pending | Open items stay actionable by the current `borrowing.approve` / `letter_requests.process` holders (L7). Other edits stay blocked. |
 | E9 | Person holds the same rule-matching position in two units (two `sekretaris` assignments) | "Own unit" scope = both units (R2). |
 | E10 | Position holder replaced mid-period | Old holder loses access on their next request; successor gets it as soon as PI-CORE records the assignment. Rules are not touched. |
-| E11 | Auth user not linked to a member | No access (L1). Message: "Your account is not linked to a member. Contact your PI-CORE admin." |
+| E11 | Auth user not linked to a member, or member deactivated | No access (L1). One combined message for both cases (D-016): "Akunmu belum bisa dipakai di NEXUS. Hubungi admin PMK ITERA." |
 | E12 | Lecturer logs in | Baseline only (R6) [A-B15]. |
 | E13 | System Admin's `access_level` is lowered while on the rules screen | Next request is denied (R3). |
 | E14 | Requester is also the processor | Blocked by L6 even if a rule grants the permission. If only one holder exists, a second holder is needed (PI-CORE can add an assignment). |
@@ -340,7 +340,7 @@ All ACs assume the default rule set (section 3) unless stated. Test personas use
 
 **No access (L1)**
 - AC-32 P-INACTIVE cannot reach any NEXUS page or data; every API call returns no data or an error.
-- AC-33 P-UNLINKED sees the "account not linked" page and no data.
+- AC-33 P-UNLINKED (and a deactivated member) sees the combined "account not usable in NEXUS" page (D-016) and no data.
 - AC-34 A request with no session is redirected to login and every direct API call is rejected.
 
 **Combining**

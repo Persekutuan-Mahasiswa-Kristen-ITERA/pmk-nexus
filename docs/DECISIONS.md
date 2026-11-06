@@ -124,3 +124,12 @@ Status tags: **[DECIDED]** final, **[ASSUMPTION]** needs owner confirmation.
 - **Rule change:** locked rule L4 (`docs/modules/access-control.md`) and `supabase/README.md` checklist item 6 now allow this single caller-only exception. The structural pgTAP test must whitelist exactly that function.
 - **Known limit:** app-level gate only (same as PI-CORE); a direct API call with the temporary password is not blocked by RLS. Option (c), a database-level block, was rejected for Phase 1 as heavier than PI-CORE itself.
 - **Answers:** `OPEN_QUESTIONS.md` E1 (option b).
+
+## D-016 Login details follow PI-CORE [DECIDED]
+- **Date:** 2026-11-06
+- **What:** Owner accepted the spec recommendations for E2-E5 (`docs/modules/auth-login.md` section 11):
+  - E2: password reset and change happen only in PI-CORE. NEXUS shows a short note ("ask the PMK ITERA admin for a temporary password") and a link to PI-CORE. PI-CORE has no email delivery, so no self-service reset exists.
+  - E3: session length = Supabase defaults, same as PI-CORE (access token about 1 hour, automatic refresh, session lasts until logout or ban). Revisit an idle limit once Finance holds real data.
+  - E4: deactivated and unlinked accounts get one combined message: "Akunmu belum bisa dipakai di NEXUS. Hubungi admin PMK ITERA." Access-control E11 and AC-33 reworded.
+  - E5: login screen in Indonesian only.
+- **Why:** Same behaviour as PI-CORE; least to maintain at handover; the combined message reveals nothing about account status.
