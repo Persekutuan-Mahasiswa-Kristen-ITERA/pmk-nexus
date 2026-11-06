@@ -1,0 +1,122 @@
+# PMK-NEXUS: LOCAL Supabase stack settings (decision D-018). Used only by `scripts/dev-db.sh`.
+#
+# This is NOT the hosted project and it is never linked to it. It is a separate local copy of
+# Supabase on your laptop, next to (not inside) PI-CORE's local stack.
+#
+# Ports: PI-CORE's local stack uses 54320-54329 (and 8083). NEXUS uses 55430-55439 (and 8183)
+# so both stacks can run at the same time without port clashes.
+
+project_id = "pmk-nexus"
+
+[api]
+enabled = true
+port = 55431
+# `nexus` is exposed here (PI-CORE's own config does not expose it).
+schemas = ["public", "graphql_public", "nexus"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[api.tls]
+enabled = false
+
+[db]
+port = 55432
+shadow_port = 55430
+health_timeout = "2m"
+major_version = 17
+
+[db.pooler]
+# Not needed locally (saves RAM). Port is still moved away from PI-CORE's 54329.
+enabled = false
+port = 55439
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[db.migrations]
+# OFF on purpose. NEXUS migrations need PI-CORE's tables first, and PI-CORE's files must not be
+# copied into this repo. So `supabase start` creates an empty database and `scripts/dev-db.sh`
+# applies PI-CORE's migrations (read from the PI-CORE folder), then NEXUS's, then the local seed.
+enabled = false
+
+[db.seed]
+# OFF on purpose: the local test accounts are applied by `scripts/dev-db.sh` (needs a safety guard).
+enabled = false
+
+[realtime]
+# NEXUS does not use realtime yet. Off saves RAM. Turn on when a feature needs it.
+enabled = false
+
+[studio]
+# Off to save RAM (studio + pg_meta). Use psql (`scripts/dev-db.sh psql`) instead.
+# Set enabled = true if you want the dashboard at http://127.0.0.1:55433.
+enabled = false
+port = 55433
+api_url = "http://127.0.0.1"
+
+[local_smtp]
+# Catches emails sent by Auth (e.g. password reset) at http://127.0.0.1:55434. Tiny, so kept on.
+enabled = true
+port = 55434
+
+[storage]
+# NEXUS has no file features yet (private buckets come later). Off saves RAM.
+# Turn on together with the Storage migration when letters/inventory photos are built.
+enabled = false
+
+[auth]
+enabled = true
+# NEXUS dev server runs on port 3100 (`pnpm dev`).
+site_url = "http://localhost:3100"
+additional_redirect_urls = ["http://127.0.0.1:3100"]
+# Same behaviour as PI-CORE's local config: closed sign-up, email login, same token lifetime.
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = false
+enable_anonymous_sign_ins = false
+enable_manual_linking = false
+minimum_password_length = 8
+password_requirements = "letters_digits"
+
+[auth.rate_limit]
+email_sent = 2
+sms_sent = 30
+anonymous_users = 30
+token_refresh = 150
+sign_in_sign_ups = 30
+token_verifications = 30
+web3 = 30
+
+[auth.email]
+# Email login must stay on (sign-up itself is closed by enable_signup = false above).
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+secure_password_change = false
+max_frequency = "1s"
+otp_length = 6
+otp_expiry = 3600
+
+[auth.sms]
+enable_signup = false
+enable_confirmations = false
+
+[auth.mfa]
+max_enrolled_factors = 10
+
+[auth.mfa.totp]
+enroll_enabled = false
+verify_enabled = false
+
+[edge_runtime]
+# NEXUS has no edge functions. Off saves RAM. Inspector port moved away from PI-CORE's 8083 anyway.
+enabled = false
+policy = "per_worker"
+inspector_port = 8183
+
+[analytics]
+# Log analytics container is heavy and not needed. Port moved away from PI-CORE's 54327 anyway.
+enabled = false
+port = 55437
+backend = "postgres"
