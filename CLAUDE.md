@@ -67,7 +67,8 @@ This table is the DEFAULT rule set. The System Admin can change it in NEXUS sett
 | System Admin (explicitly appointed) | Manage system |
 | Treasurer (Bendahara) | Manage Finance |
 | Secretary (Sekretaris) | Manage Letters and Meeting Minutes |
-| Operations Department Head and staff | Manage Inventory and Borrowing |
+| Operations Department (any position) | Manage Inventory, hand over and take back borrowed items (`borrowing.handle`). Only Kepala Departemen and Kepala Divisi of Operations approve, reject, and extend loans (D-022) |
+| Kepala Departemen and Kepala Biro (role `kepala_departemen`) | View Member Data (D-019) |
 | BPH (board) | View all modules |
 | Staff, Committee, regular members | Limited; may request item borrowing and letters |
 
@@ -157,9 +158,9 @@ Keep these files current as you work:
 3. List of PMK departments and organizational structure.
 4. Sample official letter formats.
 5. Exact colors and fonts. (Answered 2026-11-06: from Stitch, D-014.)
-6. Designs for login, letter request flow, and borrowing request flow.
-7. Meaning of "Inventory Status 80%" (for example, share of items in good condition).
-8. Meaning of member "Status" in Member Data (active/inactive?).
+6. Designs for login, letter request flow, and borrowing request flow. (Login answered 2026-11-06, D-017; borrowing in progress, `docs/design/inventory-borrowing.md`; letter request flow still open.)
+7. Meaning of "Inventory Status 80%" (for example, share of items in good condition). (Answered 2026-11-07: no percentage; the card shows counts, D-022.)
+8. Meaning of member "Status" in Member Data (active/inactive?). (Answered 2026-11-06: Aktif/Nonaktif from PI-CORE, D-019.)
 
 ## 15. Response Format
 
