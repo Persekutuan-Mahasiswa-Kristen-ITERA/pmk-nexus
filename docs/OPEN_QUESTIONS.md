@@ -63,7 +63,7 @@ Details in `docs/design/stitch/comparison.md`.
 | C8 | Meeting status (Selesai / Terjadwal / Mendatang) on the Dashboard: do meetings need a schedule/status field? | [UNKNOWN] | P2 | Not in context doc. |
 | C9 | Minutes attachments: PDF/DOCX, max 10 MB? | [ASSUMPTION] yes | P2 | Watch Supabase free-tier storage (1 GB). |
 | C10 | Dashboard "Surat Menyurat" card (not in context doc): keep? | [UNKNOWN] | P2 | |
-| C11 | Export: Stitch shows mostly PDF; context requires Excel, CSV, PDF. Keep all three? | [ASSUMPTION] keep all three | P2 | |
+| C11 | Export: Stitch shows mostly PDF; context requires Excel, CSV, PDF. Keep all three? | **[ANSWERED]** 2026-11-06: all three (D-019 M5, D-020) | - | |
 | C12 | Real PMK logo file (SVG/PNG) for the header | [UNKNOWN] | P1 (UI) | Stitch uses placeholders. |
 | C13 | Login screen: reuse PI-CORE's "Masuk PMK ITERA" design? | **[ANSWERED]** 2026-11-06: reuse structure and wording, Stitch look (D-017) | - | One account for all apps. |
 
