@@ -117,5 +117,5 @@ The rules engine is computed per call (R3, no caching). Data sizes are tiny (ten
 3. Every new function: `revoke all on function ... from public, anon, service_role;` (plus `authenticated` for internal `_*` helpers), then grant EXECUTE to `authenticated` only for client API functions. Default privileges do NOT remove the global EXECUTE-to-PUBLIC.
 4. Every SECURITY DEFINER function: `set search_path = ''`, fully qualified names, and an explicit caller check (`auth.uid()`-based helper or `nexus._require_system_admin()`).
 5. New permission keys: set `allow_baseline` explicitly (no default); `true` only if safe for every active member.
-6. Never read email, phone, nim, nip, must_change_password, audit_log, org_settings, grants_admin, or `private.*`.
+6. Never read email, phone, nim, nip, must_change_password, audit_log, org_settings, grants_admin, or `private.*`. Sole exception (D-015): ONE dedicated function returns the caller's own `must_change_password` as a boolean (never for another member); the structural test must allow exactly that function by name and keep blocking every other.
 7. Re-run the structural pgTAP tests (section 1 of `tests/nexus_access_control.test.sql`) on a throwaway database and update the expected test count in `tests/README.md`.

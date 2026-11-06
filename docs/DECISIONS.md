@@ -116,3 +116,11 @@ Status tags: **[DECIDED]** final, **[ASSUMPTION]** needs owner confirmation.
 - **Answers:** `OPEN_QUESTIONS.md` C1; also C2 (use Stitch hex) and C3 (fonts), since they follow from it; A5 (exact colors and fonts) for NEXUS.
 - **Still open:** canvas color mismatch inside Stitch (design notes `#FBF8F3` vs generated HTML `#fff8f5`); [ASSUMPTION] use `#FBF8F3` from the design notes. Stitch has no NEXUS login screen (C13). Content questions C4-C11 are not answered by this decision; Stitch filler content (e.g. statuses Cuti/Alumni, "+ Tambah Anggota", "H-3") is not adopted automatically.
 - **Pending doc updates (need owner OK):** `docs/PMK-NEXUS-context.md` section 6 and `CLAUDE.md` section 8 still describe the Figma style (curved header, pill buttons, approximate palette).
+
+## D-015 Temporary passwords: block in NEXUS and send to PI-CORE [DECIDED]
+- **Date:** 2026-11-06
+- **What:** When a logged-in member still has a temporary password (PI-CORE `members.must_change_password = true`), NEXUS shows only a "change your password in PI-CORE" state with a link, and no module data. NEXUS reads the flag through ONE dedicated `nexus` function that answers only about the caller and returns one boolean. NEXUS never changes passwords or the flag itself.
+- **Why:** The temporary password was seen by an admin. Ignoring the flag would leave it as a working key into NEXUS (including Finance) until the member opens PI-CORE. NEXUS cannot run its own change-password screen: PI-CORE does it with the service role (`pi-core-v2/src/app/actions/password.ts`), which NEXUS must never hold.
+- **Rule change:** locked rule L4 (`docs/modules/access-control.md`) and `supabase/README.md` checklist item 6 now allow this single caller-only exception. The structural pgTAP test must whitelist exactly that function.
+- **Known limit:** app-level gate only (same as PI-CORE); a direct API call with the temporary password is not blocked by RLS. Option (c), a database-level block, was rejected for Phase 1 as heavier than PI-CORE itself.
+- **Answers:** `OPEN_QUESTIONS.md` E1 (option b).

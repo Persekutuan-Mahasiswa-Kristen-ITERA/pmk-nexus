@@ -152,7 +152,7 @@ Enforced in server code AND RLS, independent of what the rules table contains. *
 | L1 | Inactive member, unlinked Auth user, or no session = no access at all. Checked first, on every request, inside every permission helper (a still-valid token is not enough). No rule can grant anything to such a user. | D-011, D3 |
 | L2 | System Admin comes ONLY from `members.access_level` in (`admin`, `super_admin`) of an active member. No rule, position, or role can create or remove it. NEXUS never calls `private.is_admin()` and never reads `roles.grants_admin`. | D-007 |
 | L3 | A System Admin always has the settings screen, the rules editor, and the change log, whatever the rules say. This prevents locking the system out. | D-011 |
-| L4 | Email, phone, NIM, NIP, `must_change_password`, `audit_log`, `org_settings` are never read or returned by NEXUS. Member Data shows only name, unit, position, active/inactive. No catalog key can widen this. | D-010 |
+| L4 | Email, phone, NIM, NIP, `must_change_password`, `audit_log`, `org_settings` are never read or returned by NEXUS. Member Data shows only name, unit, position, active/inactive. No catalog key can widen this. **Single exception (D-015):** one dedicated `nexus` function may read the CALLER's own `must_change_password` and return it as one boolean; it never answers about another member. | D-010, D-015 |
 | L5 | No permanent delete anywhere, including rules (disable instead) and the change log (append-only). Archive or void replaces delete. | CLAUDE.md 6.5 |
 | L6 | Nobody approves their own request: letter request processing and borrowing approval are blocked when the processor is the requester (matched on `members.id`). | B21 (locked) |
 | L7 | Records of a non-active period are read-only for everyone, except open items (pending letter requests, borrowings not yet returned), which stay actionable by whoever holds `letter_requests.process` / `borrowing.approve` now. Finance corrections go into the active period. | A-n6 |
@@ -223,7 +223,7 @@ Only the System Admin sees this screen (L3, L11).
 | `positions` | `id`, `name`, `rank`, `unit_type` | Position picker, stale check, Member Data display |
 | `org_units` | `id`, `parent_id`, `type`, `name`, `is_active` | Unit picker, child-unit logic, stale check, minutes unit picker |
 
-Never read or return: `email`, `phone`, `nim`, `nip`, `must_change_password`, `audit_log`, `org_settings`, `deactivated_at`. Never call `private.*` (D-010).
+Never read or return: `email`, `phone`, `nim`, `nip`, `must_change_password` (sole exception: the caller-only function of D-015), `audit_log`, `org_settings`, `deactivated_at`. Never call `private.*` (D-010).
 
 Functions answer in this shape (design level): "who am I" = member id, System Admin flag, active-period id, and the list of effective permissions, each with scope "all" or a list of unit IDs. Plus a few lookups limited by the caller's rights (names for display, Member Data list for those allowed, picker lists for the admin).
 
