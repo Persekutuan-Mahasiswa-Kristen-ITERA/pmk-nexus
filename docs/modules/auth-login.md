@@ -1,6 +1,6 @@
 # Connection and Login to PI-CORE (cross-cutting module spec)
 
-> Status: **DRAFT for owner approval** (step 2 of the work order in `CLAUDE.md` section 9).
+> Status: **APPROVED by the owner on 2026-11-06** (step 2 of the work order in `CLAUDE.md` section 9). Decisions applied: D-015 (E1 = b), D-016 (E2-E5 = a). E6 (live Auth settings check) is still open and must be done before go-live.
 > Sources: `CLAUDE.md` (sections 4, 5, 6, 8, 11), `docs/PMK-NEXUS-context.md` (sections 2, 3, 4), `docs/DECISIONS.md` (D-002, D-007, D-010, D-011, D-013), `docs/modules/access-control.md` (rev. 2, L1, L4, E5, E11, AC-32 to AC-34, AC-44), `docs/picore/schema-report.md`, `supabase/README.md` (sections 1, 3, 7), and the PI-CORE app repo (read only).
 > No code or SQL here. No visual design: screens are described in words only; a UX designer handles visuals later.
 > Tags: **[FACT]** = verified in a file (path given), **[ASSUMPTION]** = my guess, needs the owner, **[UNVERIFIED]** = cannot be checked from the repos, **E1-E6** = open question in section 11 (also added to `docs/OPEN_QUESTIONS.md`, section E).
