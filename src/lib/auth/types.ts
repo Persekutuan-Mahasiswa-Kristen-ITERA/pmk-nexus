@@ -66,6 +66,11 @@ export type SignInResult = { ok: true; redirectTo: string } | { ok: false; error
  *   signOut(): Promise<void>
  *     Ends the NEXUS session only (local scope) and redirects to /login.
  *
+ * src/lib/auth/drop-session.ts ("use client")
+ *   dropLocalSession(): Promise<void>
+ *     Ends this browser's session WITHOUT navigating. Used once by the No-access screen (spec 6.2).
+ *     Browser-side on purpose: a cookie-changing Server Action would re-render the route. Added 2026-11-06.
+ *
  * src/lib/auth/redirect.ts (shared, pure)
  *   safeRedirectPath(value: string | null | undefined): string
  *     Rules in docs/modules/auth-login.md section 8.5. Anything unsafe becomes "/".

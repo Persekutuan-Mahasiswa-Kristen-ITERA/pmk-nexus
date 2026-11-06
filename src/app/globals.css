@@ -4,117 +4,254 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
-    /* PMK brand colors, usable as bg-pmk-gold, text-pmk-brown, etc. */
-    --color-pmk-gold: var(--pmk-gold);
-    --color-pmk-gold-light: var(--pmk-gold-light);
-    --color-pmk-brown: var(--pmk-brown);
-    --color-pmk-cream: var(--pmk-cream);
-    --font-heading: var(--font-sans);
-    --font-sans: ui-sans-serif, system-ui, sans-serif;
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
-    --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
-}
-
 /*
- * THEME TOKENS: the one place where colors and radius live.
- * Change a value here and the whole app follows. Do not hard-code colors in components.
- *
- * PLACEHOLDER PALETTE: these four hex values are APPROXIMATE, taken from the context
- * document. They are NOT confirmed. Pending owner answers (docs/OPEN_QUESTIONS.md A5, C1, C2)
- * with the exact Figma values.
- *
- * TODO(fonts): no font is chosen yet. --font-sans above is the system font stack.
- * Set the real font after the owner confirms the Figma fonts.
+ * THEME TOKENS: the one place where colours, type, radius and elevation live.
+ * Source: Stitch "Executive Heritage Modern" (docs/design/stitch/design-system.md, D-014)
+ * and the approved login design (docs/design/login.md section 2, D-017).
+ * Components use the Tailwind names mapped in @theme below. Never hard-code a hex in a component.
  */
 :root {
-    /* Brand palette (placeholders) */
-    --pmk-gold: #C9A227;        /* dark gold */
-    --pmk-gold-light: #E8C766;  /* light gold */
-    --pmk-brown: #5A3E1B;       /* dark brown (header) */
-    --pmk-cream: #F5F3EA;       /* cream (page background) */
+  /* Brand */
+  --nx-walnut: #62431F;          /* app bar, primary button, links, focus ring */
+  --nx-walnut-hover: #513719;    /* primary button hover */
+  --nx-walnut-line: #4D3418;     /* 1 px line under the app bar */
+  --nx-gold: #C59A27;            /* badges, metric marks; never text on light surfaces */
+  --nx-gold-ring: #EFC04B;       /* crest ring, on the walnut bar only */
 
-    /* shadcn/ui semantic tokens, mapped to the brand palette */
-    --background: var(--pmk-cream);
-    --foreground: var(--pmk-brown);
-    --card: #FFFFFF;
-    --card-foreground: var(--pmk-brown);
-    --popover: #FFFFFF;
-    --popover-foreground: var(--pmk-brown);
-    --primary: var(--pmk-brown);
-    --primary-foreground: var(--pmk-cream);
-    --secondary: var(--pmk-gold-light);
-    --secondary-foreground: var(--pmk-brown);
-    --muted: var(--pmk-cream);
-    --muted-foreground: oklch(0.45 0.04 70);
-    --accent: var(--pmk-gold-light);
-    --accent-foreground: var(--pmk-brown);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.88 0.02 90);
-    --input: oklch(0.88 0.02 90);
-    --ring: var(--pmk-gold);
-    --chart-1: var(--pmk-gold);
-    --chart-2: var(--pmk-gold-light);
-    --chart-3: var(--pmk-brown);
-    --chart-4: oklch(0.556 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.75rem;
-    --sidebar: var(--pmk-cream);
-    --sidebar-foreground: var(--pmk-brown);
-    --sidebar-primary: var(--pmk-brown);
-    --sidebar-primary-foreground: var(--pmk-cream);
-    --sidebar-accent: var(--pmk-gold-light);
-    --sidebar-accent-foreground: var(--pmk-brown);
-    --sidebar-border: oklch(0.88 0.02 90);
-    --sidebar-ring: var(--pmk-gold);
+  /* Text */
+  --nx-title: #482D0A;           /* screen titles (Stitch primary) */
+  --nx-ink: #2C1E11;             /* main text, typed text */
+  --nx-ink-label: #4A3520;       /* field labels */
+  --nx-ink-body: #4F453B;        /* lead and secondary text (Stitch on-surface-variant) */
+  --nx-ink-meta: #7A6652;        /* placeholders, footer lines */
+
+  /* Surfaces */
+  --nx-canvas: #FBF8F3;          /* page background ([ASSUMPTION] D-014: design notes, not #fff8f5) */
+  --nx-surface: #FFFFFF;         /* cards */
+  --nx-surface-line: #EADFCF;    /* card border, crest fill */
+  --nx-hairline: #E2D7C5;        /* level 2 border, table borders */
+  --nx-row-line: #F3ECE2;        /* table row divider */
+  --nx-zebra: #FDFBF7;           /* zebra row */
+  --nx-ivory: #F0E9DC;           /* info tone, ghost hover, skeleton bars */
+  --nx-ivory-line: #DECDB5;      /* info tone border */
+  --nx-drawer: #FFF1E8;          /* side drawer (Stitch surface-container-low) */
+
+  /* Fields (D-017: border is Stitch outline, 4.33:1; Stitch #D8CCBA failed 3:1) */
+  --nx-field: #FCFBF8;
+  --nx-field-line: #81756A;
+  --nx-focus-halo: #62431F1F;    /* Stitch soft halo, walnut at 12% */
+
+  /* Status tones (text / background / border) */
+  --nx-danger: #932924;
+  --nx-danger-soft: #FBEBEA;
+  --nx-warn: #875A00;
+  --nx-warn-soft: #FEF7DA;
+  --nx-warn-line: #E8D58C;
+  --nx-success: #205E3F;
+  --nx-success-soft: #EDF7F1;
+  --nx-success-line: #BCDDC8;
+
+  /* Elevation (Stitch levels 1 and 2) */
+  --nx-elevation-1: 0 1px 3px rgba(98, 67, 31, 0.05), 0 4px 12px rgba(98, 67, 31, 0.03);
+  --nx-elevation-2: 0 8px 24px rgba(44, 30, 17, 0.08), 0 2px 6px rgba(44, 30, 17, 0.04);
+
+  /* shadcn/ui semantic tokens, mapped to the Stitch palette */
+  --background: var(--nx-canvas);
+  --foreground: var(--nx-ink);
+  --card: var(--nx-surface);
+  --card-foreground: var(--nx-ink);
+  --popover: var(--nx-surface);
+  --popover-foreground: var(--nx-ink);
+  --primary: var(--nx-walnut);
+  --primary-foreground: var(--nx-surface);
+  --secondary: var(--nx-ivory);
+  --secondary-foreground: var(--nx-walnut);
+  --muted: var(--nx-ivory);
+  --muted-foreground: var(--nx-ink-body);
+  --accent: var(--nx-ivory);
+  --accent-foreground: var(--nx-walnut);
+  --destructive: var(--nx-danger);
+  --border: var(--nx-surface-line);
+  --input: var(--nx-field-line);
+  --ring: var(--nx-walnut);
+  --chart-1: var(--nx-walnut);
+  --chart-2: var(--nx-gold);
+  --chart-3: var(--nx-title);
+  --chart-4: var(--nx-ink-meta);
+  --chart-5: var(--nx-ivory-line);
+  --radius: 0.5rem;
+  --sidebar: var(--nx-drawer);
+  --sidebar-foreground: var(--nx-ink-body);
+  --sidebar-primary: var(--nx-title);
+  --sidebar-primary-foreground: var(--nx-surface);
+  --sidebar-accent: var(--nx-ivory);
+  --sidebar-accent-foreground: var(--nx-walnut);
+  --sidebar-border: var(--nx-surface-line);
+  --sidebar-ring: var(--nx-walnut);
 }
 
-/* No dark mode yet: not part of the design. Add a .dark block here if the owner wants one. */
+/* No dark mode: not part of the Stitch design. */
+
+@theme inline {
+  /* Fonts (loaded with next/font in src/app/layout.tsx) */
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-playfair), Georgia, serif;
+
+  /* NEXUS colours: bg-walnut, text-ink-body, border-field-line, ... */
+  --color-walnut: var(--nx-walnut);
+  --color-walnut-hover: var(--nx-walnut-hover);
+  --color-walnut-line: var(--nx-walnut-line);
+  --color-gold: var(--nx-gold);
+  --color-gold-ring: var(--nx-gold-ring);
+  --color-title: var(--nx-title);
+  --color-ink: var(--nx-ink);
+  --color-ink-label: var(--nx-ink-label);
+  --color-ink-body: var(--nx-ink-body);
+  --color-ink-meta: var(--nx-ink-meta);
+  --color-canvas: var(--nx-canvas);
+  --color-surface: var(--nx-surface);
+  --color-surface-line: var(--nx-surface-line);
+  --color-hairline: var(--nx-hairline);
+  --color-row-line: var(--nx-row-line);
+  --color-zebra: var(--nx-zebra);
+  --color-ivory: var(--nx-ivory);
+  --color-ivory-line: var(--nx-ivory-line);
+  --color-drawer: var(--nx-drawer);
+  --color-field: var(--nx-field);
+  --color-field-line: var(--nx-field-line);
+  --color-focus-halo: var(--nx-focus-halo);
+  --color-danger: var(--nx-danger);
+  --color-danger-soft: var(--nx-danger-soft);
+  --color-warn: var(--nx-warn);
+  --color-warn-soft: var(--nx-warn-soft);
+  --color-warn-line: var(--nx-warn-line);
+  --color-success: var(--nx-success);
+  --color-success-soft: var(--nx-success-soft);
+  --color-success-line: var(--nx-success-line);
+
+  --shadow-elevation-1: var(--nx-elevation-1);
+  --shadow-elevation-2: var(--nx-elevation-2);
+
+  /* shadcn/ui semantic colours */
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+
+  /* Radius: Stitch rule. Controls 8 px (rounded-lg), cards 12 px (rounded-xl). Pills only for chips. */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 24px;
+  --radius-4xl: 32px;
+}
+
+/* Stitch type scale: text-display-sm, text-body-md, ... (size, line height, tracking, weight). */
+@theme {
+  --text-display-lg: 2rem;
+  --text-display-lg--line-height: 2.5rem;
+  --text-display-lg--letter-spacing: -0.01em;
+  --text-display-lg--font-weight: 700;
+
+  --text-display-sm: 1.5rem;
+  --text-display-sm--line-height: 2rem;
+  --text-display-sm--letter-spacing: -0.005em;
+  --text-display-sm--font-weight: 600;
+
+  --text-headline-lg: 1.375rem;
+  --text-headline-lg--line-height: 1.75rem;
+  --text-headline-lg--font-weight: 600;
+
+  --text-headline-sm: 1rem;
+  --text-headline-sm--line-height: 1.5rem;
+  --text-headline-sm--letter-spacing: 0.01em;
+  --text-headline-sm--font-weight: 600;
+
+  --text-body-lg: 0.9375rem;
+  --text-body-lg--line-height: 1.375rem;
+
+  --text-body-md: 0.875rem;
+  --text-body-md--line-height: 1.25rem;
+
+  --text-body-sm: 0.75rem;
+  --text-body-sm--line-height: 1.125rem;
+
+  --text-label-lg: 0.8125rem;
+  --text-label-lg--line-height: 1.125rem;
+  --text-label-lg--letter-spacing: 0.02em;
+  --text-label-lg--font-weight: 600;
+
+  --text-label-sm: 0.6875rem;
+  --text-label-sm--line-height: 0.875rem;
+  --text-label-sm--letter-spacing: 0.04em;
+  --text-label-sm--font-weight: 600;
+
+  --text-numeric-metric: 1.25rem;
+  --text-numeric-metric--line-height: 1.625rem;
+  --text-numeric-metric--letter-spacing: -0.02em;
+  --text-numeric-metric--font-weight: 700;
+
+  /* Field text: 16 px so iOS Safari does not zoom on focus (D-017, all NEXUS forms). */
+  --text-field: 1rem;
+  --text-field--line-height: 1.5rem;
+}
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
-  body {
-    @apply bg-background text-foreground;
-    }
+  }
   html {
     @apply font-sans;
-    }
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  /* One focus ring for every link and button: 2 px walnut, 2 px offset (8.97:1 on white). */
+  a:focus-visible,
+  button:focus-visible,
+  [tabindex]:not([tabindex="-1"]):focus-visible {
+    outline: 2px solid var(--nx-walnut);
+    outline-offset: 2px;
+  }
+  /* Headings get focus from script only (tabindex=-1) so screen readers start there; not a control. */
+  [tabindex="-1"]:focus {
+    outline: none;
+  }
+  ::selection {
+    background-color: var(--nx-ivory-line);
+    color: var(--nx-ink);
+  }
+  input {
+    caret-color: var(--nx-walnut);
+  }
 }

@@ -7,7 +7,12 @@
     "build": "next build",
     "start": "next start -p 3100",
     "lint": "eslint",
-    "typecheck": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "db:start": "bash scripts/dev-db.sh start",
+    "db:stop": "bash scripts/dev-db.sh stop",
+    "db:status": "bash scripts/dev-db.sh status",
+    "db:migrate": "bash scripts/dev-db.sh migrate",
+    "db:reset": "bash scripts/dev-db.sh reset"
   },
   "packageManager": "pnpm@10.20.0",
   "dependencies": {
