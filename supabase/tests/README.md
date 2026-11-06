@@ -9,7 +9,7 @@ A `-c "set ..."` before `-f` does NOT work: each `-c`/`-f` item is separate and 
 
 ## How to run (local)
 1. Start the local stack (PI-CORE repo), so PI-CORE's migrations are applied. Or a throwaway `supabase/postgres` container with PI-CORE's 5 migrations applied.
-2. Apply both NEXUS migrations (see `../README.md`).
+2. Apply all three NEXUS migrations in file-name order (see `../README.md`).
 3. Run:
    ```bash
    PGOPTIONS='-c nexus.allow_destructive_tests=yes' \
@@ -19,10 +19,10 @@ A `-c "set ..."` before `-f` does NOT work: each `-c`/`-f` item is separate and 
 
 Assumes a fresh NEXUS install (exactly the 31 seeded rules and 31 seed log rows).
 
-**Status:** **225/225 passed on 2026-11-06** (includes the L12 / D-013 and hardening tests) in a throwaway `supabase/postgres:17.11.0.003` container after PI-CORE's 5 migrations and both NEXUS migrations. Expected total: 225 (the file uses `no_plan()`; update this number when adding tests). The W1 guard was checked by hand the same day: without the setting the run stops at line 35 with "local throwaway database only" and writes nothing. After the run: 0 test members left, 31 rules, 31 log rows, no `nexus_test` schema (rollback confirmed). Earlier version: 178/178 on 2026-11-05.
+**Status:** **244/244 passed on 2026-11-06** (adds 19 D-015 tests: 6 structural in section 1, 13 persona tests in section 7) in a throwaway `supabase/postgres:17.11.0.003` container after PI-CORE's 5 migrations and the 3 NEXUS migrations. Expected total: 244 (the file uses `no_plan()`; update this number when adding tests). The W1 guard was checked by hand the same day: without the setting the run stops at line 37 with "local throwaway database only" and writes nothing. After the run: 0 test members left, 31 rules, 31 log rows, no `nexus_test` schema, no decoy function left (rollback confirmed). Earlier versions: 225/225 on 2026-11-06 (before D-015), 178/178 on 2026-11-05.
 
 ## Persona map (spec section 9, with forced deviations)
-PI-CORE allows one holder per unique position, unit, and period, so: P-BEND = Bendahara Umum 1; P-BEND-SEK = Bendahara Umum 2 + Sekretaris Departemen of Departemen **Talenta**; P-ADMIN-BEND = P-BEND promoted to `admin` mid-test; P-SEKDEP2 = secretary of Pelayanan Khusus + Biro Kewirausahaan.
+PI-CORE allows one holder per unique position, unit, and period, so: P-BEND = Bendahara Umum 1; P-BEND-SEK = Bendahara Umum 2 + Sekretaris Departemen of Departemen **Talenta**; P-ADMIN-BEND = P-BEND promoted to `admin` mid-test; P-SEKDEP2 = secretary of Pelayanan Khusus + Biro Kewirausahaan. P-TEMPPW (auth-login spec) = P-PLAIN with `must_change_password = true` (section 7). PI-CORE's column default is `true`, so section 7 first sets every persona to `false`.
 
 ## Checklist per table / policy
 
@@ -66,14 +66,28 @@ PI-CORE allows one holder per unique position, unit, and period, so: P-BEND = Be
 | Every SECURITY DEFINER function has `search_path = ''` | D-010 test |
 | `current_member_id()` and `is_system_admin()` are SECURITY DEFINER and still return nothing for P-INACTIVE | hardening tests |
 | `list_positions()` / `list_org_units()` return nothing for inactive/unlinked users | L1 picker tests |
-| No function takes/returns email, phone, nim, nip, must_change_password; no body mentions them, `audit_log`, `org_settings`, `grants_admin`, or `private.` | AC-47, AC-49, AC-56 |
+| No function takes/returns email, phone, nim, nip, must_change_password; no body mentions email, phone, nim, nip, `audit_log`, `org_settings`, `grants_admin`, or `private.` | AC-47, AC-49, AC-56 |
+| `must_change_password` appears in exactly one function body, `nexus.my_password_change_pending()` (full signature); a decoy overload with a member id and a decoy with another name both make the check fail | L4 / D-015 whitelist |
+| `my_password_change_pending()`: no arguments, returns one scalar boolean, SECURITY INVOKER, empty `search_path`; EXECUTE for `authenticated` only (no PUBLIC, anon, service_role) | D-015 structure |
+
+### `nexus.my_password_change_pending()` (D-015, no table; reads PI-CORE `members` under PI-CORE RLS)
+| Who | Expected | Test |
+|---|---|---|
+| P-TEMPPW (active, flag true) | `true`; `my_context()` still returns a row (app-level gate only, documented limit) | AUTH-19, AUTH-23 |
+| Active member, flag false (P-SEKJEN) | `false` | D-015 |
+| PI-CORE admin (P-SUPER, can SELECT every member row) | only their OWN flag, never another member's | AUTH-22 |
+| P-INACTIVE / member deactivated mid-term, flag true | `false` (own row hidden by PI-CORE RLS; No access decides via `my_context()`) | D-015 |
+| P-UNLINKED | `false` (never null) | D-015 |
+| `authenticated` without `auth.uid()` | `false` | D-015 |
+| anon, service_role | permission denied (42501) | D-015 |
+| Flag flips in PI-CORE (changed / new temporary password) | next call in the same session shows the new value, for that caller only | AUTH-21, EC7 |
 
 ## AC coverage
-**Automated (pgTAP):** AC-01, 02, 03, 04, 05, 06, 07, 08 (rights only), 09 (rights), 10, 11, 12, 13 (via 52/53), 14 (rights), 16, 17, 18, 19 (rights), 20, 21, 22, 23, 24, 25 (via 53), 26, 28, 29, 32, 33, 35, 36, 38, 39, 40 (analogue), 43, 44, 46, 47 (structural), 49 (structural), 50, 52, 53, 54, 55 (with `minutes.view`; a `finance.view` baseline rule is impossible since L12), 56 (structural), 57 (via a `bph` role rule; a baseline approve rule is impossible since L12), 59, 60, 61, 62, 63 (API side), 64, 65, 66, 67, 68, 69; plus R1, R10, R11, R15, B28, L5, L6, L11, **L12**.
+**Automated (pgTAP):** AC-01, 02, 03, 04, 05, 06, 07, 08 (rights only), 09 (rights), 10, 11, 12, 13 (via 52/53), 14 (rights), 16, 17, 18, 19 (rights), 20, 21, 22, 23, 24, 25 (via 53), 26, 28, 29, 32, 33, 35, 36, 38, 39, 40 (analogue), 43, 44, 46, 47 (structural), 49 (structural), 50, 52, 53, 54, 55 (with `minutes.view`; a `finance.view` baseline rule is impossible since L12), 56 (structural), 57 (via a `bph` role rule; a baseline approve rule is impossible since L12), 59, 60, 61, 62, 63 (API side), 64, 65, 66, 67, 68, 69; plus R1, R10, R11, R15, B28, L5, L6, L11, **L12**; auth-login AUTH-19 (DB side), AUTH-21 (DB side), AUTH-22, AUTH-23 (documents the limit), EC7 (DB side).
 
 **Need module tables first (later migrations):** AC-15, 41, 42, 58 (closed-period edits, L7), 27 and 30 (own requests, L9), 37 (assignment removal: same engine, add when convenient), 45 (records of deactivated members), 48 (signed URLs), 51 (no delete on module tables).
 
-**Manual / app level:** AC-31 (Dashboard cards), AC-34 (no session redirect; anon is already denied in DB), AC-63 (UI warning text), AC-08/AC-56 export file contents, UI parts of AC-19 and AC-61, the W1 guard (see above).
+**Manual / app level:** AUTH-19/20/21 screens and the fail-closed "gangguan" state when the pending check errors (AR10), AC-31 (Dashboard cards), AC-34 (no session redirect; anon is already denied in DB), AC-63 (UI warning text), AC-08/AC-56 export file contents, UI parts of AC-19 and AC-61, the W1 guard (see above).
 
 ## Manual check on the hosted project after applying (read-only)
 1. As the owner in the SQL editor: `select count(*) from nexus.access_rules;` = 31 and `select count(*) from nexus.access_rule_log where action = 'seed';` = 31.
@@ -81,3 +95,4 @@ PI-CORE allows one holder per unique position, unit, and period, so: P-BEND = Be
 3. From the app with a regular member token: `.schema('nexus').rpc('my_permissions')` returns only `inventory.view`.
 4. With a regular member token: `.schema('nexus').from('access_rules').select()` returns `[]`.
 5. Without a session (anon key only): any `nexus` call fails (permission denied / schema not usable).
+6. With a regular member token: `.schema('nexus').rpc('my_password_change_pending')` returns `false` (or `true` right after an admin issued a temporary password); it accepts no arguments.

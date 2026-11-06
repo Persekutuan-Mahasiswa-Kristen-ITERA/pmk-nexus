@@ -6,15 +6,16 @@ NEXUS owns schema `nexus` only. PI-CORE owns `public` and `private` in the SAME 
 |---|---|
 | `migrations/20261105100000_nexus_schema_and_access.sql` | Schema `nexus`, permission catalog, access rules, change log, permission engine, admin RPCs, RLS |
 | `migrations/20261105100100_nexus_default_access_rules.sql` | Seeds default rules D01-D31 (looks PI-CORE positions/units up by name ONCE; raises if any name is missing) |
+| `migrations/20261106100000_nexus_password_change_pending.sql` | D-015: `nexus.my_password_change_pending()`, the caller-only temporary-password check (the single L4 exception) |
 | `tests/nexus_access_control.test.sql` | pgTAP tests (local DB only; everything rolled back) |
 | `tests/README.md` | RLS / permission test checklist mapped to the spec's personas and ACs |
 
-Spec: `docs/modules/access-control.md` (rev. 2, locked rules L1-L12). Decisions: D-007 to D-013 in `docs/DECISIONS.md`.
+Spec: `docs/modules/access-control.md` (rev. 2, locked rules L1-L12) and `docs/modules/auth-login.md` (temporary-password gate). Decisions: D-007 to D-013 and D-015 in `docs/DECISIONS.md`.
 
 ## 1. Project settings (read before applying)
 
 1. **Sign-up disabled** on the hosted project (open question B12). NEXUS relies on "every Auth user is created by PI-CORE".
-2. **Exposed schemas: do this only AFTER both migrations are applied** (section 2, step 7). `supabase-js` can only call `.schema('nexus')...` if `nexus` is in Dashboard > Project Settings > Data API > "Exposed schemas". That field REPLACES the whole list (it is shared with PI-CORE): copy the current list first, add only `nexus`, save, then smoke-test one PI-CORE API call (e.g. PI-CORE login + its member page) to confirm PI-CORE still works. Tell the PI-CORE maintainer. Locally the list lives in `[api] schemas` of the `config.toml` that started the stack (PI-CORE's file, which NEXUS must not edit).
+2. **Exposed schemas: do this only AFTER all NEXUS migrations are applied** (section 2, step 8). `supabase-js` can only call `.schema('nexus')...` if `nexus` is in Dashboard > Project Settings > Data API > "Exposed schemas". That field REPLACES the whole list (it is shared with PI-CORE): copy the current list first, add only `nexus`, save, then smoke-test one PI-CORE API call (e.g. PI-CORE login + its member page) to confirm PI-CORE still works. Tell the PI-CORE maintainer. Locally the list lives in `[api] schemas` of the `config.toml` that started the stack (PI-CORE's file, which NEXUS must not edit).
 
 ## 2. How to apply migrations safely (shared database)
 
@@ -47,13 +48,14 @@ Both repos share one database and therefore one migration history table, `supaba
    ```
    If any row is not 1, stop and ask the owner (open question A3) before running M2.
 5. **Apply M2** (`20261105100100_nexus_default_access_rules.sql`) the same way (`psql ... -1 -v ON_ERROR_STOP=1 -f ...`). Right after: `select count(*) from nexus.access_rules;` = 31 and `select count(*) from nexus.access_rule_log where action = 'seed';` = 31. If it stops with "NEXUS seed: expected exactly 1 ...", nothing was inserted; the engine works with zero rules (baseline-only, locked rules still apply). Fix the name with the owner, then run M2 again.
-6. Run the read-only checks in `tests/README.md` ("Manual check on the hosted project").
-7. Only now: add `nexus` to "Exposed schemas" (section 1, item 2) and smoke-test PI-CORE.
-8. Record what was applied in `docs/ops/` (file name, date, who). NEXUS does NOT write to `supabase_migrations.schema_migrations`.
-9. Undo (only with the owner's explicit OK): nothing in PI-CORE depends on `nexus`, so the schema can be removed as a whole. This is destructive (rules and log are lost); restore from the backup instead whenever possible.
+6. **Apply M3** (`20261106100000_nexus_password_change_pending.sql`) the same way (`psql ... -1 -v ON_ERROR_STOP=1 -f ...`). It adds one function only and needs M1 (not M2). Right after, as the owner (no user session, so the answer is `false`): `select nexus.my_password_change_pending();` = `false` and `select has_function_privilege('anon', 'nexus.my_password_change_pending()', 'execute');` = `false`. Running M3 twice stops with "function ... already exists" and changes nothing (one transaction).
+7. Run the read-only checks in `tests/README.md` ("Manual check on the hosted project").
+8. Only now: add `nexus` to "Exposed schemas" (section 1, item 2) and smoke-test PI-CORE.
+9. Record what was applied in `docs/ops/` (file name, date, who). NEXUS does NOT write to `supabase_migrations.schema_migrations`.
+10. Undo (only with the owner's explicit OK): nothing in PI-CORE depends on `nexus`, so the schema can be removed as a whole. This is destructive (rules and log are lost); restore from the backup instead whenever possible.
 
 ### Local development
-Start the local stack from the PI-CORE repo (it holds PI-CORE's migrations), then apply the NEXUS files with psql to `postgresql://postgres:postgres@127.0.0.1:54322/postgres`. A PI-CORE `supabase db reset` locally wipes NEXUS objects too; just re-apply the two files.
+Start the local stack from the PI-CORE repo (it holds PI-CORE's migrations), then apply the NEXUS files with psql to `postgresql://postgres:postgres@127.0.0.1:54322/postgres`. A PI-CORE `supabase db reset` locally wipes NEXUS objects too; just re-apply the NEXUS files in file-name order.
 
 ## 3. API for the backend (`src/lib/picore/` and `src/lib/auth/` only)
 
@@ -75,8 +77,11 @@ All functions live in `nexus`, are callable by `authenticated` only (never `anon
 | `add_access_rule(...)`, `disable_access_rule(id, note)`, `enable_access_rule(id, note, confirm)`, `restore_default_access_rules(note, confirm)` | definer, admin | The only write path to rules. Each change writes one log row in the same transaction |
 | `list_rule_roles()` | definer, admin | Role picker (role_key, name, description, is_targetable) |
 | `list_positions()`, `list_org_units()` | invoker | Pickers; empty unless the caller is an active member |
+| `my_password_change_pending()` | invoker | D-015. One non-null boolean about the CALLER only, no parameters. `true` = active linked member whose PI-CORE password is still temporary. `false` = no pending change; also for inactive and unlinked users (their `my_context()` is 0 rows, which decides first). anon/service_role: permission denied |
 
 Tables readable directly: `nexus.permissions`, `nexus.permission_scopes` (any active member), `nexus.access_rules` (System Admin), `nexus.access_rule_log` (System Admin or `access_rules.view_log`). No client may write any of them.
+
+**Temporary-password gate (D-015, auth-login F6 and AR10).** The session function in `src/lib/auth/` calls `my_context()` first, then `my_password_change_pending()`, both with the user's session, once per request. Precedence: anonymous > error > no-access > password-pending > member. If the pending call errors or returns anything other than exactly `true`/`false`, the state is `error` ("gangguan": no data, no sign-out); an error is never read as `false`, and `false` never grants access by itself. Known limit: the gate is app-level only (same as PI-CORE); RLS does not stop a direct API call made with a temporary password.
 
 Errors from the RPCs carry a stable `hint` (e.g. `not_system_admin`, `baseline_not_allowed`, `note_required`, `note_too_long`, `scope_not_allowed`, `duplicate_rule`, `sensitive_confirmation_required`, `position_missing`) for the backend to map to Indonesian messages. Error codes: `42501` not allowed, `22023` invalid input (incl. L12 and note errors), `23505` duplicate, `P0001` needs confirmation / not seeded, `P0002` not found.
 

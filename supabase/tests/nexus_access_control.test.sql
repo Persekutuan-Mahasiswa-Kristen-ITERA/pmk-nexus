@@ -1,11 +1,12 @@
--- pgTAP tests for the NEXUS access-control engine (migrations 20261105100000 + 20261105100100).
+-- pgTAP tests for the NEXUS access-control engine (migrations 20261105100000 + 20261105100100) and the
+-- D-015 temporary-password check (20261106100000, section 7 plus the L4 whitelist tests in section 1).
 --
 -- LOCAL / THROWAWAY DATABASE ONLY. Never run against the hosted (shared) project.
 -- It WRITES to PI-CORE tables (auth.users, public.members, public.periods, public.assignments) inside
 -- a transaction that ends with ROLLBACK. To make an accidental run harmless, the file refuses to do
 -- anything unless the session sets nexus.allow_destructive_tests = 'yes' (see tests/README.md):
 --   PGOPTIONS='-c nexus.allow_destructive_tests=yes' psql "<local url>" -f supabase/tests/nexus_access_control.test.sql
--- Preconditions: local Supabase with the PI-CORE migrations applied, then both NEXUS migrations.
+-- Preconditions: local Supabase with the PI-CORE migrations applied, then all three NEXUS migrations.
 -- Everything runs inside ONE transaction that ends with ROLLBACK: the test personas, periods, and
 -- assignments written into PI-CORE tables, and the helper schema `nexus_test`, never persist.
 --
@@ -20,6 +21,7 @@
 --   1 P-ADMIN  2 P-SUPER  3 P-KETUM  4 P-SEKJEN  5 P-BEND  6 P-SEKDEP  7 P-KADEP-OPS  8 P-STAFF-LOG
 --   9 P-STAFF-AKO  10 P-STAFF-PUB  11 P-PLAIN  12 P-BEND-SEK  13 P-OPS-BPH  14 P-OLD  15 P-INACTIVE
 --   16 P-LECT  17 P-UNLINKED (auth user, no member)  18 P-SEKDEP2
+--   P-TEMPPW (auth-login spec) = P-PLAIN (11) with must_change_password = true in section 7.
 
 \set ON_ERROR_STOP on
 begin;
@@ -180,8 +182,47 @@ select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.
 
 select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
            where n.nspname = 'nexus'
-             and p.prosrc ~* '(\m(email|phone|nim|nip|must_change_password|audit_log|org_settings|grants_admin)\M|private\.)'), 0,
+             and p.prosrc ~* '(\m(email|phone|nim|nip|audit_log|org_settings|grants_admin)\M|private\.)'), 0,
   'AC-47/AC-49/L4: no nexus function body reads PII, audit_log, org_settings, grants_admin, or private.*');
+
+-- L4 / D-015: must_change_password may appear in EXACTLY one function body, identified by its full
+-- signature (an overload with a parameter would have a different signature and is caught).
+create function nexus_test.mcp_readers() returns text[] language sql stable
+as $$
+  select coalesce(array_agg(p.oid::regprocedure::text order by p.oid::regprocedure::text), '{}')
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'nexus' and p.prosrc ~* '\mmust_change_password\M'
+$$;
+select is(nexus_test.mcp_readers(), array['nexus.my_password_change_pending()'],
+  'L4/D-015: only nexus.my_password_change_pending() reads must_change_password');
+
+-- The whitelist must still catch any other function. Decoy = the most dangerous shape: an overload of
+-- the whitelisted name that takes a member id. Created and dropped inside this rolled-back transaction.
+create function nexus.my_password_change_pending(p_member_id uuid) returns boolean language sql stable
+as $$ select m.must_change_password from public.members m where m.id = p_member_id $$;
+select isnt(nexus_test.mcp_readers(), array['nexus.my_password_change_pending()'],
+  'L4/D-015: the whitelist check fails for any other function (decoy overload with a member id)');
+drop function nexus.my_password_change_pending(uuid);
+create function nexus.zz_decoy_flag() returns boolean language sql stable
+as $$ select bool_or(must_change_password) from public.members $$;
+select isnt(nexus_test.mcp_readers(), array['nexus.my_password_change_pending()'],
+  'L4/D-015: the whitelist check fails for a differently named function');
+drop function nexus.zz_decoy_flag();
+select is(nexus_test.mcp_readers(), array['nexus.my_password_change_pending()'],
+  'L4/D-015: decoys removed again (later structural tests see the real schema)');
+
+-- Shape of the one exception: no parameters, one scalar boolean, INVOKER (PI-CORE RLS applies),
+-- empty search_path, EXECUTE for authenticated only (no PUBLIC entry in the ACL).
+select ok((select p.pronargs = 0 and p.prorettype = 'boolean'::regtype and not p.proretset
+                  and not p.prosecdef and coalesce(p.proconfig @> array['search_path=""'], false)
+           from pg_proc p where p.oid = 'nexus.my_password_change_pending()'::regprocedure),
+  'D-015: my_password_change_pending() takes no argument, returns one boolean, INVOKER, empty search_path');
+select ok(has_function_privilege('authenticated', 'nexus.my_password_change_pending()', 'execute')
+          and not has_function_privilege('anon', 'nexus.my_password_change_pending()', 'execute')
+          and not has_function_privilege('service_role', 'nexus.my_password_change_pending()', 'execute')
+          and not exists (select 1 from pg_proc p, aclexplode(p.proacl) a
+                          where p.oid = 'nexus.my_password_change_pending()'::regprocedure and a.grantee = 0),
+  'D-015: only authenticated may execute my_password_change_pending() (not anon, service_role, PUBLIC)');
 
 select is((select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace
            where n.nspname = 'nexus' and c.relkind in ('r', 'p')
@@ -753,6 +794,65 @@ select is((select count(*)::int from nexus.access_rule_log where action = 'resto
            and actor_member_id = nexus_test.mid(2) and note = 'test restore'), 31,
   'B28: each restored rule is logged with actor and note');
 select ok(nexus.has_permission('inventory.view'), 'restored baseline works again');
+
+-- =============================================================================================
+-- 7. Temporary-password gate (D-015, docs/modules/auth-login.md F6, AUTH-19..AUTH-23)
+--    PI-CORE's column default is must_change_password = true, so every fixture member starts "true".
+--    Reset all personas to false first, then P-TEMPPW = P-PLAIN (11) gets the flag.
+--    State here: P-KETUM (3) deactivated in section 5, P-INACTIVE (15) inactive, P-SUPER (2) super_admin.
+-- =============================================================================================
+reset role; select nexus_test.logout();
+update public.members set must_change_password = false where id::text like '20000000-%';
+update public.members set must_change_password = true where id in (nexus_test.mid(11), nexus_test.mid(15), nexus_test.mid(3));
+
+reset role; select nexus_test.login_as(11);
+select is(nexus.my_password_change_pending(), true, 'AUTH-19: P-TEMPPW (flag true) gets true');
+select isnt_empty('select * from nexus.my_context()',
+  'AUTH-23: P-TEMPPW still has a context; the gate is app-level only (documented D-015 limit)');
+
+reset role; select nexus_test.login_as(4);
+select is(nexus.my_password_change_pending(), false, 'D-015: normal active member (P-SEKJEN) gets false');
+
+-- PI-CORE admins may SELECT every member row (members_select), yet the answer is still only their own.
+reset role; select nexus_test.login_as(2);
+select is(nexus.my_password_change_pending(), false,
+  'AUTH-22: P-SUPER (can read all rows in PI-CORE) gets only their own false, not P-TEMPPW''s true');
+
+reset role; select nexus_test.login_as(15);
+select is(nexus.my_password_change_pending(), false, 'D-015: P-INACTIVE with flag true gets false (row hidden; No access decides)');
+reset role; select nexus_test.login_as(3);
+select is(nexus.my_password_change_pending(), false, 'D-015: member deactivated mid-term with flag true gets false');
+
+reset role; select nexus_test.login_as(17);
+select is(nexus.my_password_change_pending(), false, 'D-015: P-UNLINKED gets false (never null)');
+
+-- authenticated role but no JWT subject (auth.uid() is null)
+reset role; select nexus_test.logout();
+set local role authenticated;
+select is(nexus.my_password_change_pending(), false, 'D-015: authenticated without auth.uid() gets false');
+
+reset role; select nexus_test.logout();
+set local role anon;
+select throws_ok($$select nexus.my_password_change_pending()$$, '42501', null,
+  'D-015: anon cannot call my_password_change_pending() (permission denied)');
+reset role;
+set local role service_role;
+select throws_ok($$select nexus.my_password_change_pending()$$, '42501', null,
+  'D-015: service_role cannot call my_password_change_pending() (permission denied)');
+reset role;
+
+-- Flip the flags: the caller always sees exactly their own value, so nobody can learn another's flag.
+update public.members set must_change_password = false where id = nexus_test.mid(11);
+update public.members set must_change_password = true where id = nexus_test.mid(2);
+select nexus_test.login_as(11);
+select is(nexus.my_password_change_pending(), false,
+  'AUTH-21: after the change in PI-CORE, P-TEMPPW gets false on the next call (same session)');
+reset role; select nexus_test.login_as(2);
+select is(nexus.my_password_change_pending(), true,
+  'EC7: an admin-issued temporary password shows up for that caller only (P-SUPER now true)');
+reset role; select nexus_test.login_as(4);
+select is(nexus.my_password_change_pending(), false, 'AUTH-22: ... while P-SEKJEN still gets their own false');
+reset role; select nexus_test.logout();
 
 select * from finish();
 rollback;

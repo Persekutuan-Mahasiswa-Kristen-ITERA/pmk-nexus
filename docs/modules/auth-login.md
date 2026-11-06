@@ -45,7 +45,7 @@ Repo: `/home/fycode/Documents/pi-core-v2` (D-005 [ASSUMPTION] that this is the s
 | P16 | Login page also shows a disabled "Masuk dengan Google / Segera hadir" row. | `src/app/login/page.tsx` |
 
 **From NEXUS's own database (already written, not applied yet):**
-- `nexus.my_context()` is SECURITY INVOKER and reads `public.members` under PI-CORE's RLS. **Zero rows = No access** (no session, not linked, or inactive). It never reads `must_change_password` (checklist item 6 in `supabase/README.md`, locked rule L4). Source: `supabase/migrations/20261105100000_nexus_schema_and_access.sql`.
+- `nexus.my_context()` is SECURITY INVOKER and reads `public.members` under PI-CORE's RLS. **Zero rows = No access** (no session, not linked, or inactive). It never reads `must_change_password` (checklist item 6 in `supabase/README.md`, locked rule L4); the flag is read only by the dedicated caller-only function `nexus.my_password_change_pending()` (D-015, migration `20261106100000_nexus_password_change_pending.sql`), which returns true only for an active linked member with a temporary password, else false. Source: `supabase/migrations/20261105100000_nexus_schema_and_access.sql`.
 - `nexus.my_permissions()` and the RLS helpers (`current_member_id()`, `is_system_admin()`) also require an active member, so a valid token of a deactivated member returns nothing from NEXUS tables either.
 - The functions can be called only by the signed-in user's own session (`authenticated`), never by `anon` or `service_role`.
 

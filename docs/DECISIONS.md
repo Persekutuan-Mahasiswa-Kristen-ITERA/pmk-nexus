@@ -124,6 +124,7 @@ Status tags: **[DECIDED]** final, **[ASSUMPTION]** needs owner confirmation.
 - **Rule change:** locked rule L4 (`docs/modules/access-control.md`) and `supabase/README.md` checklist item 6 now allow this single caller-only exception. The structural pgTAP test must whitelist exactly that function.
 - **Known limit:** app-level gate only (same as PI-CORE); a direct API call with the temporary password is not blocked by RLS. Option (c), a database-level block, was rejected for Phase 1 as heavier than PI-CORE itself.
 - **Answers:** `OPEN_QUESTIONS.md` E1 (option b).
+- **Implemented:** `nexus.my_password_change_pending()` (SECURITY INVOKER, no parameters) in `supabase/migrations/20261106100000_nexus_password_change_pending.sql`. Relies on PI-CORE's own grant and RLS (caller reads only their own active row). Inactive/unlinked return false so the combined no-access message (D-016) wins. App gate order: anonymous > error > no-access > password-pending > member; on error the app shows "Terjadi gangguan" (fail closed). pgTAP 244/244 passed on 2026-11-06 (re-run by the tech lead). Not yet applied to the hosted project.
 
 ## D-016 Login details follow PI-CORE [DECIDED]
 - **Date:** 2026-11-06
