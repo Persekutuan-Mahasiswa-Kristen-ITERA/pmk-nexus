@@ -86,9 +86,14 @@ test.describe("AUTH-02: no Server Action or route handler answers an anonymous c
   test("no API route exists for auth, signup, reset, or members", async ({ request }) => {
     for (const path of ["/api", "/api/auth", "/api/signup", "/api/members", "/auth/callback", "/signup", "/register", "/reset-password", "/forgot-password", "/change-password", "/invite"]) {
       const res = await request.get(path, { maxRedirects: 0 });
-      // Anonymous requests are redirected to /login by the proxy; none returns content of its own.
-      expect([307, 308, 404], `${path} -> ${res.status()}`).toContain(res.status());
+      // Anonymous page requests are redirected to /login; /api/* gets a bare 401 from the proxy
+      // (app-layer review LOW 5). None returns content of its own.
+      expect([307, 308, 401, 404], `${path} -> ${res.status()}`).toContain(res.status());
       if (res.status() === 307) expect(res.headers().location).toMatch(/\/login(\?|$)/);
+      if (res.status() === 401) {
+        expect(path.startsWith("/api")).toBe(true);
+        expect(await res.json()).toEqual({ error: { code: "unauthenticated" } });
+      }
     }
   });
 

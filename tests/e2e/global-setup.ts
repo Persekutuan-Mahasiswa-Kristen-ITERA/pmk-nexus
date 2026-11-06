@@ -11,6 +11,16 @@ export const CANONICAL_RESET_SQL = `
   update auth.users set banned_until = null where email like '%@nexus.test';
   update public.periods set is_active = false where is_active;
   update public.periods set is_active = true where label = '2026/2027';
+  -- Member Data specs: remove what a test may have left behind (temporary members and the temporary previous-period
+  -- officer) and give the Member Data functions their grants back (the "gangguan" test revokes one for a moment).
+  delete from public.assignments where member_id in (select id from public.members where email like 'qa-tmp-%@nexus.test');
+  delete from public.assignments where member_id = (select id from public.members where email = 'member.regular@nexus.test')
+    and period_id = (select id from public.periods where label = '2025/2026');
+  delete from public.members where email like 'qa-tmp-%@nexus.test';
+  alter table nexus.member_data_export_logs drop constraint if exists qa_block_log_write;
+  grant execute on function nexus.member_data_list(text, uuid, text, integer, integer),
+    nexus.member_data_unit_options(), nexus.member_data_active_count(), nexus.member_data_export(text, text, uuid, text),
+    nexus.member_data_export_log_list(integer, integer) to authenticated;
 `;
 
 export default async function globalSetup() {
