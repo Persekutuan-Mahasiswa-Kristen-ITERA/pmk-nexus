@@ -1,0 +1,120 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    /* PMK brand colors, usable as bg-pmk-gold, text-pmk-brown, etc. */
+    --color-pmk-gold: var(--pmk-gold);
+    --color-pmk-gold-light: var(--pmk-gold-light);
+    --color-pmk-brown: var(--pmk-brown);
+    --color-pmk-cream: var(--pmk-cream);
+    --font-heading: var(--font-sans);
+    --font-sans: ui-sans-serif, system-ui, sans-serif;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/*
+ * THEME TOKENS: the one place where colors and radius live.
+ * Change a value here and the whole app follows. Do not hard-code colors in components.
+ *
+ * PLACEHOLDER PALETTE: these four hex values are APPROXIMATE, taken from the context
+ * document. They are NOT confirmed. Pending owner answers (docs/OPEN_QUESTIONS.md A5, C1, C2)
+ * with the exact Figma values.
+ *
+ * TODO(fonts): no font is chosen yet. --font-sans above is the system font stack.
+ * Set the real font after the owner confirms the Figma fonts.
+ */
+:root {
+    /* Brand palette (placeholders) */
+    --pmk-gold: #C9A227;        /* dark gold */
+    --pmk-gold-light: #E8C766;  /* light gold */
+    --pmk-brown: #5A3E1B;       /* dark brown (header) */
+    --pmk-cream: #F5F3EA;       /* cream (page background) */
+
+    /* shadcn/ui semantic tokens, mapped to the brand palette */
+    --background: var(--pmk-cream);
+    --foreground: var(--pmk-brown);
+    --card: #FFFFFF;
+    --card-foreground: var(--pmk-brown);
+    --popover: #FFFFFF;
+    --popover-foreground: var(--pmk-brown);
+    --primary: var(--pmk-brown);
+    --primary-foreground: var(--pmk-cream);
+    --secondary: var(--pmk-gold-light);
+    --secondary-foreground: var(--pmk-brown);
+    --muted: var(--pmk-cream);
+    --muted-foreground: oklch(0.45 0.04 70);
+    --accent: var(--pmk-gold-light);
+    --accent-foreground: var(--pmk-brown);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.88 0.02 90);
+    --input: oklch(0.88 0.02 90);
+    --ring: var(--pmk-gold);
+    --chart-1: var(--pmk-gold);
+    --chart-2: var(--pmk-gold-light);
+    --chart-3: var(--pmk-brown);
+    --chart-4: oklch(0.556 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --radius: 0.75rem;
+    --sidebar: var(--pmk-cream);
+    --sidebar-foreground: var(--pmk-brown);
+    --sidebar-primary: var(--pmk-brown);
+    --sidebar-primary-foreground: var(--pmk-cream);
+    --sidebar-accent: var(--pmk-gold-light);
+    --sidebar-accent-foreground: var(--pmk-brown);
+    --sidebar-border: oklch(0.88 0.02 90);
+    --sidebar-ring: var(--pmk-gold);
+}
+
+/* No dark mode yet: not part of the design. Add a .dark block here if the owner wants one. */
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+  html {
+    @apply font-sans;
+    }
+}
