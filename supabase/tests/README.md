@@ -8,12 +8,12 @@ The file refuses to run unless the session sets `nexus.allow_destructive_tests =
 A `-c "set ..."` before `-f` does NOT work: each `-c`/`-f` item is separate and `set` would be undone by the file's own transaction handling. Pass the setting as a connection option instead.
 
 ## How to run (local)
-1. Start the local stack (PI-CORE repo), so PI-CORE's migrations are applied. Or a throwaway `supabase/postgres` container with PI-CORE's 5 migrations applied.
+1. Use a THROWAWAY `supabase/postgres:17.11.0.003` container (recommended; this is how every recorded run was done): start it on a free port (e.g. 54399), apply PI-CORE's 5 migrations from the PI-CORE repo, then all NEXUS migrations, then `create extension if not exists pgtap with schema extensions`. Do not use the NEXUS dev stack (`pnpm db:start`, port 55432): its seeded test accounts break this file's "fresh install" assumptions. Never use PI-CORE's stack (54322).
 2. Apply all three NEXUS migrations in file-name order (see `../README.md`).
 3. Run:
    ```bash
    PGOPTIONS='-c nexus.allow_destructive_tests=yes' \
-     psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/tests/nexus_access_control.test.sql
+     psql "postgresql://postgres:postgres@127.0.0.1:54399/postgres" -f supabase/tests/nexus_access_control.test.sql
    ```
    Any line starting with `not ok` is a failure. (`pg_prove` also works with the same `PGOPTIONS`.)
 

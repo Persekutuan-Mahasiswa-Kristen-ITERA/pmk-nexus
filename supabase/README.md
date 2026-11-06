@@ -55,7 +55,7 @@ Both repos share one database and therefore one migration history table, `supaba
 10. Undo (only with the owner's explicit OK): nothing in PI-CORE depends on `nexus`, so the schema can be removed as a whole. This is destructive (rules and log are lost); restore from the backup instead whenever possible.
 
 ### Local development
-Start the local stack from the PI-CORE repo (it holds PI-CORE's migrations), then apply the NEXUS files with psql to `postgresql://postgres:postgres@127.0.0.1:54322/postgres`. A PI-CORE `supabase db reset` locally wipes NEXUS objects too; just re-apply the NEXUS files in file-name order.
+NEXUS has its OWN local stack (D-018): `pnpm db:start` (or `bash scripts/dev-db.sh start`). It applies PI-CORE's migrations read-only from the PI-CORE repo, then the NEXUS migrations, then the local-only test accounts. Database: `postgresql://postgres:postgres@127.0.0.1:55432/postgres`, API `http://127.0.0.1:55431`. Do not apply NEXUS files to PI-CORE's local stack (54322): its config does not expose `nexus`. Full guide: `docs/ops/local-setup.md`.
 
 ## 3. API for the backend (`src/lib/picore/` and `src/lib/auth/` only)
 
@@ -81,7 +81,7 @@ All functions live in `nexus`, are callable by `authenticated` only (never `anon
 
 Tables readable directly: `nexus.permissions`, `nexus.permission_scopes` (any active member), `nexus.access_rules` (System Admin), `nexus.access_rule_log` (System Admin or `access_rules.view_log`). No client may write any of them.
 
-**Temporary-password gate (D-015, auth-login F6 and AR10).** The session function in `src/lib/auth/` calls `my_context()` first, then `my_password_change_pending()`, both with the user's session, once per request. Precedence: anonymous > error > no-access > password-pending > member. If the pending call errors or returns anything other than exactly `true`/`false`, the state is `error` ("gangguan": no data, no sign-out); an error is never read as `false`, and `false` never grants access by itself. Known limit: the gate is app-level only (same as PI-CORE); RLS does not stop a direct API call made with a temporary password.
+**Temporary-password gate (D-015, auth-login F6 and AR10).** The session function in `src/lib/auth/` calls `my_context()` and `my_password_change_pending()` in parallel, both with the user's session, once per request, and then applies the precedence below to the two results (the order of the calls does not matter). Precedence: anonymous > error > no-access > password-pending > member. If the pending call errors or returns anything other than exactly `true`/`false`, the state is `error` ("gangguan": no data, no sign-out); an error is never read as `false`, and `false` never grants access by itself. Known limit: the gate is app-level only (same as PI-CORE); RLS does not stop a direct API call made with a temporary password.
 
 Errors from the RPCs carry a stable `hint` (e.g. `not_system_admin`, `baseline_not_allowed`, `note_required`, `note_too_long`, `scope_not_allowed`, `duplicate_rule`, `sensitive_confirmation_required`, `position_missing`) for the backend to map to Indonesian messages. Error codes: `42501` not allowed, `22023` invalid input (incl. L12 and note errors), `23505` duplicate, `P0001` needs confirmation / not seeded, `P0002` not found.
 
