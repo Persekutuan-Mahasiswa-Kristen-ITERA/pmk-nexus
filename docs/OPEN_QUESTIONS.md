@@ -65,7 +65,7 @@ Details in `docs/design/stitch/comparison.md`.
 | C10 | Dashboard "Surat Menyurat" card (not in context doc): keep? | [UNKNOWN] | P2 | |
 | C11 | Export: Stitch shows mostly PDF; context requires Excel, CSV, PDF. Keep all three? | [ASSUMPTION] keep all three | P2 | |
 | C12 | Real PMK logo file (SVG/PNG) for the header | [UNKNOWN] | P1 (UI) | Stitch uses placeholders. |
-| C13 | Login screen: reuse PI-CORE's "Masuk PMK ITERA" design? | [UNKNOWN] | P1 | One account for all apps. |
+| C13 | Login screen: reuse PI-CORE's "Masuk PMK ITERA" design? | **[ANSWERED]** 2026-11-06: reuse structure and wording, Stitch look (D-017) | - | One account for all apps. |
 
 ## B-bis. Effect of D-011 (configurable access)
 

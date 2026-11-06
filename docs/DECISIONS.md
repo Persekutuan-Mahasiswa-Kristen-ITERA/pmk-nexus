@@ -134,3 +134,13 @@ Status tags: **[DECIDED]** final, **[ASSUMPTION]** needs owner confirmation.
   - E4: deactivated and unlinked accounts get one combined message: "Akunmu belum bisa dipakai di NEXUS. Hubungi admin PMK ITERA." Access-control E11 and AC-33 reworded.
   - E5: login screen in Indonesian only.
 - **Why:** Same behaviour as PI-CORE; least to maintain at handover; the combined message reveals nothing about account status.
+
+## D-017 Login screen design approved [DECIDED]
+- **Date:** 2026-11-06
+- **What:** `docs/design/login.md` approved: login, no-access, password-pending, loading-after-login, and generic-error screens in the Stitch style. Owner accepted:
+  - Q1 / C13: reuse PI-CORE's login STRUCTURE and WORDING (same account, same words), with the NEXUS Stitch look. Not copied: PI-CORE's palette, curved panel, glow, breathing logo, disabled Google row, English tagline, language switch.
+  - Q2: field borders use Stitch outline `#81756A` (Stitch `#D8CCBA` is 1.53:1, fails the 3:1 non-text rule) and field text is 16 px (prevents iOS zoom), on ALL NEXUS forms.
+  - Q3: "Buka PI-CORE" opens in a new tab, so "Sudah ganti? Muat ulang" stays open. Spec F6 updated.
+  - New strings in design section 2.8 ("Memeriksa akunmu...", "Kata sandimu belum berubah. Ganti di PI-CORE dulu, lalu coba lagi.", error body second sentence, "Masih terjadi gangguan." for screen readers).
+- **Not approved (not asked):** showing the signed-in email on the No-access screen. Not built.
+- **Still open:** real logo file (C12); the design uses an empty 28 px crest slot. PI-CORE has `public/brand/pmk-logo-192.png`; not reused until the owner decides.

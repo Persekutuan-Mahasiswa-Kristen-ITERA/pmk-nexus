@@ -1,6 +1,6 @@
 # Login and sign-in states: screen design
 
-> Status: **PROPOSAL, waiting for owner approval.** Nothing here is built.
+> Status: **APPROVED by the owner on 2026-11-06 (D-017)**, including Q1 (a), Q2 (a), Q3 (a) and the new strings in section 2.8. Not built yet.
 > Scope: the login screen and the four states around it (no access, password pending, loading after login, generic error).
 > Sources: `docs/modules/auth-login.md` (APPROVED; sections 3, 4, 6, 13), `docs/DECISIONS.md` D-014, D-015, D-016, `docs/design/stitch/design-system.md`, `docs/design/stitch/screens.md`, Stitch HTML `08-notulensi-rapat` (app bar and form inputs), `docs/PMK-NEXUS-context.md` section 6, PI-CORE login (`/home/fycode/Documents/pi-core-v2/src/app/login/`, `src/lib/i18n/id.ts`, read only).
 > Stitch has no NEXUS login screen. Everything below uses Stitch tokens only. No new hex values and no new fonts.
@@ -401,7 +401,7 @@ Optional addition (needs owner approval, not in the spec): a small line under th
 ### 6.2 Elements and choices
 
 1. App bar (login variant), card, h1, body text.
-2. "Buka PI-CORE": primary, a real link (not a script button) to the PI-CORE change-password address from one configuration value (A-AUTH-2). Opens in the same tab (spec F6). No arrow icon: the label names the destination.
+2. "Buka PI-CORE": primary, a real link (not a script button) to the PI-CORE change-password address from one configuration value (A-AUTH-2). Opens in a NEW tab (owner decision Q3 (a), D-017; `target="_blank" rel="noopener noreferrer"`). No arrow icon: the label names the destination.
 3. "Sudah ganti? Muat ulang": outline, re-checks the account.
 4. "Keluar": text button, centred under the two buttons.
 
@@ -535,7 +535,7 @@ Nothing below is applied silently. D1 to D3 need the owner's decision before the
 | D2 | Stitch app bar vs a login screen | Stitch bar has a hamburger and a bell. | Login variant has neither (no destinations before the access check; rules R-24, R-26). Also: not fixed, no 9 px subtitle. |
 | D3 | Stitch required-field marker | Stitch marks required fields with a red `*` (`#ba1a1a`). | Omitted on login: both fields are required and nothing is optional, so the star adds noise. |
 | S1 | Spec 6.1 heading "Masuk" | Spec says heading "Masuk". | "Masuk ke PMK-NEXUS" (reason K3). |
-| S2 | Spec F6: "Buka PI-CORE" opens in the same tab | After changing the password PI-CORE shows its own page. The person has to navigate back to NEXUS themselves, and the NEXUS page with "Sudah ganti? Muat ulang" is gone. | Designed as the spec says (same tab). See open question Q3. |
+| S2 | Spec F6: "Buka PI-CORE" opens in the same tab | After changing the password PI-CORE shows its own page. The person has to navigate back to NEXUS themselves, and the NEXUS page with "Sudah ganti? Muat ulang" is gone. | Resolved: new tab (Q3 (a), D-017). Spec F6 updated. |
 | S3 | Spec 6.4 loading, no Stitch skeleton | Stitch has no loading, empty or error states. | Designed from Stitch tokens in section 7. |
 | S4 | New strings not in spec 6.4a | "Memeriksa akunmu...", "Kata sandimu belum berubah...", second sentence of the error body, "Masih terjadi gangguan." (screen reader only). | Marked "new" in 2.8, need owner review. |
 | T1 | `design-taste-frontend` app-screen rules vs Stitch | The skill discourages a saturated brand-coloured bar and brand-filled buttons on light app screens, and a serif display face for titles. | Stitch wins (skills never override the design). Kept: walnut bar, walnut primary button, Playfair title. Applied from the skill: one raised surface, no gradients or glows, skeleton as flat bars at real size, errors inside the content with a retry action, placeholders at 4.5:1 or better. |
@@ -595,7 +595,7 @@ Reasons for (a): one account means the member should meet the same words in both
 
 ## 12. Verification notes
 
-- `contrast-check.py` could not be run (this session has no shell tool). All ratios in section 3 were computed by hand with the WCAG formula from the skill. QA should re-run the script on the pairs before build; the near-threshold ones are `#81756A` on white (4.48, used only for icons and borders, never for text) and `#7A6652` on canvas (5.15).
+- `contrast-check.py` could not be run by the designer (no shell). The tech lead re-computed the key pairs with the WCAG formula on 2026-11-06; all matched section 3 (incl. `#D8CCBA` 1.53 fail, `#81756A` 4.33 pass). All ratios in section 3 were computed by hand with the WCAG formula from the skill. QA should re-run the script on the pairs before build; the near-threshold ones are `#81756A` on white (4.48, used only for icons and borders, never for text) and `#7A6652` on canvas (5.15).
 - `impeccable` setup (`impeccable context`) could not run for the same reason. Its Operate-mode guidance was read from `reference/operate.md`; its `craft-floor.md` was not loaded because this task is planning only. No `PRODUCT.md` or `DESIGN.md` was read for it; Stitch tokens were used as the visual source.
 - `antislop` mode (during or after) was not set: no `~/.config/antislop/settings.json` exists and a sub-agent cannot ask. The rules were applied while designing (the "during" behaviour).
 - No design file was run in a browser. Sizes and spacing come from the Stitch scale and Stitch HTML `08-notulensi-rapat`, not from a render.

@@ -119,7 +119,7 @@ Two cases.
 ### F6. Still on a temporary password (`must_change_password = true`)
 Depends on E1. With the recommended option B:
 1. Sign-in succeeds; `my_context()` returns one row; the password-pending check says true.
-2. The app shows the "Ganti kata sandi dulu" state (section 6.3): short text, a primary button "Buka PI-CORE" (opens PI-CORE `/change-password` in the same tab), "Keluar", and a secondary "Sudah ganti? Muat ulang".
+2. The app shows the "Ganti kata sandi dulu" state (section 6.3): short text, a primary button "Buka PI-CORE" (opens PI-CORE `/change-password` in a new tab, D-017, so this NEXUS page stays open for "Sudah ganti? Muat ulang"), "Keluar", and a secondary "Sudah ganti? Muat ulang".
 3. While the flag is true, every NEXUS page and Server Action returns this state and no module data (app-level gate, same as PI-CORE).
 4. The person opens PI-CORE (separate login there, same temporary password; PI-CORE then lands on its change-password page because it keeps `next=/change-password` through its login), chooses a new password, returns to NEXUS and presses "Muat ulang". The next check says false and they enter normally. No new NEXUS login is needed (P6).
 5. With option A: no state; the flow is F2.
