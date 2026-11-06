@@ -122,6 +122,9 @@ No CRITICAL or HIGH findings. M1 (data-based guard on the local seed and pgTAP f
 | F2 | L2: every protected page and Server Action must call `getAccessState()` itself (layouts do not re-run on client navigation). Add a test or lint that fails when a route skips it. | [PLANNED] with the first module | P1 | Owner: backend + QA. |
 | F3 | L3: if PI-CORE ever breaks its `members` read policy, every user sees "Belum ada akses" and is signed out (fail closed, but noisy). | [ASSUMPTION] accepted risk | P2 | Re-check after every PI-CORE migration (schema inspector). |
 | F4 | I1: the local stacks (NEXUS and PI-CORE) publish ports on all network interfaces. They hold only fake data and default dev credentials. | [ASSUMPTION] accepted for local dev | P2 | Avoid running them on public Wi-Fi; noted in `docs/ops/local-setup.md`. |
+| F5 | Member Data export has no rate limit; each export adds one append-only log row (~80 bytes). | **[ANSWERED]** 2026-11-07: accepted risk for Phase 1 (owner) | P2 | Export is BPH-only and every row names the exporter. Review before go-live; a per-member limit (e.g. 30/hour in the RPC) is the planned fix if needed. |
+| F6 | The export route's same-origin check trusts `x-forwarded-host` first. Safe on Vercel (the platform overwrites it); a self-hosted proxy that appends the header would make the first value client-controlled. | [ASSUMPTION] Vercel hosting | P2 | Re-check if NEXUS ever leaves Vercel. App-layer review LOW 4, 2026-11-07. |
+| F7 | Local e2e tests briefly change the LOCAL stack (switch period, temporary members, revoke/grant on Member Data functions, a temporary CHECK on the log table) and revert it in global setup/teardown. The local export log keeps growing (append-only). | [ASSUMPTION] accepted for local only | P2 | e2e refuses to run unless the API is the local NEXUS stack. Never point tests at hosted. |
 
 ## G. Member Data assumptions (2026-11-06)
 
