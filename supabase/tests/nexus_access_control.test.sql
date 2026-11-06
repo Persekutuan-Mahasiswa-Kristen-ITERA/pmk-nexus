@@ -1,12 +1,14 @@
 -- pgTAP tests for the NEXUS access-control engine (migrations 20261105100000 + 20261105100100) and the
 -- D-015 temporary-password check (20261106100000, section 7 plus the L4 whitelist tests in section 1).
+-- Counts include the Member Data additions of 20261106200000 (key member_data.view_export_log, rules
+-- D32/D33); the Member Data functions themselves are tested in nexus_member_data.test.sql.
 --
 -- LOCAL / THROWAWAY DATABASE ONLY. Never run against the hosted (shared) project.
 -- It WRITES to PI-CORE tables (auth.users, public.members, public.periods, public.assignments) inside
 -- a transaction that ends with ROLLBACK. To make an accidental run harmless, the file refuses to do
 -- anything unless the session sets nexus.allow_destructive_tests = 'yes' (see tests/README.md):
 --   PGOPTIONS='-c nexus.allow_destructive_tests=yes' psql "<local url>" -f supabase/tests/nexus_access_control.test.sql
--- Preconditions: local Supabase with the PI-CORE migrations applied, then all three NEXUS migrations.
+-- Preconditions: local Supabase with the PI-CORE migrations applied, then all NEXUS migrations.
 -- Everything runs inside ONE transaction that ends with ROLLBACK: the test personas, periods, and
 -- assignments written into PI-CORE tables, and the helper schema `nexus_test`, never persist.
 --
@@ -44,6 +46,18 @@ begin
   if exists (select 1 from auth.users u where u.email is null or u.email !~* '@(example\.test|nexus\.test)$')
      or exists (select 1 from public.members m where m.email is not null and m.email !~* '@(example\.test|nexus\.test)$') then
     raise exception 'nexus_access_control.test.sql: found a non-test email address, so this is NOT a throwaway local database. Nothing was written.';
+  end if;
+end
+$$;
+
+-- Dev-stack guard (review L5): the NEXUS dev stack is seeded with fake accounts under @nexus.test
+-- (supabase/local/seed_test_accounts.sql, e.g. ketum@nexus.test). This file assumes a FRESH database
+-- and only uses @example.test, so any @nexus.test account means "wrong database": stop before writing.
+do $$
+begin
+  if exists (select 1 from auth.users u where u.email ~* '@nexus\.test$')
+     or exists (select 1 from public.members m where m.email ~* '@nexus\.test$') then
+    raise exception 'nexus_access_control.test.sql: found the NEXUS dev stack seed accounts (@nexus.test). Run it only in a fresh throwaway container (see supabase/tests/README.md). Nothing was written.';
   end if;
 end
 $$;
@@ -252,7 +266,7 @@ select ok((select p.prosecdef from pg_proc p where p.oid = 'nexus.current_member
           and (select p.prosecdef from pg_proc p where p.oid = 'nexus.is_system_admin()'::regprocedure),
   'identity helpers are SECURITY DEFINER (independent of PI-CORE RLS/column grants)');
 
-select is((select count(*)::int from nexus.permissions), 20, 'catalog has the 20 permission keys');
+select is((select count(*)::int from nexus.permissions), 21, 'catalog has the 21 permission keys');
 select is((select array_agg(key order by key) from nexus.permissions where allow_baseline),
           array['inventory.export', 'inventory.view', 'letters.export', 'letters.view', 'minutes.export', 'minutes.view'],
   'L12: exactly these 6 keys may be granted to every active member');
@@ -268,18 +282,18 @@ select throws_ok($$insert into nexus.permissions (key, module, label, descriptio
   'L12: the catalog constraint refuses a baseline-safe *.approve key');
 select is((select count(*)::int from nexus.permission_scopes where scope <> 'all'), 6,
   'only minutes.* (3 keys x 2 unit scopes) accept unit scopes');
-select is((select count(*)::int from nexus.access_rules where default_code is not null and is_enabled), 31,
-  'seed: 31 default rules, all enabled');
-select is((select count(*)::int from nexus.access_rule_log where action = 'seed' and actor_member_id is null), 31,
-  'seed: 31 seed log rows without an actor');
+select is((select count(*)::int from nexus.access_rules where default_code is not null and is_enabled), 33,
+  'seed: 33 default rules (D01-D33), all enabled');
+select is((select count(*)::int from nexus.access_rule_log where action = 'seed' and actor_member_id is null), 33,
+  'seed: 33 seed log rows without an actor');
 select is((select position_id from nexus.access_rules where default_code = 'D15'),
           nexus_test.pos('bph', 'Sekretaris Jenderal'), 'seed: D15 stores the Sekretaris Jenderal position id');
 select ok((select org_unit_id = nexus_test.unit('Departemen Operasional') and include_child_units
            from nexus.access_rules where default_code = 'D28'),
   'seed: D28 stores Departemen Operasional with include_child_units');
 select is((select count(*)::int from nexus.access_rules r join nexus.permissions pk on pk.key = r.permission_key
-           where r.default_code is not null and not pk.allow_baseline and r.note is not null), 23,
-  'L12: the 23 seeded rules with sensitive/power keys all carry a note');
+           where r.default_code is not null and not pk.allow_baseline and r.note is not null), 25,
+  'L12: the 25 seeded rules with sensitive/power keys all carry a note');
 select is((select array_agg(r.default_code) from nexus.access_rules r where r.subject_type = 'all_members'),
           array['D01'], 'L12: D01 (inventory.view) is the only seeded baseline rule');
 
@@ -342,9 +356,9 @@ select ok(not nexus.has_permission('letters.view'), 'AC-03: P-ADMIN cannot view 
 select ok(not nexus.has_permission('member_data.view'), 'AC-03: P-ADMIN cannot view Member Data');
 select is((select array_agg(permission_key order by permission_key) from nexus.my_permissions()),
           array['inventory.view'], 'AC-68: being admin alone adds no business rights');
-select is((select count(*)::int from nexus.list_access_rules()), 31, 'AC-02: P-ADMIN lists all 31 rules');
-select is((select count(*)::int from nexus.access_rules), 31, 'P-ADMIN can read the rules table');
-select is((select count(*)::int from nexus.access_rule_log), 31, 'L3: P-ADMIN can read the log');
+select is((select count(*)::int from nexus.list_access_rules()), 33, 'AC-02: P-ADMIN lists all 33 rules');
+select is((select count(*)::int from nexus.access_rules), 33, 'P-ADMIN can read the rules table');
+select is((select count(*)::int from nexus.access_rule_log), 33, 'L3: P-ADMIN can read the log');
 select is((select count(*)::int from nexus.list_access_rules() where stale_reason is not null), 0,
   'no default rule is stale on a fresh database');
 
@@ -371,7 +385,7 @@ select ok(not nexus.has_permission('minutes.manage'), 'AC-07: P-KETUM cannot man
 select ok(not nexus.has_permission('letters.manage'), 'AC-07: P-KETUM cannot manage letters');
 select ok(not nexus.has_permission('inventory.manage'), 'AC-07: P-KETUM cannot manage inventory');
 select ok(not nexus.has_permission('borrowing.approve'), 'AC-07: P-KETUM cannot approve borrowing');
-select is((select count(*)::int from nexus.access_rule_log), 31, 'AC-60: P-KETUM (BPH) reads the log');
+select is((select count(*)::int from nexus.access_rule_log), 33, 'AC-60: P-KETUM (BPH) reads the log');
 select is((select count(*)::int from nexus.access_rules), 0, 'AC-01: P-KETUM reads no rows of the rules table');
 select throws_ok($$select * from nexus.list_access_rules()$$, '42501', null, 'AC-01: P-KETUM cannot open the rules list');
 select throws_ok($$select nexus.disable_access_rule((select rule_id from nexus.access_rule_log limit 1))$$, '42501', null,
@@ -519,7 +533,7 @@ select is((select array_agg(pk.key order by pk.key) from nexus.permissions pk
              and nexus_test.hint_of(format(
                    'select nexus.add_access_rule(%L, %L, p_note => %L, p_confirm_sensitive => true)',
                    'all_members', pk.key, 'x')) is distinct from 'baseline_not_allowed'),
-          null, 'L12: every one of the 14 locked keys is rejected for all_members (RPC)');
+          null, 'L12: every one of the 15 locked keys is rejected for all_members (RPC)');
 select throws_ok($$select nexus.add_access_rule('all_members', 'finance.view', p_note => 'x', p_confirm_sensitive => true)$$,
   '22023', null, 'L12: rejection uses errcode 22023');
 
@@ -799,11 +813,11 @@ select is(nexus_test.hint_of($$select nexus.restore_default_access_rules(null, t
   'L12: restore re-granting sensitive/power defaults needs a note');
 select is(nexus_test.hint_of($$select nexus.restore_default_access_rules('   ', true)$$), 'note_required',
   'L12: ... a blank note is not enough');
-select is(nexus.restore_default_access_rules('test restore', true), 31, 'B28: restore re-enables the 31 defaults');
+select is(nexus.restore_default_access_rules('test restore', true), 33, 'B28: restore re-enables the 33 defaults');
 select is((select count(*)::int from nexus.access_rules where default_code is null and is_enabled), 0,
   'B28: restore never touches custom rules');
 select is((select count(*)::int from nexus.access_rule_log where action = 'restore_default'
-           and actor_member_id = nexus_test.mid(2) and note = 'test restore'), 31,
+           and actor_member_id = nexus_test.mid(2) and note = 'test restore'), 33,
   'B28: each restored rule is logged with actor and note');
 select ok(nexus.has_permission('inventory.view'), 'restored baseline works again');
 

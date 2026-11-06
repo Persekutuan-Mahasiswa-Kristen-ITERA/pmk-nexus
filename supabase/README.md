@@ -7,10 +7,12 @@ NEXUS owns schema `nexus` only. PI-CORE owns `public` and `private` in the SAME 
 | `migrations/20261105100000_nexus_schema_and_access.sql` | Schema `nexus`, permission catalog, access rules, change log, permission engine, admin RPCs, RLS |
 | `migrations/20261105100100_nexus_default_access_rules.sql` | Seeds default rules D01-D31 (looks PI-CORE positions/units up by name ONCE; raises if any name is missing) |
 | `migrations/20261106100000_nexus_password_change_pending.sql` | D-015: `nexus.my_password_change_pending()`, the caller-only temporary-password check (the single L4 exception) |
-| `tests/nexus_access_control.test.sql` | pgTAP tests (local DB only; everything rolled back) |
+| `migrations/20261106200000_nexus_member_data.sql` | Member Data (D-019): key `member_data.view_export_log`, default rules D32/D33, append-only `nexus.member_data_export_logs`, five restricted read/export functions |
+| `tests/nexus_access_control.test.sql` | pgTAP tests for the engine (local DB only; everything rolled back) |
+| `tests/nexus_member_data.test.sql` | pgTAP tests for Member Data (local DB only; everything rolled back) |
 | `tests/README.md` | RLS / permission test checklist mapped to the spec's personas and ACs |
 
-Spec: `docs/modules/access-control.md` (rev. 2, locked rules L1-L12) and `docs/modules/auth-login.md` (temporary-password gate). Decisions: D-007 to D-013 and D-015 in `docs/DECISIONS.md`.
+Spec: `docs/modules/access-control.md` (rev. 2, locked rules L1-L12), `docs/modules/auth-login.md` (temporary-password gate) and `docs/modules/member-data.md` (rev. 2). Decisions: D-007 to D-013, D-015 and D-019 in `docs/DECISIONS.md`.
 
 ## 1. Project settings (read before applying)
 
@@ -37,7 +39,7 @@ Both repos share one database and therefore one migration history table, `supaba
 4. **Read-only name check before M2** (changes nothing). Every row must show `found = 1`:
    ```sql
    select 'role ' || k as item, (select count(*) from public.roles r where r.key = k) as found
-   from unnest(array['bph', 'bendahara', 'sekretaris']) k
+   from unnest(array['bph', 'bendahara', 'sekretaris', 'kepala_departemen']) k  -- kepala_departemen: needed by M4 (D32)
    union all
    select 'bph position ' || n, (select count(*) from public.positions p
                                  where p.unit_type = 'bph' and lower(btrim(p.name)) = lower(n))
@@ -49,17 +51,18 @@ Both repos share one database and therefore one migration history table, `supaba
    If any row is not 1, stop and ask the owner (open question A3) before running M2.
 5. **Apply M2** (`20261105100100_nexus_default_access_rules.sql`) the same way (`psql ... -1 -v ON_ERROR_STOP=1 -f ...`). Right after: `select count(*) from nexus.access_rules;` = 31 and `select count(*) from nexus.access_rule_log where action = 'seed';` = 31. If it stops with "NEXUS seed: expected exactly 1 ...", nothing was inserted; the engine works with zero rules (baseline-only, locked rules still apply). Fix the name with the owner, then run M2 again.
 6. **Apply M3** (`20261106100000_nexus_password_change_pending.sql`) the same way (`psql ... -1 -v ON_ERROR_STOP=1 -f ...`). It adds one function only and needs M1 (not M2). Right after, as the owner (no user session, so the answer is `false`): `select nexus.my_password_change_pending();` = `false` and `select has_function_privilege('anon', 'nexus.my_password_change_pending()', 'execute');` = `false`. Running M3 twice stops with "function ... already exists" and changes nothing (one transaction).
-7. Run the read-only checks in `tests/README.md` ("Manual check on the hosted project").
-8. Only now: add `nexus` to "Exposed schemas" (section 1, item 2) and smoke-test PI-CORE.
-9. Record what was applied in `docs/ops/` (file name, date, who). NEXUS does NOT write to `supabase_migrations.schema_migrations`.
-10. Undo (only with the owner's explicit OK): nothing in PI-CORE depends on `nexus`, so the schema can be removed as a whole. This is destructive (rules and log are lost); restore from the backup instead whenever possible.
+7. **Apply M4** (`20261106200000_nexus_member_data.sql`) the same way (`psql ... -1 -v ON_ERROR_STOP=1 -f ...`). It needs M1 AND M2: if D01-D31 are not all seeded it stops with "default rules D01-D31 are not seeded" and changes nothing (seeding D32 first would make M2 skip its own rules). It also stops if role key `bph` or `kepala_departemen` is missing in `public.roles`. Right after: `select count(*) from nexus.permissions;` = 21, `select count(*) from nexus.access_rules;` = 33, `select count(*) from nexus.access_rule_log where action = 'seed';` = 33, `select count(*) from nexus.member_data_export_logs;` = 0. Re-running M4 is safe (every statement is idempotent; nothing changes). **Not yet applied to the hosted project** (as of 2026-11-06); the owner applies it.
+8. Run the read-only checks in `tests/README.md` ("Manual check on the hosted project").
+9. Only now: add `nexus` to "Exposed schemas" (section 1, item 2) and smoke-test PI-CORE.
+10. Record what was applied in `docs/ops/` (file name, date, who). NEXUS does NOT write to `supabase_migrations.schema_migrations`.
+11. Undo (only with the owner's explicit OK): nothing in PI-CORE depends on `nexus`, so the schema can be removed as a whole. This is destructive (rules and log are lost); restore from the backup instead whenever possible.
 
 ### Local development
 NEXUS has its OWN local stack (D-018): `pnpm db:start` (or `bash scripts/dev-db.sh start`). It applies PI-CORE's migrations read-only from the PI-CORE repo, then the NEXUS migrations, then the local-only test accounts. Database: `postgresql://postgres:postgres@127.0.0.1:55432/postgres`, API `http://127.0.0.1:55431`. Do not apply NEXUS files to PI-CORE's local stack (54322): its config does not expose `nexus`. Full guide: `docs/ops/local-setup.md`.
 
 ## 3. API for the backend (`src/lib/picore/` and `src/lib/auth/` only)
 
-All functions live in `nexus`, are callable by `authenticated` only (never `anon`, never `service_role`), and answer only about the caller (`auth.uid()`). Call them with the USER's session client. The service role has SELECT on the four nexus tables (and bypasses RLS) but no write privilege and no EXECUTE.
+All functions live in `nexus`, are callable by `authenticated` only (never `anon`, never `service_role`), and answer only about the caller (`auth.uid()`). Call them with the USER's session client. The service role has SELECT on the five nexus tables (and bypasses RLS) but no write privilege and no EXECUTE.
 
 **L12 (D-013):** keys with `allow_baseline = false` (all except inventory.view/export, minutes.view/export, letters.view/export) can never go to "every active member", and adding or re-enabling a rule for them (or restoring defaults that re-enable them) needs a non-empty `p_note`. Enforced in the RPCs and by the trigger on `nexus.access_rules`.
 
@@ -77,13 +80,18 @@ All functions live in `nexus`, are callable by `authenticated` only (never `anon
 | `add_access_rule(...)`, `disable_access_rule(id, note)`, `enable_access_rule(id, note, confirm)`, `restore_default_access_rules(note, confirm)` | definer, admin | The only write path to rules. Each change writes one log row in the same transaction |
 | `list_rule_roles()` | definer, admin | Role picker (role_key, name, description, is_targetable) |
 | `list_positions()`, `list_org_units()` | invoker | Pickers; empty unless the caller is an active member |
+| `member_data_list(p_search text default null, p_unit_id uuid default null, p_status text default 'active', p_page integer default 1, p_page_size integer default 20)` | definer, `member_data.view` | Member Data list (D-019). Returns `row_no, member_id, full_name, member_type, is_active, unit_name, unit_type, parent_unit_name, position_name, total_count, page, page_size`. One row per member; unit/position = PRIMARY active-period assignment (null = "-"); `parent_unit_name` only for a division (show "Parent · Unit"). Search = name only, case-insensitive, partial, `%`/`_` literal, max 120 chars after trimming (raw input over 480 chars refused first). An unknown `p_unit_id` is refused (`invalid_unit`). Status `active` / `inactive` / `all`. Unit filter matches ANY active-period assignment in the unit or its divisions. Sorted name A-Z, ties by id. Page size 1..50; a page past the end returns the last page (`page` says which). 0 rows = no match |
+| `member_data_unit_options()` | definer, `member_data.view` | `(id, name, type, sort_order)`: active units of type bph/department/bureau, PI-CORE order |
+| `member_data_active_count()` | definer, `member_data.view` | One integer: all members with `is_active` (Dashboard "Members") |
+| `member_data_export(p_format text, p_search text default null, p_unit_id uuid default null, p_status text default 'active')` | definer, `member_data.export` (+ view, R15) | Same rows/columns as the list without paging (no `total_count/page/page_size`). `p_format` = `xlsx`/`csv`/`pdf`. Writes ONE export-log row in the same transaction; if that fails, the call fails and returns nothing. VOLATILE: call with `.rpc()` (POST); a GET fails closed |
+| `member_data_export_log_list(p_page integer default 1, p_page_size integer default 50)` | definer, System Admin or `member_data.view_export_log` | Newest first: `log_id, created_at, exporter_member_id, exporter_name, format, filter_unit_id, filter_unit_name, filter_status, search_used, period_id, period_label, total_count, page, page_size`. Page size 1..50 |
 | `my_password_change_pending()` | invoker | D-015. One non-null boolean about the CALLER only, no parameters. `true` = active linked member whose PI-CORE password is still temporary. `false` = no pending change; also for inactive and unlinked users (their `my_context()` is 0 rows, which decides first). anon/service_role: permission denied |
 
-Tables readable directly: `nexus.permissions`, `nexus.permission_scopes` (any active member), `nexus.access_rules` (System Admin), `nexus.access_rule_log` (System Admin or `access_rules.view_log`). No client may write any of them.
+Tables readable directly: `nexus.permissions`, `nexus.permission_scopes` (any active member), `nexus.access_rules` (System Admin), `nexus.access_rule_log` (System Admin or `access_rules.view_log`). `nexus.member_data_export_logs` is NOT readable directly by any client (no grant, no policy): read it only through `member_data_export_log_list()`, which adds the exporter's current name. No client may write any of them.
 
 **Temporary-password gate (D-015, auth-login F6 and AR10).** The session function in `src/lib/auth/` calls `my_context()` and `my_password_change_pending()` in parallel, both with the user's session, once per request, and then applies the precedence below to the two results (the order of the calls does not matter). Precedence: anonymous > error > no-access > password-pending > member. If the pending call errors or returns anything other than exactly `true`/`false`, the state is `error` ("gangguan": no data, no sign-out); an error is never read as `false`, and `false` never grants access by itself. Known limit: the gate is app-level only (same as PI-CORE); RLS does not stop a direct API call made with a temporary password.
 
-Errors from the RPCs carry a stable `hint` (e.g. `not_system_admin`, `baseline_not_allowed`, `note_required`, `note_too_long`, `scope_not_allowed`, `duplicate_rule`, `sensitive_confirmation_required`, `position_missing`) for the backend to map to Indonesian messages. Error codes: `42501` not allowed, `22023` invalid input (incl. L12 and note errors), `23505` duplicate, `P0001` needs confirmation / not seeded, `P0002` not found.
+Errors from the RPCs carry a stable `hint` (e.g. `not_system_admin`, `baseline_not_allowed`, `note_required`, `note_too_long`, `scope_not_allowed`, `duplicate_rule`, `sensitive_confirmation_required`, `position_missing`; Member Data: `permission_required` (42501, `detail` = the missing key), `invalid_status`, `invalid_page`, `invalid_page_size`, `invalid_format`, `invalid_unit`, `search_too_long`) for the backend to map to Indonesian messages. Error codes: `42501` not allowed, `22023` invalid input (incl. L12 and note errors), `23505` duplicate, `P0001` needs confirmation / not seeded, `P0002` not found.
 
 ## 4. RLS pattern for future module tables
 
@@ -115,6 +123,8 @@ The rules engine is computed per call (R3, no caching). Data sizes are tiny (ten
 - Keep an off-database audit copy: periodically (e.g. monthly and before each handover) run
   `pg_dump "$DB_URL" -Fc -t nexus.access_rule_log -t nexus.access_rules -f nexus-audit-$(date +%Y%m%d).dump`
   and store it like the backups above (encrypted, outside the repo). Comparing two copies shows any rewrite.
+- **Never enable PostgREST `db-tx-end = rollback-allowed`** (or any "rollback" transaction-end setting) on this project. With it, a client could ask for a rolled-back request and still receive `member_data_export()` rows while the export-log insert is rolled back, i.e. an untraced export. The default (`commit`) keeps rows and log row in one committed transaction.
+- **Export log (`nexus.member_data_export_logs`): no rate limit, no pruning.** Every successful export adds one small row (ids and settings only, about 100 bytes), and nothing limits how often a holder of `member_data.export` can export. Rows cannot be deleted without disabling the append-only guard trigger. Retention/cleanup is an **owner-approved operation only**: take the off-database copy above first (`-t nexus.member_data_export_logs`), record the decision in `docs/DECISIONS.md`, then the owner disables the trigger, deletes rows older than the agreed cut-off, and re-enables the trigger in the SAME transaction. At hundreds of members and a few exports per month this is not needed for years; no throttle is built (review L3). If exports ever look abusive, read the log (BPH/System Admin) and disable the export rule instead.
 
 ## 7. Checklist for every future nexus migration (W5)
 1. Only `nexus` objects; never create, alter, grant, or write anything in `public`/`private`.
@@ -123,4 +133,5 @@ The rules engine is computed per call (R3, no caching). Data sizes are tiny (ten
 4. Every SECURITY DEFINER function: `set search_path = ''`, fully qualified names, and an explicit caller check (`auth.uid()`-based helper or `nexus._require_system_admin()`).
 5. New permission keys: set `allow_baseline` explicitly (no default); `true` only if safe for every active member.
 6. Never read email, phone, nim, nip, must_change_password, audit_log, org_settings, grants_admin, or `private.*`. Sole exception (D-015): ONE dedicated function returns the caller's own `must_change_password` as a boolean (never for another member); the structural test must allow exactly that function by name and keep blocking every other.
-7. Re-run the structural pgTAP tests (section 1 of `tests/nexus_access_control.test.sql`) on a throwaway database and update the expected test count in `tests/README.md`.
+7. Re-run BOTH pgTAP files on a throwaway database and update the expected test counts in `tests/README.md` (adding a key or default rule changes counts in `nexus_access_control.test.sql` section 1).
+8. Module functions gate on `nexus._require_permission('<key>')` (42501, hint `permission_required`) as their first statement; do not re-implement the permission check.

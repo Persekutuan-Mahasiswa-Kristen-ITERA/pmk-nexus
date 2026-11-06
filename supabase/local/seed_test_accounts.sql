@@ -68,7 +68,9 @@ create temp table _persona (
   unit_name text,
   unit_type text,
   position_name text,
-  deactivate boolean not null default false
+  deactivate boolean not null default false,
+  -- PI-CORE members.member_type; lecturers (pembina) have no NIM and can hold no assignment.
+  member_type text not null default 'student'
 ) on commit drop;
 
 insert into _persona values
@@ -78,7 +80,14 @@ insert into _persona values
   (4, 'unlinked@nexus.test',        'Test Tanpa Data Anggota',   null,        'member', false, false, null,            null,       null,               false),
   (5, 'ketum@nexus.test',           'Test Ketua Umum',           '123450005', 'member', false, true,  'BPH PMK ITERA', 'bph',      'Ketua Umum',       false),
   (6, 'bendahara@nexus.test',       'Test Bendahara Umum 1',     '123450006', 'member', false, true,  'BPH PMK ITERA', 'bph',      'Bendahara Umum 1', false),
-  (7, 'admin@nexus.test',           'Test System Admin',         '123450007', 'admin',  false, true,  null,            null,       null,               false);
+  (7, 'admin@nexus.test',           'Test System Admin',         '123450007', 'admin',  false, true,  null,            null,       null,               false),
+  -- Member Data (docs/modules/member-data.md section 7): department/bureau heads see the list (D32)
+  -- but cannot export.
+  (8, 'kadep@nexus.test',           'Test Kepala Departemen',    '123450008', 'member', false, true,  'Departemen Operasional', 'department', 'Kepala Departemen', false),
+  (9, 'kabiro@nexus.test',          'Test Kepala Biro',          '123450009', 'member', false, true,  'Biro Kewirausahaan',     'bureau',     'Kepala Biro',       false);
+-- Lecturer: listed with the "Pembina" marker, no NIM, no assignment (separate insert: different row width).
+insert into _persona values
+  (10, 'pembina@nexus.test',        'Test Dosen Pembina',        null,        'member', false, true,  null,            null,       null,               false, 'lecturer');
 
 -- 1. Auth users (what GoTrue checks at login): confirmed email, bcrypt password.
 insert into auth.users (
@@ -108,9 +117,10 @@ where not exists (select 1 from auth.identities i where i.user_id = u.id and i.p
 
 -- 3. PI-CORE member rows (all personas except the unlinked one). Inserted active, even the one that
 --    is deactivated at the end, because an assignment needs an active member.
-insert into public.members (id, user_id, full_name, email, nim, access_level, must_change_password)
+insert into public.members (id, user_id, full_name, email, nim, access_level, must_change_password, member_type)
 select ('a2000000-0000-4000-8000-' || lpad(p.n::text, 12, '0'))::uuid,
-       u.id, p.full_name, p.email, p.nim, p.access_level::public.access_level, p.must_change
+       u.id, p.full_name, p.email, p.nim, p.access_level::public.access_level, p.must_change,
+       p.member_type::public.member_type
 from _persona p
 join auth.users u on u.email = p.email
 where p.has_member
