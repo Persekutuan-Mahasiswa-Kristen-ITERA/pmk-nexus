@@ -239,6 +239,7 @@
   /* One focus ring for every link and button: 2 px walnut, 2 px offset (8.97:1 on white). */
   a:focus-visible,
   button:focus-visible,
+  summary:focus-visible,
   [tabindex]:not([tabindex="-1"]):focus-visible {
     outline: 2px solid var(--nx-walnut);
     outline-offset: 2px;

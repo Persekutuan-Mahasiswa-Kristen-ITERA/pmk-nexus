@@ -38,9 +38,9 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
           ref={ref}
           id={id}
           aria-invalid={invalid || undefined}
-          className={cn(
+          className={`${cn(
             // scroll-mb-24 keeps the focused field above the phone keyboard (design 4.4).
-            "h-12 w-full scroll-mb-24 rounded-lg border bg-field px-3 text-field text-ink transition-[border-color,box-shadow] duration-100 placeholder:text-ink-meta",
+            "h-12 w-full scroll-mb-24 rounded-lg border bg-field px-3 text-ink transition-[border-color,box-shadow] duration-100 placeholder:text-ink-meta",
             "focus:outline-none focus-visible:outline-none",
             // taste-skill-ignore: focus-only inner line plus Stitch halo; nothing has a shadow at rest.
             invalid
@@ -49,7 +49,8 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
             leadingIcon && "pl-10",
             trailing && "pr-12",
             className,
-          )}
+            // text-field (16 px, D-017) is appended outside cn(), which drops it next to text-ink.
+          )} text-field`}
           {...inputProps}
         />
         {trailing ? <div className="absolute inset-y-0.5 right-0.5 flex items-center">{trailing}</div> : null}

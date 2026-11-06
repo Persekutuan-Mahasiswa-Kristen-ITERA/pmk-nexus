@@ -2,6 +2,7 @@ import { Suspense, type ReactNode } from "react";
 import { getAccessState } from "@/lib/auth/session";
 import { picoreChangePasswordUrl } from "@/lib/auth/config";
 import { AppFrame } from "@/components/shell/app-frame";
+import { buildNavData } from "@/components/shell/nav";
 import { ErrorScreen } from "@/components/auth/error-screen";
 import { LoadingShell } from "@/components/auth/loading-shell";
 import { NoAccessScreen } from "@/components/auth/no-access-screen";
@@ -49,6 +50,11 @@ async function AccessGate({ children }: { children: ReactNode }) {
         </AppFrame>
       );
     case "member":
-      return <AppFrame>{children}</AppFrame>;
+      // Drawer items are computed here on the server (D-021); pages still check access themselves.
+      return (
+        <AppFrame nav={buildNavData(state)} column="page">
+          {children}
+        </AppFrame>
+      );
   }
 }

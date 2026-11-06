@@ -9,17 +9,25 @@ const base =
 const variants: Record<ButtonVariant, string> = {
   // 48 px, full width inside a card, walnut fill (docs/design/login.md 2.6).
   primary:
-    "h-12 w-full rounded-lg bg-walnut px-5 text-headline-sm text-primary-foreground hover:bg-walnut-hover active:scale-[0.98] motion-reduce:active:scale-100",
+    "h-12 w-full rounded-lg bg-walnut px-5 text-primary-foreground hover:bg-walnut-hover active:scale-[0.98] motion-reduce:active:scale-100",
   // 1.5 px walnut outline on white; hover ivory.
   outline:
-    "h-12 w-full rounded-lg border-[1.5px] border-walnut bg-surface px-5 text-headline-sm text-walnut hover:bg-ivory active:scale-[0.98] motion-reduce:active:scale-100",
+    "h-12 w-full rounded-lg border-[1.5px] border-walnut bg-surface px-5 text-walnut hover:bg-ivory active:scale-[0.98] motion-reduce:active:scale-100",
   // Underlined text action with a 44 px tap area.
-  text: "min-h-11 min-w-11 rounded-lg px-2 text-label-lg text-walnut underline underline-offset-2 hover:bg-ivory",
+  text: "min-h-11 min-w-11 rounded-lg px-2 text-walnut underline underline-offset-2 hover:bg-ivory",
+};
+
+// Stitch type sizes stay OUTSIDE cn(): its merge rules read unknown `text-*` names (text-label-lg)
+// as colours and drop them when a colour class follows.
+const sizes: Record<ButtonVariant, string> = {
+  primary: "text-headline-sm",
+  outline: "text-headline-sm",
+  text: "text-label-lg",
 };
 
 /** Class string for a NEXUS button or a link that looks like one. */
 export function buttonClass(variant: ButtonVariant, className?: string) {
-  return cn(base, variants[variant], className);
+  return `${cn(base, variants[variant], className)} ${sizes[variant]}`;
 }
 
 /** Busy indicator shown left of a button label while a request runs (static with reduced motion). */

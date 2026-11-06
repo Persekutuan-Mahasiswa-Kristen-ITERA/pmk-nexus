@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getAccessState } from "@/lib/auth/session";
 import { SignOutAction } from "@/components/auth/sign-out-action";
 import { AlertMessage } from "@/components/ui/alert-message";
+import { NarrowColumn } from "@/components/shell/app-frame";
 
 // The (app) layout may show a status screen instead of this page; the tab title follows it (QA NOTE-1).
 const STATUS_TITLES = {
@@ -29,24 +30,26 @@ export default async function DashboardPage() {
   const { fullName, activePeriodLabel } = state.member;
 
   return (
-    <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="font-heading text-display-sm text-title">Dashboard</h1>
-        <p className="mt-1 text-body-md text-ink-body">Masuk sebagai {fullName}.</p>
-        {activePeriodLabel ? (
-          <p className="mt-1 text-body-md text-ink-body">Periode {activePeriodLabel}</p>
-        ) : null}
+    <NarrowColumn>
+      <div className="flex flex-col gap-5">
+        <div>
+          <h1 className="font-heading text-display-sm text-title">Dashboard</h1>
+          <p className="mt-1 text-body-md text-ink-body">Masuk sebagai {fullName}.</p>
+          {activePeriodLabel ? (
+            <p className="mt-1 text-body-md text-ink-body">Periode {activePeriodLabel}</p>
+          ) : null}
+        </div>
+
+        {activePeriodLabel ? null : (
+          // AUTH-39 / access-control R11: login works without an active period.
+          <AlertMessage role="status" tone="info">
+            Belum ada periode aktif.
+          </AlertMessage>
+        )}
+
+        {/* "Keluar" is also in the side drawer (spec F8); this copy stays until the Dashboard module is built. */}
+        <SignOutAction variant="text" />
       </div>
-
-      {activePeriodLabel ? null : (
-        // AUTH-39 / access-control R11: login works without an active period.
-        <AlertMessage role="status" tone="info">
-          Belum ada periode aktif.
-        </AlertMessage>
-      )}
-
-      {/* TODO(shell): move "Keluar" into the side drawer when the drawer is built (spec F8). */}
-      <SignOutAction variant="text" />
-    </div>
+    </NarrowColumn>
   );
 }

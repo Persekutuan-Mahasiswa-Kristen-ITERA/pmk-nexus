@@ -1,18 +1,36 @@
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import { AppBar } from "./app-bar";
+import type { NavData } from "./nav";
 
 /**
- * Page frame shared by login, status screens and the signed-in area:
- * app bar, then one centred column (max 448 px, Stitch content width) on the canvas.
+ * Page frame shared by login, status screens and the signed-in area: app bar, then the content
+ * column on the canvas. `column="narrow"` centres a 448 px column (Stitch content width); with
+ * `column="page"` each page sets its own width (lists need more room on a desktop).
  */
-export function AppFrame({ children, footer }: { children: ReactNode; footer?: ReactNode }) {
+export function AppFrame({
+  children,
+  footer,
+  nav,
+  column = "narrow",
+}: {
+  children: ReactNode;
+  footer?: ReactNode;
+  nav?: NavData;
+  column?: "narrow" | "page";
+}) {
   return (
     <div className="flex min-h-dvh flex-col">
-      <AppBar />
+      <AppBar nav={nav} />
       <main className="w-full flex-1 px-4 pt-7 pb-6 md:pt-16">
-        <div className="mx-auto w-full max-w-md">{children}</div>
+        <div className={cn("mx-auto w-full", column === "narrow" && "max-w-md")}>{children}</div>
       </main>
       {footer}
     </div>
   );
+}
+
+/** Narrow centred column for pages inside `column="page"` (Dashboard, status cards). */
+export function NarrowColumn({ children }: { children: ReactNode }) {
+  return <div className="mx-auto w-full max-w-md">{children}</div>;
 }
