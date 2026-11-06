@@ -158,7 +158,7 @@ Status tags: **[DECIDED]** final, **[ASSUMPTION]** needs owner confirmation.
 - **Date:** 2026-11-06
 - **What:** Owner answers M1-M8 for `docs/modules/member-data.md`:
   - M1: status = Aktif / Nonaktif from `members.is_active`. The list shows everyone; the Status filter defaults to Aktif, with Nonaktif and Semua selectable. (Answers A8 and C4.)
-  - M2 (answers B9): `member_data.view` goes to role `bph` AND role `kepala_departemen` (Kepala Departemen and Kepala Biro), scope "all". This is a new default rule D32 (default rules 31 -> 33 together with D33 below); it is sensitive, so the seed needs a written reason (L12). `member_data.export` stays BPH only (D13). "All active members" stays blocked by L12. The migration for D32 is not written yet.
+  - M2 (answers B9): `member_data.view` goes to role `bph` AND role `kepala_departemen` (Kepala Departemen and Kepala Biro), scope "all". This is a new default rule D32 (default rules 31 -> 33 together with D33 below); it is sensitive, so the seed needs a written reason (L12). `member_data.export` stays BPH only (D13). "All active members" stays blocked by L12. D32/D33 are in migration `20261106200000_nexus_member_data.sql` (not yet applied to the hosted project).
   - M3 (answers B10): one PRIMARY assignment per member = lowest `positions.rank`. Column title "Unit / Jabatan": line 1 = unit (a division is written after its department, "Departemen Operasional · Logistik"), line 2 = position; no assignment = "-". Unit filter matches ANY active-period assignment [ASSUMPTION A-MD9]. Tie-break (owner, 2026-11-06, A-MD8): top-level unit order first (a division uses its parent department's `sort_order`), then the division's own order, unit name, position name; same order as the unit filter.
   - M4: no row detail view; the Stitch hint is removed.
   - M5: one "Ekspor" button with a menu of Excel, CSV, PDF; visible only with `member_data.export`.
@@ -169,3 +169,10 @@ Status tags: **[DECIDED]** final, **[ASSUMPTION]** needs owner confirmation.
 - **Why:** Department and bureau heads need the directory to coordinate their units, while the list stays read-only and free of sensitive fields. One primary assignment keeps rows short on a 390 px screen and counts people, not assignments. Export is the riskiest action (every name in one file), so it stays BPH-only and leaves a trace.
 - **Impact:** `docs/modules/access-control.md` amended (D32, row count 32, B9 answered, L4 and catalog text mention the marker, AC-70/71, export log listed in 7.2). The export log is the only NEXUS data stored for this module; NEXUS still keeps no member list. Not yet designed: the screen to read the export log (`docs/modules/member-data.md` section 11).
 - **Answers:** `OPEN_QUESTIONS.md` A8, B9, B10, C4.
+
+## D-020 Export libraries: write-excel-file + pdfkit [DECIDED]
+- **Date:** 2026-11-06
+- **What:** Excel (.xlsx) files are generated with `write-excel-file` and PDF files with `pdfkit`, both on the server. CSV is written by our own code (no library). This applies to every module's export, not only Member Data.
+- **Why:** Both are small, MIT-licensed, and actively maintained (npm releases in 2026). They give a real downloaded file on every phone, including iPhones, where "print to PDF" is awkward. `exceljs` was rejected: last release 2023 and many transitive dependencies. Browser print-to-PDF was rejected: awkward on iOS and output differs per browser.
+- **Trade-off:** two new dependencies; `pdfkit` reads its font data files at run time, so Next.js needs it listed in `serverExternalPackages`.
+- **Owner:** chosen 2026-11-06.
