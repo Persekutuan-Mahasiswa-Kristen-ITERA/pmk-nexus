@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Notulensi Rapat - PMK-NEXUS</title>
+<!-- Material Symbols Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Editorial & Clean Typography -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-surface": "#26190c",
+            "primary-container": "#62431f",
+            "background": "#fff8f5",
+            "on-error-container": "#93000a",
+            "on-secondary-fixed-variant": "#4a463d",
+            "surface-dim": "#efd5c1",
+            "error": "#ba1a1a",
+            "surface-container-low": "#fff1e8",
+            "on-tertiary-fixed-variant": "#5a4300",
+            "tertiary": "#423000",
+            "outline": "#81756a",
+            "on-secondary-fixed": "#1e1b14",
+            "error-container": "#ffdad6",
+            "on-surface-variant": "#4f453b",
+            "on-primary-container": "#dcb184",
+            "secondary-fixed": "#e9e2d5",
+            "tertiary-fixed-dim": "#efc04b",
+            "on-primary": "#ffffff",
+            "tertiary-container": "#5e4600",
+            "surface-container-high": "#fee3ce",
+            "primary-fixed": "#ffddbb",
+            "outline-variant": "#d3c4b7",
+            "surface-variant": "#f8dec9",
+            "on-secondary-container": "#68645a",
+            "tertiary-fixed": "#ffdf9a",
+            "on-tertiary-fixed": "#251a00",
+            "surface-bright": "#fff8f5",
+            "surface-container": "#ffeadb",
+            "inverse-primary": "#ebbe90",
+            "on-primary-fixed-variant": "#5f401d",
+            "on-secondary": "#ffffff",
+            "surface-tint": "#7a5832",
+            "inverse-on-surface": "#ffeee1",
+            "secondary-fixed-dim": "#ccc6b9",
+            "surface-container-highest": "#f8dec9",
+            "primary-fixed-dim": "#ebbe90",
+            "secondary": "#625e54",
+            "on-tertiary-container": "#e1b33f",
+            "on-primary-fixed": "#2b1700",
+            "primary": "#482d0a",
+            "surface": "#fff8f5",
+            "surface-container-lowest": "#ffffff",
+            "on-background": "#26190c",
+            "on-tertiary": "#ffffff",
+            "inverse-surface": "#3d2d1f",
+            "on-error": "#ffffff",
+            "secondary-container": "#e9e2d5"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter-md": "1rem",
+            "space-xs": "0.25rem",
+            "space-xl": "1.75rem",
+            "margin": "1rem",
+            "space-sm": "0.5rem",
+            "space-md": "1rem",
+            "margin-md": "1.5rem",
+            "space-lg": "1.25rem",
+            "gutter": "0.75rem",
+            "margin-lg": "2rem"
+          },
+          "fontFamily": {
+            "display-lg": ["Playfair Display"],
+            "numeric-metric": ["Plus Jakarta Sans"],
+            "body-lg": ["Plus Jakarta Sans"],
+            "body-sm": ["Plus Jakarta Sans"],
+            "display-sm": ["Playfair Display"],
+            "headline-sm": ["Plus Jakarta Sans"],
+            "body-md": ["Plus Jakarta Sans"],
+            "label-sm": ["Plus Jakarta Sans"],
+            "headline-lg": ["Playfair Display"],
+            "label-lg": ["Plus Jakarta Sans"]
+          },
+          "fontSize": {
+            "display-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "700" }],
+            "numeric-metric": ["20px", { lineHeight: "26px", letterSpacing: "-0.02em", fontWeight: "700" }],
+            "body-lg": ["15px", { lineHeight: "22px", fontWeight: "400" }],
+            "body-sm": ["12px", { lineHeight: "18px", fontWeight: "400" }],
+            "display-sm": ["24px", { lineHeight: "32px", letterSpacing: "-0.005em", fontWeight: "600" }],
+            "headline-sm": ["16px", { lineHeight: "24px", letterSpacing: "0.01em", fontWeight: "600" }],
+            "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+            "label-sm": ["11px", { lineHeight: "14px", letterSpacing: "0.04em", fontWeight: "600" }],
+            "headline-lg": ["22px", { lineHeight: "28px", fontWeight: "600" }],
+            "label-lg": ["13px", { lineHeight: "18px", letterSpacing: "0.02em", fontWeight: "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    /* Ambient institutional elevation */
+    .shadow-executive-card {
+      box-shadow: 0 1px 3px rgba(98, 67, 31, 0.05), 0 4px 12px rgba(98, 67, 31, 0.03);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen pb-12 flex flex-col items-center">
+<!-- Mobile Screen Container Frame -->
+<div class="w-full max-w-md bg-[#FBF8F3] min-h-screen flex flex-col relative shadow-2xl border-x border-outline-variant/30">
+<!-- TopAppBar (from Shared Components JSON: docked, full-width, h-16, walnut background) -->
+<header class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center h-16 px-space-md w-full max-w-md mx-auto bg-primary-container text-on-primary border-b border-primary/20 shadow-sm">
+<!-- Leading Menu Icon -->
+<button aria-label="Open Navigation Drawer" class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-primary/20 transition-colors active:scale-95 duration-150" type="button">
+<span class="material-symbols-outlined text-on-primary text-[24px]">menu</span>
+</button>
+<!-- Center Brand Identity & Emblem -->
+<div class="flex items-center gap-space-sm">
+<div class="w-7 h-7 rounded-full bg-[#EADFCF] border border-tertiary-fixed-dim flex items-center justify-center shadow-inner">
+<span class="material-symbols-outlined text-primary-container text-[18px]" style="font-variation-settings: 'FILL' 1;">local_library</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="font-headline-lg text-headline-lg text-on-primary tracking-wide leading-none">PMK ITERA</span>
+<span class="font-label-sm text-[9px] uppercase tracking-widest text-on-primary-container mt-0.5">PMK-NEXUS</span>
+</div>
+</div>
+<!-- Trailing Notification with Indicator Dot -->
+<div class="relative">
+<button aria-label="Notifications" class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-primary/20 transition-colors active:scale-95 duration-150 text-on-primary" type="button">
+<span class="material-symbols-outlined text-[24px]">notifications</span>
+</button>
+<span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-tertiary-fixed-dim ring-2 ring-primary-container"></span>
+</div>
+</header>
+<!-- Top Spacing Compensation for Fixed App Bar -->
+<div class="h-16 w-full"></div>
+<!-- Main Content Canvas -->
+<main class="flex-1 px-space-md pt-space-lg pb-space-xl flex flex-col gap-space-md">
+<!-- Breadcrumb & Header Banner Card -->
+<section class="bg-surface-container-lowest border border-[#EADFCF] rounded-xl p-space-md shadow-executive-card relative overflow-hidden">
+<div class="absolute -right-6 -bottom-6 opacity-5 pointer-events-none text-primary">
+<span class="material-symbols-outlined text-[130px]">description</span>
+</div>
+<div class="flex items-center gap-1.5 text-on-surface-variant font-label-sm text-label-sm mb-1.5">
+<span>Administrasi</span>
+<span class="material-symbols-outlined text-[12px]">chevron_right</span>
+<span class="text-primary font-semibold">Notulensi Rapat</span>
+</div>
+<h1 class="font-display-sm text-display-sm text-primary mb-1">Notulensi Rapat</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Form Pencatatan &amp; Risalah Resmi Pertemuan Pengurus</p>
+<!-- Status Meta Pill -->
+<div class="mt-space-sm pt-space-xs border-t border-[#F3ECE2] flex items-center justify-between">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#EDF7F1] border border-[#BCDDC8] text-[#205E3F] font-label-sm text-[11px]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#205E3F]"></span>
+            Sistem Dokumen Terverifikasi
+          </div>
+<span class="font-label-sm text-label-sm text-outline">v2.4 NEXUS</span>
+</div>
+</section>
+<!-- Form Container -->
+<form action="#" class="flex flex-col gap-space-md" method="POST" onsubmit="event.preventDefault();">
+<!-- Card: Informasi Pertemuan -->
+<div class="bg-surface-container-lowest border border-[#EADFCF] rounded-xl p-space-md shadow-executive-card flex flex-col gap-space-md">
+<div class="flex items-center gap-space-xs pb-space-xs border-b border-[#F3ECE2]">
+<span class="material-symbols-outlined text-primary text-[20px]">event_note</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Data Pertemuan</h2>
+</div>
+<!-- Field 1: Tanggal -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-lg text-label-lg text-on-surface flex items-center gap-1" for="tanggal">
+              Tanggal Rapat <span class="text-error">*</span>
+</label>
+<div class="relative">
+<input class="w-full h-11 px-3 pl-10 rounded-lg bg-[#FCFBF8] border border-[#D8CCBA] text-on-surface font-body-md text-body-md focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 transition outline-none" id="tanggal" name="tanggal" type="date" value="2026-10-24"/>
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+</div>
+</div>
+</div>
+<!-- Field 2: Judul Rapat -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-lg text-label-lg text-on-surface flex items-center gap-1" for="judul_rapat">
+              Judul Rapat <span class="text-error">*</span>
+</label>
+<div class="relative">
+<input class="w-full h-11 px-3 pl-10 rounded-lg bg-[#FCFBF8] border border-[#D8CCBA] text-on-surface font-body-md text-body-md placeholder:text-outline/70 focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 transition outline-none" id="judul_rapat" name="judul_rapat" placeholder="Contoh: Rapat Evaluasi Bulanan" type="text" value="Rapat Koordinasi BPH &amp; Koordinator Divisi"/>
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-[20px]">title</span>
+</div>
+</div>
+</div>
+<!-- Field 3: Topik -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-lg text-label-lg text-on-surface flex items-center gap-1" for="topik">
+              Topik Bahasan <span class="text-error">*</span>
+</label>
+<div class="relative">
+<input class="w-full h-11 px-3 pl-10 rounded-lg bg-[#FCFBF8] border border-[#D8CCBA] text-on-surface font-body-md text-body-md placeholder:text-outline/70 focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 transition outline-none" id="topik" name="topik" placeholder="Pokok agenda atau agenda bahasan" type="text" value="Persiapan Natal Bersama &amp; Regenerasi Kepengurusan"/>
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-[20px]">topic</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card: Risalah & Notulensi -->
+<div class="bg-surface-container-lowest border border-[#EADFCF] rounded-xl p-space-md shadow-executive-card flex flex-col gap-space-md">
+<div class="flex items-center gap-space-xs pb-space-xs border-b border-[#F3ECE2]">
+<span class="material-symbols-outlined text-primary text-[20px]">edit_note</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Risalah &amp; Hasil Rapat</h2>
+</div>
+<!-- Field 4: Isi Notulensi -->
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between items-center">
+<label class="font-label-lg text-label-lg text-on-surface flex items-center gap-1" for="isi_notulensi">
+                Isi Notulensi <span class="text-error">*</span>
+</label>
+<span class="font-label-sm text-[11px] text-outline">Poin Diskusi &amp; Dinamika</span>
+</div>
+<textarea class="w-full p-3 rounded-lg bg-[#FCFBF8] border border-[#D8CCBA] text-on-surface font-body-md text-body-md placeholder:text-outline/70 focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 transition outline-none resize-none leading-relaxed" id="isi_notulensi" name="isi_notulensi" placeholder="Tuliskan poin pembahasan, dinamika rapat, dan catatan penting..." rows="5"></textarea>
+</div>
+<!-- Field 5: Keputusan -->
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between items-center">
+<label class="font-label-lg text-label-lg text-on-surface flex items-center gap-1" for="keputusan">
+                Keputusan &amp; Tindak Lanjut <span class="text-error">*</span>
+</label>
+<span class="font-label-sm text-[11px] text-[#205E3F] font-semibold">Tersusun Terstruktur</span>
+</div>
+<textarea class="w-full p-3 rounded-lg bg-[#FCFBF8] border border-[#D8CCBA] text-on-surface font-body-md text-body-md placeholder:text-outline/70 focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 transition outline-none resize-none leading-relaxed" id="keputusan" name="keputusan" rows="4">1. Tanggal perayaan Natal disetujui pada 15 Desember 2026 di Aula ITERA.
+2. Penunjukan PIC acara kepada Divisi Acara dan Kerohanian.
+3. Batas akhir pengumpulan RAB fungsional divisi disepakati 2 November 2026.</textarea>
+</div>
+</div>
+<!-- Card: Lampiran Dokumen -->
+<div class="bg-surface-container-lowest border border-[#EADFCF] rounded-xl p-space-md shadow-executive-card flex flex-col gap-space-sm">
+<div class="flex items-center gap-space-xs pb-space-xs border-b border-[#F3ECE2]">
+<span class="material-symbols-outlined text-primary text-[20px]">attach_file</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Unggah Lampiran</h2>
+</div>
+<!-- Field 6: Unggah Box -->
+<label class="group cursor-pointer flex flex-col items-center justify-center p-5 rounded-xl border-2 border-dashed border-[#D8CCBA] bg-[#FCFBF8] hover:bg-surface-container-low/40 hover:border-primary-container/70 transition-all duration-150" for="file_upload">
+<input class="hidden" id="file_upload" name="file_upload" type="file"/>
+<div class="w-12 h-12 rounded-full bg-[#F0E9DC] text-primary flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[26px]">cloud_upload</span>
+</div>
+<p class="font-label-lg text-label-lg text-primary text-center">Ketuk untuk unggah dokumen lampiran</p>
+<p class="font-body-sm text-[11px] text-outline text-center mt-1">Mendukung format PDF, DOCX (Maksimal 10MB)</p>
+<div class="mt-3 flex items-center gap-2 px-3 py-1 rounded bg-[#EADFCF]/50 text-on-surface-variant font-label-sm text-[11px]">
+<span class="material-symbols-outlined text-[14px]">format_image_left</span>
+              Disimpan terenkripsi di Cloud ITERA
+            </div>
+</label>
+</div>
+<!-- Sticky Action Bar / Buttons -->
+<div class="pt-space-xs flex flex-col gap-2.5">
+<!-- Primary Action Button: #62431F with Gold Text -->
+<button class="w-full h-12 flex items-center justify-center gap-2 rounded-lg bg-primary-container hover:bg-[#513719] text-tertiary-fixed font-headline-sm text-headline-sm shadow-md transition-all active:scale-[0.99]" type="submit">
+<span class="material-symbols-outlined text-[20px]">save</span>
+<span>Simpan Notulensi</span>
+</button>
+<!-- Secondary Action: Draft / Batal -->
+<div class="grid grid-cols-2 gap-2">
+<button class="h-11 flex items-center justify-center gap-1.5 rounded-lg border border-[#D8CCBA] bg-surface-container-lowest hover:bg-[#F0E9DC] text-on-surface font-label-lg text-label-lg transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">draft</span>
+<span>Simpan Draft</span>
+</button>
+<button class="h-11 flex items-center justify-center gap-1.5 rounded-lg border border-transparent bg-transparent hover:bg-error-container/40 text-error font-label-lg text-label-lg transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+<span>Batal</span>
+</button>
+</div>
+</div>
+</form>
+</main>
+<!-- Footer Security Notice -->
+<footer class="mt-auto px-space-md py-4 text-center border-t border-[#EADFCF]/60 bg-surface-container-low/30">
+<p class="font-label-sm text-[11px] text-outline">PMK-NEXUS • Sistem Administrasi Resmi • Institut Teknologi Sumatera</p>
+</footer>
+</div>
+</body></html>

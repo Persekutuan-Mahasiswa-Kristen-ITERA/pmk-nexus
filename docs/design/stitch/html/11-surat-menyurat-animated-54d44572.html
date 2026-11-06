@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Surat Menyurat - PMK-NEXUS ITERA</title>
+<!-- Google Fonts & Material Symbols -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration Verbatim -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-surface": "#26190c",
+            "primary-container": "#62431f",
+            "background": "#fff8f5",
+            "on-error-container": "#93000a",
+            "on-secondary-fixed-variant": "#4a463d",
+            "surface-dim": "#efd5c1",
+            "error": "#ba1a1a",
+            "surface-container-low": "#fff1e8",
+            "on-tertiary-fixed-variant": "#5a4300",
+            "tertiary": "#423000",
+            "outline": "#81756a",
+            "on-secondary-fixed": "#1e1b14",
+            "error-container": "#ffdad6",
+            "on-surface-variant": "#4f453b",
+            "on-primary-container": "#dcb184",
+            "secondary-fixed": "#e9e2d5",
+            "tertiary-fixed-dim": "#efc04b",
+            "on-primary": "#ffffff",
+            "tertiary-container": "#5e4600",
+            "surface-container-high": "#fee3ce",
+            "primary-fixed": "#ffddbb",
+            "outline-variant": "#d3c4b7",
+            "surface-variant": "#f8dec9",
+            "on-secondary-container": "#68645a",
+            "tertiary-fixed": "#ffdf9a",
+            "on-tertiary-fixed": "#251a00",
+            "surface-bright": "#fff8f5",
+            "surface-container": "#ffeadb",
+            "inverse-primary": "#ebbe90",
+            "on-primary-fixed-variant": "#5f401d",
+            "on-secondary": "#ffffff",
+            "surface-tint": "#7a5832",
+            "inverse-on-surface": "#ffeee1",
+            "secondary-fixed-dim": "#ccc6b9",
+            "surface-container-highest": "#f8dec9",
+            "primary-fixed-dim": "#ebbe90",
+            "secondary": "#625e54",
+            "on-tertiary-container": "#e1b33f",
+            "on-primary-fixed": "#2b1700",
+            "primary": "#482d0a",
+            "surface": "#fff8f5",
+            "surface-container-lowest": "#ffffff",
+            "on-background": "#26190c",
+            "on-tertiary": "#ffffff",
+            "inverse-surface": "#3d2d1f",
+            "on-error": "#ffffff",
+            "secondary-container": "#e9e2d5"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter-md": "1rem",
+            "space-xs": "0.25rem",
+            "space-xl": "1.75rem",
+            "margin": "1rem",
+            "space-sm": "0.5rem",
+            "space-md": "1rem",
+            "margin-md": "1.5rem",
+            "space-lg": "1.25rem",
+            "gutter": "0.75rem",
+            "margin-lg": "2rem"
+          },
+          "fontFamily": {
+            "display-lg": ["Playfair Display"],
+            "numeric-metric": ["Plus Jakarta Sans"],
+            "body-lg": ["Plus Jakarta Sans"],
+            "body-sm": ["Plus Jakarta Sans"],
+            "display-sm": ["Playfair Display"],
+            "headline-sm": ["Plus Jakarta Sans"],
+            "body-md": ["Plus Jakarta Sans"],
+            "label-sm": ["Plus Jakarta Sans"],
+            "headline-lg": ["Playfair Display"],
+            "label-lg": ["Plus Jakarta Sans"]
+          },
+          "fontSize": {
+            "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+            "numeric-metric": ["20px", { "lineHeight": "26px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "body-lg": ["15px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "display-sm": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+            "headline-sm": ["16px", { "lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+            "headline-lg": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "label-lg": ["13px", { "lineHeight": "18px", "letterSpacing": "0.02em", "fontWeight": "600" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      display: none;
+    }
+    .custom-scroll {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    body {
+      min-height: max(884px, 100dvh);
+    }
+
+    /* Keyframe Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulseGlowEmerald {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+      }
+      50% {
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0);
+      }
+    }
+
+    @keyframes pulseGlowAmber {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.4);
+      }
+      50% {
+        box-shadow: 0 0 0 4px rgba(217, 119, 6, 0);
+      }
+    }
+
+    .animate-fade-in-up {
+      animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .pulse-glow-emerald {
+      animation: pulseGlowEmerald 2.5s infinite;
+    }
+
+    .pulse-glow-amber {
+      animation: pulseGlowAmber 2.2s infinite;
+    }
+
+    /* Staggered entrance animation delays */
+    .stagger-1 { animation-delay: 0.05s; }
+    .stagger-2 { animation-delay: 0.12s; }
+    .stagger-3 { animation-delay: 0.2s; }
+    .stagger-4 { animation-delay: 0.28s; }
+    .stagger-5 { animation-delay: 0.36s; }
+    .stagger-6 { animation-delay: 0.44s; }
+
+    /* Accessibility - Reduced Motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, ::before, ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen pb-24 selection:bg-surface-variant selection:text-primary">
+<!-- ==================== TOP APP BAR ==================== -->
+<header class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center h-16 px-space-md w-full bg-primary-container text-on-primary shadow-sm">
+<!-- Leading Menu Button -->
+<button aria-label="Open Navigation Drawer" class="p-2 rounded-lg hover:bg-primary/20 transition-all active:scale-95 duration-150 flex items-center justify-center text-on-primary" id="open-drawer-btn" type="button">
+<span class="material-symbols-outlined text-[24px]">menu</span>
+</button>
+<!-- Center Brand & Institutional Seal -->
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-white flex items-center justify-center p-1 shadow-sm border border-secondary-container">
+<!-- Official Crest Emblem stylized representation -->
+<div class="w-full h-full rounded-full border border-primary flex items-center justify-center bg-surface-container-low text-primary">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">local_police</span>
+</div>
+</div>
+<span class="font-headline-lg text-headline-lg text-on-primary tracking-wide">PMK ITERA</span>
+</div>
+<!-- Trailing Notification Button with Alert Badge -->
+<div class="relative">
+<button aria-label="Notifications" class="p-2 rounded-lg hover:bg-primary/20 transition-all active:scale-95 duration-150 flex items-center justify-center text-on-primary" type="button">
+<span class="material-symbols-outlined text-[24px]">notifications</span>
+</button>
+<span class="absolute top-2 right-2 w-2.5 h-2.5 bg-tertiary-fixed-dim rounded-full border-2 border-primary-container"></span>
+</div>
+</header>
+<!-- ==================== NAVIGATION DRAWER (Shared Component) ==================== -->
+<div class="fixed inset-0 bg-on-surface/40 z-50 hidden transition-opacity duration-300 opacity-0" id="drawer-backdrop"></div>
+<aside class="fixed inset-y-0 left-0 w-72 max-w-[80vw] z-50 bg-surface-container-low text-primary shadow-xl border-r border-outline-variant/30 transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col h-full p-space-md overflow-y-auto" id="drawer">
+<!-- Drawer Header -->
+<div class="flex items-center justify-between pb-4 border-b border-outline-variant/20 mb-3">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold shadow-sm">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+</div>
+<div>
+<h2 class="font-display-sm text-display-sm font-bold text-primary leading-tight">PMK-NEXUS</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant font-medium">Institut Teknologi Sumatera</p>
+<span class="font-label-sm text-label-sm text-secondary block mt-0.5">Sistem Administrasi Terpadu</span>
+</div>
+</div>
+<button class="p-1 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" id="close-drawer-btn">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Drawer Navigation Links -->
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg px-space-md py-space-sm transition-colors active:scale-[0.99] duration-150" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-lg text-label-lg">Dashboard</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg px-space-md py-space-sm transition-colors active:scale-[0.99] duration-150" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-lg text-label-lg">Data Anggota</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg px-space-md py-space-sm transition-colors active:scale-[0.99] duration-150" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="font-label-lg text-label-lg">Finance</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg px-space-md py-space-sm transition-colors active:scale-[0.99] duration-150" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-lg text-label-lg">Notulensi Rapat</span>
+</a>
+<!-- Active Link: Surat Menyurat -->
+<a class="flex items-center gap-space-sm bg-primary text-on-primary font-semibold rounded-lg px-space-md py-space-sm shadow-sm active:scale-[0.99] duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">mail</span>
+<span class="font-label-lg text-label-lg">Surat Menyurat</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg px-space-md py-space-sm transition-colors active:scale-[0.99] duration-150" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-lg text-label-lg">Manajemen &amp; Inventaris Barang</span>
+</a>
+</nav>
+<!-- Bottom Meta Profile -->
+<div class="pt-4 border-t border-outline-variant/30 flex items-center justify-between text-on-surface-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">verified_user</span>
+<span class="font-label-sm text-label-sm">BPH Periode 2026/2027</span>
+</div>
+<span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+</div>
+</aside>
+<!-- ==================== MAIN CONTENT CANVAS ==================== -->
+<main class="pt-20 px-4 max-w-md mx-auto w-full">
+<!-- Executive Title Banner -->
+<section class="mb-4 text-center animate-fade-in-up stagger-1">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container/60 text-secondary mb-1 border border-outline-variant/30 transition-transform hover:scale-105 duration-200">
+<span class="material-symbols-outlined text-[14px]">archive</span>
+<span class="font-label-sm text-label-sm tracking-wide">ARSIP ELEKTRONIK</span>
+</div>
+<h1 class="font-display-lg text-display-lg text-primary tracking-tight">Surat Menyurat</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Arsip &amp; Manajemen Dokumen Resmi PMK ITERA</p>
+</section>
+<!-- Category Segments / Pill Navigation -->
+<section class="bg-surface-container-low p-1.5 rounded-xl border border-outline-variant/40 mb-4 flex items-center gap-1 shadow-sm animate-fade-in-up stagger-2" id="tab-segment-group">
+<button class="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-primary-container text-on-primary font-label-lg text-label-lg shadow-sm transition-all duration-200 active:scale-95 hover:brightness-105" id="tab-masuk" type="button">
+<span>Surat Masuk</span>
+<span class="inline-flex items-center justify-center px-1.5 py-0.2 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold shadow-xs">8</span>
+</button>
+<button class="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-lg text-label-lg transition-all duration-200 active:scale-95" id="tab-keluar" type="button">
+<span>Surat Keluar</span>
+<span class="inline-flex items-center justify-center px-1.5 py-0.2 rounded-full bg-secondary-container text-on-secondary-fixed-variant font-label-sm text-label-sm font-bold">14</span>
+</button>
+</section>
+<!-- Search & Filter Controls -->
+<section class="mb-4 space-y-2 animate-fade-in-up stagger-3">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-secondary text-[20px] transition-colors duration-150">search</span>
+<input class="w-full pl-10 pr-10 py-2.5 bg-surface-container-lowest border border-outline-variant/50 rounded-lg text-on-surface font-body-md text-body-md placeholder:text-outline focus:outline-none focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 shadow-sm transition duration-200" placeholder="Cari nomor surat atau perihal..." type="search"/>
+<button class="absolute right-3 text-secondary hover:text-primary active:scale-90 transition-all duration-150" type="button">
+<span class="material-symbols-outlined text-[20px]">tune</span>
+</button>
+</div>
+<!-- Quick Filter Pills -->
+<div class="flex items-center gap-2 overflow-x-auto custom-scroll pb-1" id="filter-pills-container">
+<span class="font-label-sm text-label-sm text-secondary shrink-0 pl-1">Status:</span>
+<button class="filter-pill shrink-0 px-2.5 py-1 rounded-full bg-primary text-on-primary font-label-sm text-label-sm shadow-xs transition-all duration-200 active:scale-95 border border-primary">Semua (22)</button>
+<button class="filter-pill shrink-0 px-2.5 py-1 rounded-full bg-surface-container-lowest border border-outline-variant/50 text-on-surface-variant font-label-sm text-label-sm hover:border-primary hover:text-primary transition-all duration-200 active:scale-95">Verifikasi (5)</button>
+<button class="filter-pill shrink-0 px-2.5 py-1 rounded-full bg-surface-container-lowest border border-outline-variant/50 text-on-surface-variant font-label-sm text-label-sm hover:border-primary hover:text-primary transition-all duration-200 active:scale-95">Disetujui (12)</button>
+<button class="filter-pill shrink-0 px-2.5 py-1 rounded-full bg-surface-container-lowest border border-outline-variant/50 text-on-surface-variant font-label-sm text-label-sm hover:border-primary hover:text-primary transition-all duration-200 active:scale-95">Menunggu (5)</button>
+</div>
+</section>
+<!-- Correspondence Ledger Cards -->
+<section class="space-y-3.5">
+<!-- Card 1 -->
+<article class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-4 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 relative group animate-fade-in-up stagger-4">
+<div class="flex items-start justify-between gap-2 pb-2.5 border-b border-outline-variant/20">
+<div>
+<span class="font-label-sm text-label-sm text-secondary uppercase tracking-wider block">Nomor Surat</span>
+<p class="font-headline-sm text-headline-sm font-bold text-primary">PMK/NEX/SM/2026/001</p>
+</div>
+<!-- Status Badge -->
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm bg-emerald-50 text-emerald-800 border border-emerald-200 pulse-glow-emerald">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+            Resmi / Terverifikasi
+          </span>
+</div>
+<div class="pt-2.5 space-y-1.5">
+<div class="flex items-center gap-1.5 text-secondary">
+<span class="material-symbols-outlined text-[16px]">corporate_fare</span>
+<span class="font-label-sm text-label-sm font-semibold text-on-surface">Direktorat Jenderal Pajak / BPH ITERA</span>
+</div>
+<div>
+<h3 class="font-body-md text-body-md font-bold text-on-surface leading-snug group-hover:text-primary transition-colors duration-150">
+              Permohonan Verifikasi Berkas &amp; Legalitas Kepengurusan
+            </h3>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant font-body-sm text-body-sm pt-1">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-outline">calendar_today</span>
+              14 Okt 2026
+            </span>
+<span class="flex items-center gap-1 text-secondary">
+<span class="material-symbols-outlined text-[15px]">attach_file</span>
+              2 Berkas (PDF)
+            </span>
+</div>
+</div>
+<!-- Quick Actions Row -->
+<div class="mt-3 pt-3 border-t border-outline-variant/20 flex items-center justify-end gap-2">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container active:scale-95 text-primary font-label-sm text-label-sm font-semibold flex items-center gap-1.5 transition-all duration-150" type="button">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+            Lihat Surat
+          </button>
+<button class="px-3 py-1.5 rounded-lg bg-primary-container text-on-primary hover:bg-primary active:scale-95 font-label-sm text-label-sm font-semibold flex items-center gap-1.5 shadow-sm hover:shadow transition-all duration-150" type="button">
+<span class="material-symbols-outlined text-[16px]">download</span>
+            Unduh PDF
+          </button>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-4 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 relative group animate-fade-in-up stagger-5">
+<div class="flex items-start justify-between gap-2 pb-2.5 border-b border-outline-variant/20">
+<div>
+<span class="font-label-sm text-label-sm text-secondary uppercase tracking-wider block">Nomor Surat</span>
+<p class="font-headline-sm text-headline-sm font-bold text-primary">PMK/NEX/SK/2026/012</p>
+</div>
+<!-- Status Badge -->
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm bg-surface-container-low text-primary border border-outline-variant/50">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+            Surat Keluar
+          </span>
+</div>
+<div class="pt-2.5 space-y-1.5">
+<div class="flex items-center gap-1.5 text-secondary">
+<span class="material-symbols-outlined text-[16px]">school</span>
+<span class="font-label-sm text-label-sm font-semibold text-on-surface">Rektorat Institut Teknologi Sumatera</span>
+</div>
+<div>
+<h3 class="font-body-md text-body-md font-bold text-on-surface leading-snug group-hover:text-primary transition-colors duration-150">
+              Peminjaman Aula Gedung Kuliah Umum (GKU 1) Kegiatan Dies Natalis
+            </h3>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant font-body-sm text-body-sm pt-1">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-outline">calendar_today</span>
+              20 Okt 2026
+            </span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800">
+<span class="material-symbols-outlined text-[13px]">check_circle</span>
+              Status: Disetujui
+            </span>
+</div>
+</div>
+<!-- Quick Actions Row -->
+<div class="mt-3 pt-3 border-t border-outline-variant/20 flex items-center justify-end gap-2">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container active:scale-95 text-primary font-label-sm text-label-sm font-semibold flex items-center gap-1.5 transition-all duration-150" type="button">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+            Lihat Surat
+          </button>
+<button class="px-3 py-1.5 rounded-lg bg-primary-container text-on-primary hover:bg-primary active:scale-95 font-label-sm text-label-sm font-semibold flex items-center gap-1.5 shadow-sm hover:shadow transition-all duration-150" type="button">
+<span class="material-symbols-outlined text-[16px]">download</span>
+            Unduh PDF
+          </button>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-4 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 relative group animate-fade-in-up stagger-6">
+<div class="flex items-start justify-between gap-2 pb-2.5 border-b border-outline-variant/20">
+<div>
+<span class="font-label-sm text-label-sm text-secondary uppercase tracking-wider block">Nomor Surat</span>
+<p class="font-headline-sm text-headline-sm font-bold text-primary">PMK/NEX/SM/2026/005</p>
+</div>
+<!-- Status Badge -->
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm bg-amber-50 text-amber-900 border border-amber-200 pulse-glow-amber">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+            Sedang Diproses
+          </span>
+</div>
+<div class="pt-2.5 space-y-1.5">
+<div class="flex items-center gap-1.5 text-secondary">
+<span class="material-symbols-outlined text-[16px]">groups</span>
+<span class="font-label-sm text-label-sm font-semibold text-on-surface">Badan Kerjasama Mahasiswa Kristen Lampung</span>
+</div>
+<div>
+<h3 class="font-body-md text-body-md font-bold text-on-surface leading-snug group-hover:text-primary transition-colors duration-150">
+              Undangan Seminar Kepemimpinan Mahasiswa Kristen Se-Lampung
+            </h3>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant font-body-sm text-body-sm pt-1">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-outline">calendar_today</span>
+              02 Nov 2026
+            </span>
+<span class="flex items-center gap-1 text-secondary">
+<span class="material-symbols-outlined text-[15px]">attach_file</span>
+              1 Dokumen Disposisi
+            </span>
+</div>
+</div>
+<!-- Quick Actions Row -->
+<div class="mt-3 pt-3 border-t border-outline-variant/20 flex items-center justify-end gap-2">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container active:scale-95 text-primary font-label-sm text-label-sm font-semibold flex items-center gap-1.5 transition-all duration-150" type="button">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+            Lihat Surat
+          </button>
+<button class="px-3 py-1.5 rounded-lg bg-primary-container text-on-primary hover:bg-primary active:scale-95 font-label-sm text-label-sm font-semibold flex items-center gap-1.5 shadow-sm hover:shadow transition-all duration-150" type="button">
+<span class="material-symbols-outlined text-[16px]">download</span>
+            Unduh PDF
+          </button>
+</div>
+</article>
+</section>
+<!-- Understated Pagination -->
+<div class="mt-6 flex items-center justify-between text-on-surface-variant py-2 px-1">
+<button class="p-2 rounded-lg border border-outline-variant/50 text-secondary hover:bg-surface-container disabled:opacity-40 transition-colors" disabled="">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<span class="font-body-sm text-body-sm font-medium">Halaman 1 dari 4 (22 Dokumen)</span>
+<button class="p-2 rounded-lg border border-outline-variant/50 text-primary hover:bg-surface-container active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</main>
+<!-- ==================== FLOATING ACTION BUTTON (Primary Action) ==================== -->
+<div class="fixed bottom-6 right-4 z-40 max-w-md mx-auto">
+<button class="flex items-center gap-2 px-4 py-3 bg-primary-container hover:bg-primary text-on-primary rounded-full shadow-lg hover:shadow-xl hover:-translate-y-0.5 border border-primary/20 active:scale-95 transition-all duration-200" type="button">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">add</span>
+<span class="font-label-lg text-label-lg font-bold tracking-wide">+ Buat Surat Baru</span>
+</button>
+</div>
+<!-- Interactive Logic for Drawer & Filter Micro-interactions -->
+<script>
+    const drawer = document.getElementById('drawer');
+    const backdrop = document.getElementById('drawer-backdrop');
+    const openBtn = document.getElementById('open-drawer-btn');
+    const closeBtn = document.getElementById('close-drawer-btn');
+
+    function openDrawer() {
+      backdrop.classList.remove('hidden');
+      setTimeout(() => {
+        backdrop.classList.remove('opacity-0');
+        backdrop.classList.add('opacity-100');
+        drawer.classList.remove('-translate-x-full');
+      }, 10);
+    }
+
+    function closeDrawer() {
+      drawer.classList.add('-translate-x-full');
+      backdrop.classList.remove('opacity-100');
+      backdrop.classList.add('opacity-0');
+      setTimeout(() => {
+        backdrop.classList.add('hidden');
+      }, 300);
+    }
+
+    openBtn.addEventListener('click', openDrawer);
+    closeBtn.addEventListener('click', closeDrawer);
+    backdrop.addEventListener('click', closeDrawer);
+
+    // Segmented Tab Switch Microinteraction
+    const tabMasuk = document.getElementById('tab-masuk');
+    const tabKeluar = document.getElementById('tab-keluar');
+
+    function setActiveTab(activeBtn, inactiveBtn) {
+      activeBtn.className = "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-primary-container text-on-primary font-label-lg text-label-lg shadow-sm transition-all duration-200 active:scale-95 hover:brightness-105";
+      inactiveBtn.className = "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container font-label-lg text-label-lg transition-all duration-200 active:scale-95";
+    }
+
+    tabMasuk.addEventListener('click', () => setActiveTab(tabMasuk, tabKeluar));
+    tabKeluar.addEventListener('click', () => setActiveTab(tabKeluar, tabMasuk));
+
+    // Smooth status pill selection microinteraction
+    const filterPills = document.querySelectorAll('.filter-pill');
+    filterPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        filterPills.forEach(p => {
+          p.className = 'filter-pill shrink-0 px-2.5 py-1 rounded-full bg-surface-container-lowest border border-outline-variant/50 text-on-surface-variant font-label-sm text-label-sm hover:border-primary hover:text-primary transition-all duration-200 active:scale-95';
+        });
+        pill.className = 'filter-pill shrink-0 px-2.5 py-1 rounded-full bg-primary text-on-primary font-label-sm text-label-sm shadow-xs transition-all duration-200 active:scale-95 border border-primary';
+      });
+    });
+  </script>
+</body></html>

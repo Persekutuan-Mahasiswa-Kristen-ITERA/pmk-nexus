@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PMK-NEXUS - Finance &amp; Transparansi Keuangan</title>
+<!-- Google Fonts: Playfair Display & Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-surface": "#26190c",
+            "primary-container": "#62431f",
+            "background": "#fff8f5",
+            "on-error-container": "#93000a",
+            "on-secondary-fixed-variant": "#4a463d",
+            "surface-dim": "#efd5c1",
+            "error": "#ba1a1a",
+            "surface-container-low": "#fff1e8",
+            "on-tertiary-fixed-variant": "#5a4300",
+            "tertiary": "#423000",
+            "outline": "#81756a",
+            "on-secondary-fixed": "#1e1b14",
+            "error-container": "#ffdad6",
+            "on-surface-variant": "#4f453b",
+            "on-primary-container": "#dcb184",
+            "secondary-fixed": "#e9e2d5",
+            "tertiary-fixed-dim": "#efc04b",
+            "on-primary": "#ffffff",
+            "tertiary-container": "#5e4600",
+            "surface-container-high": "#fee3ce",
+            "primary-fixed": "#ffddbb",
+            "outline-variant": "#d3c4b7",
+            "surface-variant": "#f8dec9",
+            "on-secondary-container": "#68645a",
+            "tertiary-fixed": "#ffdf9a",
+            "on-tertiary-fixed": "#251a00",
+            "surface-bright": "#fff8f5",
+            "surface-container": "#ffeadb",
+            "inverse-primary": "#ebbe90",
+            "on-primary-fixed-variant": "#5f401d",
+            "on-secondary": "#ffffff",
+            "surface-tint": "#7a5832",
+            "inverse-on-surface": "#ffeee1",
+            "secondary-fixed-dim": "#ccc6b9",
+            "surface-container-highest": "#f8dec9",
+            "primary-fixed-dim": "#ebbe90",
+            "secondary": "#625e54",
+            "on-tertiary-container": "#e1b33f",
+            "on-primary-fixed": "#2b1700",
+            "primary": "#482d0a",
+            "surface": "#fff8f5",
+            "surface-container-lowest": "#ffffff",
+            "on-background": "#26190c",
+            "on-tertiary": "#ffffff",
+            "inverse-surface": "#3d2d1f",
+            "on-error": "#ffffff",
+            "secondary-container": "#e9e2d5"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter-md": "1rem",
+            "space-xs": "0.25rem",
+            "space-xl": "1.75rem",
+            "margin": "1rem",
+            "space-sm": "0.5rem",
+            "space-md": "1rem",
+            "margin-md": "1.5rem",
+            "space-lg": "1.25rem",
+            "gutter": "0.75rem",
+            "margin-lg": "2rem"
+          },
+          "fontFamily": {
+            "display-lg": ["Playfair Display"],
+            "numeric-metric": ["Plus Jakarta Sans"],
+            "body-lg": ["Plus Jakarta Sans"],
+            "body-sm": ["Plus Jakarta Sans"],
+            "display-sm": ["Playfair Display"],
+            "headline-sm": ["Plus Jakarta Sans"],
+            "body-md": ["Plus Jakarta Sans"],
+            "label-sm": ["Plus Jakarta Sans"],
+            "headline-lg": ["Playfair Display"],
+            "label-lg": ["Plus Jakarta Sans"]
+          },
+          "fontSize": {
+            "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+            "numeric-metric": ["20px", { "lineHeight": "26px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "body-lg": ["15px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "display-sm": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+            "headline-sm": ["16px", { "lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+            "headline-lg": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "label-lg": ["13px", { "lineHeight": "18px", "letterSpacing": "0.02em", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      font-size: 24px;
+      line-height: 1;
+      display: inline-block;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface antialiased min-h-screen pb-16 selection:bg-surface-variant selection:text-primary">
+<!-- Mobile Drawer Backdrop & Shell (Simulated Responsive Drawer Integration) -->
+<div class="fixed inset-0 bg-inverse-surface/40 backdrop-blur-xs z-50 hidden transition-opacity" id="drawer-backdrop"></div>
+<aside class="fixed inset-y-0 left-0 w-72 max-w-[80vw] z-50 bg-surface-container-low dark:bg-surface-container shadow-xl border-r border-outline-variant/30 -translate-x-full transition-transform duration-200 ease-in-out" id="drawer">
+<div class="flex flex-col h-full p-space-md overflow-y-auto">
+<!-- Profile Header in Drawer -->
+<div class="pb-space-md border-b border-outline-variant/30 flex items-center gap-space-sm mb-space-md">
+<div class="w-12 h-12 rounded-full border border-outline-variant/60 bg-surface-container-lowest flex items-center justify-center p-1 shadow-xs">
+<img class="w-full h-full object-contain rounded-full" data-alt="Official round institutional seal of PMK ITERA featuring Christian cross, academic laurel wreath, and golden crest in walnut brown and gold palette on crisp parchment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDa4fBneijyuxYRJrbryGscgn-yQrhqYmL-L6R2zXpwYixYb4kp0Q3x5p_8a_FB6igwLWPGmfkWVNnlFyiZWcS8YXXNse4Emzx2e-JfWaidEOvindNjiUIB9yfTHeZScHtmkcrBHRQJyiKBwBIjECiMBm6lOCRW4gdHbkQqCi-zFf5Bj24EW6M8LAICi5YeHmvmBXRLCpm2Z7lZ1CHbCH2UEZLwaDeTOgkB1BanOH1G"/>
+</div>
+<div>
+<h2 class="font-display-sm text-display-sm font-bold text-primary dark:text-primary-fixed leading-tight">PMK-NEXUS</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Institut Teknologi Sumatera</p>
+<span class="inline-block mt-0.5 font-label-sm text-[10px] text-tertiary-container bg-tertiary-fixed/60 px-1.5 py-0.5 rounded">Sistem Administrasi Terpadu</span>
+</div>
+</div>
+<!-- Navigation Drawer Links -->
+<nav class="flex flex-col gap-1.5 flex-1">
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg px-space-md py-space-sm transition-colors active:scale-[0.99] duration-150" href="#">
+<span class="material-symbols-outlined text-outline">dashboard</span>
+<span class="font-label-lg text-label-lg">Dashboard</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg px-space-md py-space-sm transition-colors active:scale-[0.99] duration-150" href="#">
+<span class="material-symbols-outlined text-outline">group</span>
+<span class="font-label-lg text-label-lg">Data Anggota</span>
+</a>
+<!-- ACTIVE TAB: Finance (As mandated by hierarchy and context) -->
+<a class="flex items-center gap-space-sm bg-primary text-on-primary font-semibold rounded-lg px-space-md py-space-sm shadow-sm active:scale-[0.99] duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+<span class="font-label-lg text-label-lg">Finance</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg px-space-md py-space-sm transition-colors active:scale-[0.99] duration-150" href="#">
+<span class="material-symbols-outlined text-outline">description</span>
+<span class="font-label-lg text-label-lg">Notulensi Rapat</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg px-space-md py-space-sm transition-colors active:scale-[0.99] duration-150" href="#">
+<span class="material-symbols-outlined text-outline">mail</span>
+<span class="font-label-lg text-label-lg">Surat Menyurat</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg px-space-md py-space-sm transition-colors active:scale-[0.99] duration-150" href="#">
+<span class="material-symbols-outlined text-outline">inventory_2</span>
+<span class="font-label-lg text-label-lg">Manajemen &amp; Inventaris Barang</span>
+</a>
+</nav>
+<div class="pt-space-md border-t border-outline-variant/30 flex items-center justify-between text-on-surface-variant">
+<span class="font-label-sm text-label-sm">Versi 2.4 Executive</span>
+<button class="p-1 rounded-lg hover:bg-surface-container-high" id="close-drawer">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+</div>
+</aside>
+<!-- TopAppBar Component (from Shared Components JSON: small_center_aligned) -->
+<header class="fixed top-0 left-0 right-0 z-40 flex justify-between items-center h-16 px-space-md w-full bg-primary-container dark:bg-surface-container-highest border-b border-primary/20 shadow-sm">
+<!-- Leading Icon (Menu button triggering the drawer) -->
+<button aria-label="Buka Menu" class="w-10 h-10 flex items-center justify-center rounded-lg text-on-primary hover:bg-primary/20 transition-colors active:scale-95 duration-150" id="open-drawer-btn" type="button">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<!-- Center Headline & Institutional Branding -->
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full border border-on-primary/40 bg-surface-container-lowest/10 flex items-center justify-center p-0.5">
+<img class="w-full h-full object-contain rounded-full" data-alt="Insignia crest of PMK ITERA student body rendered in regal gold and deep walnut lines, emblem representing unity and academic excellence." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYPq-LmMMeXLySMna6vsswiqyw22PWMm8UMiWbo9NsS7zboZKMcshi7I5sACHHdHEyd_kUi5ItuEAzxTjyG75-KnBODflN2PGooL6rc6qgqnL_2vfQVMU7SoW6SQtlISOGMdrCKN-RI76VmAuCFWJvHATCN-oHDNkxC5OyDlHD8ipABMlf-2wXOkQk8zch8Dw6AJ0qE4znlHQHWxVfFcOjrU8GxVZacQL5xc0jovgo"/>
+</div>
+<div class="flex flex-col items-center">
+<span class="font-headline-lg text-headline-lg text-on-primary tracking-wide leading-none font-bold">PMK ITERA</span>
+<span class="font-label-sm text-[10px] tracking-wider text-on-primary-container uppercase">Executive Dashboard</span>
+</div>
+</div>
+<!-- Trailing Icon (Notifications with gold badge dot) -->
+<div class="relative">
+<button aria-label="Notifikasi" class="w-10 h-10 flex items-center justify-center rounded-lg text-on-primary hover:bg-primary/20 transition-colors active:scale-95 duration-150" type="button">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<span class="absolute top-2 right-2 w-2.5 h-2.5 bg-tertiary-fixed-dim rounded-full ring-2 ring-primary-container"></span>
+</div>
+</header>
+<!-- Main Content Canvas (Optimized for Mobile with Responsive Max-width Shell) -->
+<main class="pt-20 px-space-md max-w-xl mx-auto space-y-space-lg">
+<!-- Title Section: Collegiate Crest Banner & Page Header -->
+<section class="pt-2">
+<!-- Institutional Ribbon Pill -->
+<div class="mx-auto w-fit px-4 py-1 rounded-full bg-surface-container-high border border-outline-variant/40 flex items-center gap-1.5 shadow-xs mb-3">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary-container animate-pulse"></span>
+<span class="font-display-sm text-xs font-bold tracking-widest text-primary uppercase">PMK-NEXUS</span>
+</div>
+<div class="text-center">
+<h1 class="font-display-lg text-display-lg text-on-surface font-bold tracking-tight">Finance</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-0.5">Laporan Arus Kas &amp; Saldo Operasional Organisasi</p>
+</div>
+</section>
+<!-- Metrics Cards: Total Pemasukan & Total Pengeluaran (Horizontal Metric Pair) -->
+<section class="grid grid-cols-2 gap-3">
+<!-- Total Pemasukan Card -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/40 shadow-xs flex flex-col justify-between relative overflow-hidden">
+<div class="absolute -right-3 -bottom-3 text-secondary/5 pointer-events-none">
+<span class="material-symbols-outlined text-6xl">trending_up</span>
+</div>
+<div>
+<div class="flex items-center justify-between gap-1 mb-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Total Pemasukan</span>
+<span class="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+<span class="material-symbols-outlined text-[12px]">north</span> 12%
+            </span>
+</div>
+<p class="font-numeric-metric text-numeric-metric text-on-surface font-bold tracking-tight break-all">
+            Rp 999.999.999
+          </p>
+</div>
+<div class="mt-2.5 pt-2 border-t border-outline-variant/20 flex items-center justify-between text-[11px] text-on-surface-variant">
+<span>Tercatat TA 2026</span>
+<span class="text-emerald-700 font-medium">Surplus</span>
+</div>
+</div>
+<!-- Total Pengeluaran Card -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md border border-outline-variant/40 shadow-xs flex flex-col justify-between relative overflow-hidden">
+<div class="absolute -right-3 -bottom-3 text-secondary/5 pointer-events-none">
+<span class="material-symbols-outlined text-6xl">trending_down</span>
+</div>
+<div>
+<div class="flex items-center justify-between gap-1 mb-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Total Pengeluaran</span>
+<span class="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200">
+<span class="material-symbols-outlined text-[12px]">south</span> 4.2%
+            </span>
+</div>
+<p class="font-numeric-metric text-numeric-metric text-on-surface font-bold tracking-tight break-all">
+            Rp 100.000.000
+          </p>
+</div>
+<div class="mt-2.5 pt-2 border-t border-outline-variant/20 flex items-center justify-between text-[11px] text-on-surface-variant">
+<span>Anggaran RKA</span>
+<span class="text-amber-800 font-medium">Terkontrol</span>
+</div>
+</div>
+</section>
+<!-- Central Hero Card: Total Saldo Kas -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant/50 p-5 shadow-xs relative overflow-hidden">
+<!-- Decorative Top Accent Bar -->
+<div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-primary-container to-tertiary-fixed-dim"></div>
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">Total Saldo Kas</h2>
+<p class="font-body-sm text-[11px] text-on-surface-variant">Rekening Giro Utama Kas Operasional</p>
+</div>
+</div>
+<span class="px-2.5 py-0.5 rounded-full text-label-sm text-label-sm font-semibold bg-[#EDF7F1] text-[#205E3F] border border-[#BCDDC8] flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-[#205E3F]"></span> Aktif / Klir
+        </span>
+</div>
+<!-- Main Balance Display -->
+<div class="my-4 p-4 rounded-lg bg-surface-container-low border border-outline-variant/30 text-center">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant block mb-1">Kas Likuid Tersedia</span>
+<div class="font-display-lg text-[28px] leading-tight font-extrabold text-primary">
+          Rp 899.999.999
+        </div>
+<p class="font-body-sm text-[11px] text-on-surface-variant mt-2 flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-tertiary-container">verified</span>
+          Update per 24 Oktober 2026 • Rekening BNI Resmi PMK (No. Rek 182-004-9811)
+        </p>
+</div>
+<!-- Action Button: Unduh Transkrip -->
+<div class="flex flex-col sm:flex-row gap-2 mt-4">
+<button class="w-full flex items-center justify-center gap-2 bg-primary-container text-on-primary hover:bg-[#513719] py-2.5 px-4 rounded-lg font-label-lg text-label-lg font-semibold shadow-xs transition-transform active:scale-[0.98]" type="button">
+<span class="material-symbols-outlined text-[18px]">print</span>
+<span>Unduh Transkrip / Cetak Laporan</span>
+</button>
+<button class="w-full sm:w-auto flex items-center justify-center gap-1.5 border border-primary text-primary hover:bg-surface-container-high py-2.5 px-3 rounded-lg font-label-lg text-label-lg font-semibold transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+<span class="whitespace-nowrap">Input Kas</span>
+</button>
+</div>
+</section>
+<!-- Quick Search & Ledger Filters -->
+<section class="flex items-center justify-between gap-2">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-outline text-lg pointer-events-none">search</span>
+<input class="w-full pl-9 pr-3 py-2 text-body-md bg-[#FCFBF8] border border-[#D8CCBA] rounded-lg focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 text-on-surface placeholder:text-outline" placeholder="Cari transaksi..." type="text"/>
+</div>
+<button class="h-10 px-3 bg-secondary-container hover:bg-outline-variant/50 rounded-lg text-on-secondary-container flex items-center gap-1 border border-outline-variant/30 text-label-lg font-medium">
+<span class="material-symbols-outlined text-lg">tune</span>
+<span class="hidden sm:inline">Filter</span>
+</button>
+</section>
+<!-- Section: Riwayat Transaksi Terkini (Ledger Table & Responsive Cards) -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant/40 shadow-xs overflow-hidden">
+<!-- Section Header -->
+<div class="p-space-md border-b border-outline-variant/30 flex items-center justify-between bg-surface-bright">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
+<h3 class="font-headline-sm text-headline-sm font-bold text-on-surface">Riwayat Transaksi Terkini</h3>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full">4 Data Terbaru</span>
+</div>
+<!-- Table Header (Visible for structure) -->
+<div class="grid grid-cols-12 bg-[#F0E9DC] px-3 py-2 text-label-sm font-bold text-primary-container uppercase border-b border-[#E2D7C5]">
+<div class="col-span-3 text-left">Tanggal</div>
+<div class="col-span-5 text-left">Keterangan</div>
+<div class="col-span-4 text-right">Jumlah / Status</div>
+</div>
+<!-- Transaction Rows -->
+<div class="divide-y divide-[#F3ECE2]">
+<!-- Row 1: Persembahan Ibadah Padang (+Rp 4.500.000) -->
+<div class="grid grid-cols-12 px-3 py-3 items-center hover:bg-surface-container-low/40 transition-colors">
+<div class="col-span-3 font-label-sm text-label-sm text-on-surface-variant">
+            2026-10-15
+          </div>
+<div class="col-span-5 pr-2">
+<p class="font-label-lg text-label-lg font-semibold text-on-surface line-clamp-1">Persembahan Ibadah Padang</p>
+<span class="font-body-sm text-[11px] text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-tertiary">church</span> Divisi Kerohanian
+            </span>
+</div>
+<div class="col-span-4 text-right">
+<div class="font-numeric-metric text-label-lg font-bold text-emerald-700">
+              +Rp 4.500.000
+            </div>
+<span class="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] font-bold bg-[#EDF7F1] text-[#205E3F] border border-[#BCDDC8]">
+              Pemasukan
+            </span>
+</div>
+</div>
+<!-- Row 2: Pembelian Kabel Audio & Mic (-Rp 1.250.000) -->
+<div class="grid grid-cols-12 px-3 py-3 items-center bg-[#FDFBF7] hover:bg-surface-container-low/40 transition-colors">
+<div class="col-span-3 font-label-sm text-label-sm text-on-surface-variant">
+            2026-10-12
+          </div>
+<div class="col-span-5 pr-2">
+<p class="font-label-lg text-label-lg font-semibold text-on-surface line-clamp-1">Pembelian Kabel Audio &amp; Mic</p>
+<span class="font-body-sm text-[11px] text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-outline">mic</span> Inventaris Musik
+            </span>
+</div>
+<div class="col-span-4 text-right">
+<div class="font-numeric-metric text-label-lg font-bold text-error">
+              -Rp 1.250.000
+            </div>
+<span class="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] font-bold bg-[#FEF7DA] text-[#875A00] border border-[#E8D58C]">
+              Pengeluaran
+            </span>
+</div>
+</div>
+<!-- Row 3: Kas Bulanan Departemen (+Rp 12.000.000) -->
+<div class="grid grid-cols-12 px-3 py-3 items-center hover:bg-surface-container-low/40 transition-colors">
+<div class="col-span-3 font-label-sm text-label-sm text-on-surface-variant">
+            2026-10-05
+          </div>
+<div class="col-span-5 pr-2">
+<p class="font-label-lg text-label-lg font-semibold text-on-surface line-clamp-1">Kas Bulanan Departemen</p>
+<span class="font-body-sm text-[11px] text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-tertiary">groups</span> 5 Departemen
+            </span>
+</div>
+<div class="col-span-4 text-right">
+<div class="font-numeric-metric text-label-lg font-bold text-emerald-700">
+              +Rp 12.000.000
+            </div>
+<span class="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] font-bold bg-[#EDF7F1] text-[#205E3F] border border-[#BCDDC8]">
+              Pemasukan
+            </span>
+</div>
+</div>
+<!-- Row 4: Sewa Gedung Retret (-Rp 8.500.000) -->
+<div class="grid grid-cols-12 px-3 py-3 items-center bg-[#FDFBF7] hover:bg-surface-container-low/40 transition-colors">
+<div class="col-span-3 font-label-sm text-label-sm text-on-surface-variant">
+            2026-09-28
+          </div>
+<div class="col-span-5 pr-2">
+<p class="font-label-lg text-label-lg font-semibold text-on-surface line-clamp-1">Sewa Gedung Retret</p>
+<span class="font-body-sm text-[11px] text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-outline">apartment</span> Panitia Retret Akbar
+            </span>
+</div>
+<div class="col-span-4 text-right">
+<div class="font-numeric-metric text-label-lg font-bold text-error">
+              -Rp 8.500.000
+            </div>
+<span class="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] font-bold bg-[#FEF7DA] text-[#875A00] border border-[#E8D58C]">
+              Pengeluaran
+            </span>
+</div>
+</div>
+</div>
+<!-- Understated Table Pagination -->
+<div class="p-3 border-t border-outline-variant/30 bg-surface-bright flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">
+          Halaman 1 dari 5
+        </span>
+<div class="flex items-center gap-1">
+<button aria-label="Halaman sebelumnya" class="px-2 py-1 rounded text-outline-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" disabled="">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<span class="px-2 py-0.5 rounded bg-primary text-on-primary font-bold text-xs">1</span>
+<span class="px-2 py-0.5 rounded text-on-surface font-semibold text-xs hover:bg-surface-container cursor-pointer">2</span>
+<span class="px-2 py-0.5 rounded text-on-surface font-semibold text-xs hover:bg-surface-container cursor-pointer">3</span>
+<button aria-label="Halaman berikutnya" class="px-2 py-1 rounded text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Institutional Auditor & Accountability Note -->
+<div class="rounded-xl p-4 bg-surface-container-low border border-outline-variant/30 flex items-start gap-3">
+<span class="material-symbols-outlined text-primary mt-0.5">policy</span>
+<div class="space-y-1">
+<h4 class="font-label-lg text-label-lg font-bold text-on-surface">Transparansi Dana Terverifikasi</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+          Setiap mutasi kas masuk dan keluar telah diverifikasi oleh Bendahara Umum PMK ITERA bersama Badan Pengawas Organisasi sesuai dengan AD/ART Periode 2026/2027.
+        </p>
+</div>
+</div>
+</main>
+<!-- Interactive Drawer Toggle Vanilla Script -->
+<script>
+    const openBtn = document.getElementById('open-drawer-btn');
+    const closeBtn = document.getElementById('close-drawer');
+    const drawer = document.getElementById('drawer');
+    const backdrop = document.getElementById('drawer-backdrop');
+
+    function toggleDrawer(show) {
+      if (show) {
+        drawer.classList.remove('-translate-x-full');
+        backdrop.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+      } else {
+        drawer.classList.add('-translate-x-full');
+        backdrop.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+      }
+    }
+
+    if (openBtn) openBtn.addEventListener('click', () => toggleDrawer(true));
+    if (closeBtn) closeBtn.addEventListener('click', () => toggleDrawer(false));
+    if (backdrop) backdrop.addEventListener('click', () => toggleDrawer(false));
+  </script>
+</body></html>

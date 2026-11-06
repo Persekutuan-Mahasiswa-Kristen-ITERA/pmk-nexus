@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PMK-NEXUS - Manajemen &amp; Inventaris Barang</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Playfair Display & Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&amp;family=Plus Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-surface": "#26190c",
+            "primary-container": "#62431f",
+            "background": "#fff8f5",
+            "on-error-container": "#93000a",
+            "on-secondary-fixed-variant": "#4a463d",
+            "surface-dim": "#efd5c1",
+            "error": "#ba1a1a",
+            "surface-container-low": "#fff1e8",
+            "on-tertiary-fixed-variant": "#5a4300",
+            "tertiary": "#423000",
+            "outline": "#81756a",
+            "on-secondary-fixed": "#1e1b14",
+            "error-container": "#ffdad6",
+            "on-surface-variant": "#4f453b",
+            "on-primary-container": "#dcb184",
+            "secondary-fixed": "#e9e2d5",
+            "tertiary-fixed-dim": "#efc04b",
+            "on-primary": "#ffffff",
+            "tertiary-container": "#5e4600",
+            "surface-container-high": "#fee3ce",
+            "primary-fixed": "#ffddbb",
+            "outline-variant": "#d3c4b7",
+            "surface-variant": "#f8dec9",
+            "on-secondary-container": "#68645a",
+            "tertiary-fixed": "#ffdf9a",
+            "on-tertiary-fixed": "#251a00",
+            "surface-bright": "#fff8f5",
+            "surface-container": "#ffeadb",
+            "inverse-primary": "#ebbe90",
+            "on-primary-fixed-variant": "#5f401d",
+            "on-secondary": "#ffffff",
+            "surface-tint": "#7a5832",
+            "inverse-on-surface": "#ffeee1",
+            "secondary-fixed-dim": "#ccc6b9",
+            "surface-container-highest": "#f8dec9",
+            "primary-fixed-dim": "#ebbe90",
+            "secondary": "#625e54",
+            "on-tertiary-container": "#e1b33f",
+            "on-primary-fixed": "#2b1700",
+            "primary": "#482d0a",
+            "surface": "#fff8f5",
+            "surface-container-lowest": "#ffffff",
+            "on-background": "#26190c",
+            "on-tertiary": "#ffffff",
+            "inverse-surface": "#3d2d1f",
+            "on-error": "#ffffff",
+            "secondary-container": "#e9e2d5"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter-md": "1rem",
+            "space-xs": "0.25rem",
+            "space-xl": "1.75rem",
+            "margin": "1rem",
+            "space-sm": "0.5rem",
+            "space-md": "1rem",
+            "margin-md": "1.5rem",
+            "space-lg": "1.25rem",
+            "gutter": "0.75rem",
+            "margin-lg": "2rem"
+          },
+          "fontFamily": {
+            "display-lg": ["Playfair Display"],
+            "numeric-metric": ["Plus Jakarta Sans"],
+            "body-lg": ["Plus Jakarta Sans"],
+            "body-sm": ["Plus Jakarta Sans"],
+            "display-sm": ["Playfair Display"],
+            "headline-sm": ["Plus Jakarta Sans"],
+            "body-md": ["Plus Jakarta Sans"],
+            "label-sm": ["Plus Jakarta Sans"],
+            "headline-lg": ["Playfair Display"],
+            "label-lg": ["Plus Jakarta Sans"]
+          },
+          "fontSize": {
+            "display-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "700" }],
+            "numeric-metric": ["20px", { lineHeight: "26px", letterSpacing: "-0.02em", fontWeight: "700" }],
+            "body-lg": ["15px", { lineHeight: "22px", fontWeight: "400" }],
+            "body-sm": ["12px", { lineHeight: "18px", fontWeight: "400" }],
+            "display-sm": ["24px", { lineHeight: "32px", letterSpacing: "-0.005em", fontWeight: "600" }],
+            "headline-sm": ["16px", { lineHeight: "24px", letterSpacing: "0.01em", fontWeight: "600" }],
+            "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+            "label-sm": ["11px", { lineHeight: "14px", letterSpacing: "0.04em", fontWeight: "600" }],
+            "headline-lg": ["22px", { lineHeight: "28px", fontWeight: "600" }],
+            "label-lg": ["13px", { lineHeight: "18px", letterSpacing: "0.02em", fontWeight: "600" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface antialiased min-h-screen pb-12 selection:bg-tertiary-fixed selection:text-tertiary">
+<!-- TopAppBar Component (from Shared JSON specs) -->
+<header class="bg-primary-container dark:bg-surface-container-highest shadow-sm fixed top-0 left-0 right-0 z-50 flex justify-between items-center h-16 px-space-md w-full border-b border-primary/20">
+<button aria-label="Buka Menu" class="w-10 h-10 flex items-center justify-center rounded-lg text-on-primary hover:bg-primary/20 transition-colors active:scale-95 duration-150" id="open-drawer-btn">
+<span class="material-symbols-outlined text-2xl">menu</span>
+</button>
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-tertiary-fixed flex items-center justify-center text-primary shadow-xs border border-tertiary/20">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">church</span>
+</div>
+<span class="font-headline-lg text-headline-lg text-on-primary tracking-wide">PMK ITERA</span>
+</div>
+<button aria-label="Notifikasi" class="relative w-10 h-10 flex items-center justify-center rounded-lg text-on-primary hover:bg-primary/20 transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined text-2xl">notifications</span>
+<span class="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-tertiary-fixed ring-2 ring-primary-container"></span>
+</button>
+</header>
+<!-- NavigationDrawer Component (Slide-over overlay) -->
+<div class="fixed inset-0 bg-on-surface/40 backdrop-blur-xs z-50 hidden transition-opacity" id="drawer-backdrop"></div>
+<aside class="fixed inset-y-0 left-0 w-72 max-w-[80vw] z-50 bg-surface-container-low dark:bg-surface-container border-r border-outline-variant/30 shadow-xl -translate-x-full transition-transform duration-200 ease-in-out" id="drawer">
+<div class="flex flex-col h-full p-space-md overflow-y-auto">
+<!-- Profile / Org Header -->
+<div class="flex items-center justify-between pb-space-md mb-space-md border-b border-outline-variant/30">
+<div class="flex items-center gap-space-sm">
+<div class="w-11 h-11 rounded-xl bg-primary-container flex items-center justify-center text-on-primary shadow-sm font-display-sm text-display-sm">
+            †
+          </div>
+<div>
+<h2 class="font-display-sm text-display-sm font-bold text-primary dark:text-primary-fixed">PMK-NEXUS</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Institut Teknologi Sumatera</p>
+<span class="font-label-sm text-label-sm text-outline">Sistem Administrasi Terpadu</span>
+</div>
+</div>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors" id="close-drawer-btn">
+<span class="material-symbols-outlined text-lg">close</span>
+</button>
+</div>
+<!-- Navigation Links -->
+<nav class="flex flex-col gap-1.5 flex-1">
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg px-space-md py-space-sm transition-colors active:scale-[0.99] duration-150" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-lg text-label-lg">Dashboard</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg px-space-md py-space-sm transition-colors active:scale-[0.99] duration-150" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-lg text-label-lg">Data Anggota</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg px-space-md py-space-sm transition-colors active:scale-[0.99] duration-150" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="font-label-lg text-label-lg">Finance</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg px-space-md py-space-sm transition-colors active:scale-[0.99] duration-150" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-lg text-label-lg">Notulensi Rapat</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg px-space-md py-space-sm transition-colors active:scale-[0.99] duration-150" href="#">
+<span class="material-symbols-outlined">mail</span>
+<span class="font-label-lg text-label-lg">Surat Menyurat</span>
+</a>
+<!-- ACTIVE TAB: Manajemen & Inventaris Barang -->
+<a class="flex items-center gap-space-sm bg-primary text-on-primary font-semibold rounded-lg px-space-md py-space-sm shadow-sm active:scale-[0.99] duration-150" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-lg text-label-lg">Manajemen &amp; Inventaris Barang</span>
+</a>
+</nav>
+<div class="pt-space-md border-t border-outline-variant/30 flex items-center justify-between text-outline">
+<span class="font-label-sm text-label-sm">Versi 2.4 Executive</span>
+<span class="material-symbols-outlined text-base">verified_user</span>
+</div>
+</div>
+</aside>
+<!-- Main Mobile Content Area -->
+<main class="pt-20 px-4 max-w-md mx-auto flex flex-col gap-5">
+<!-- Institutional Crest & Headline Pillar -->
+<section class="bg-surface-container-lowest border border-secondary-container rounded-xl p-4 shadow-sm flex flex-col items-center text-center">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 bg-surface-container rounded-full text-tertiary border border-outline-variant/40 mb-2">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">account_tree</span>
+<span class="font-label-sm text-label-sm">Divisi Rumah Tangga &amp; Logistik</span>
+</div>
+<h1 class="font-display-lg text-display-lg text-primary tracking-tight">Manajemen &amp; Inventaris</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Peminjaman Aset &amp; Data Logistik Organisasi</p>
+<!-- Live Metrics Mini-Pills -->
+<div class="grid grid-cols-3 gap-2 w-full mt-4 pt-3 border-t border-surface-container">
+<div class="bg-surface-container-low rounded-lg p-2 text-center">
+<span class="font-label-sm text-label-sm text-outline block">Total Aset</span>
+<span class="font-numeric-metric text-numeric-metric text-primary">12 Unit</span>
+</div>
+<div class="bg-surface-container-low rounded-lg p-2 text-center">
+<span class="font-label-sm text-label-sm text-outline block">Dipinjam</span>
+<span class="font-numeric-metric text-numeric-metric text-tertiary">2 Unit</span>
+</div>
+<div class="bg-surface-container-low rounded-lg p-2 text-center">
+<span class="font-label-sm text-label-sm text-outline block">Kondisi Baik</span>
+<span class="font-numeric-metric text-numeric-metric text-primary">91%</span>
+</div>
+</div>
+</section>
+<!-- Search & Filter Bar -->
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3.5 top-3 text-outline text-xl">search</span>
+<input class="w-full h-11 pl-10 pr-10 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 transition-all shadow-xs" id="inventory-search" placeholder="Cari nama barang, kode, atau lokasi..." type="search"/>
+<button class="absolute right-2.5 top-2.5 p-1 rounded-md text-on-surface-variant hover:bg-surface-container transition-colors" title="Filter Cepat">
+<span class="material-symbols-outlined text-lg">tune</span>
+</button>
+</div>
+<!-- SECTION 1: Manajemen Barang (Peminjaman & Status) -->
+<section class="flex flex-col gap-3">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<div class="w-2.5 h-2.5 rounded-full bg-tertiary"></div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Manajemen Barang</h2>
+<span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-fixed-variant font-label-sm text-label-sm">Peminjaman</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">3 Aktivitas</span>
+</div>
+<!-- Action Card & Quick Apply -->
+<div class="bg-surface-container-lowest border border-secondary-container rounded-xl p-3.5 shadow-sm space-y-3">
+<!-- Peminjaman Item 1 -->
+<div class="p-3 rounded-lg bg-surface border border-outline-variant/40 flex flex-col gap-2">
+<div class="flex items-start justify-between gap-2">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Drum Elektrik Yamaha DTX</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-xs text-outline">calendar_month</span>
+                Pinjam: 12-05-2026
+              </p>
+</div>
+<!-- Status Badge: Sedang Dipinjam -->
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FEF7DA] text-[#875A00] border border-[#E8D58C] font-label-sm text-label-sm whitespace-nowrap">
+<span class="w-1.5 h-1.5 rounded-full bg-[#875A00]"></span>
+              Sedang Dipinjam
+            </span>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-outline-variant/30 text-outline font-label-sm text-label-sm">
+<span>Peminjam: Tim Ibadah Padang</span>
+<span class="text-primary font-medium hover:underline cursor-pointer">Detail Tiket</span>
+</div>
+</div>
+<!-- Peminjaman Item 2 -->
+<div class="p-3 rounded-lg bg-surface border border-outline-variant/40 flex flex-col gap-2">
+<div class="flex items-start justify-between gap-2">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Sound System Portable 200W</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-xs text-outline">calendar_month</span>
+                Pinjam: 14-06-2026
+              </p>
+</div>
+<!-- Status Badge: Selesai / Tersedia -->
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#EDF7F1] text-[#205E3F] border border-[#BCDDC8] font-label-sm text-label-sm whitespace-nowrap">
+<span class="w-1.5 h-1.5 rounded-full bg-[#205E3F]"></span>
+              Tersedia
+            </span>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-outline-variant/30 text-outline font-label-sm text-label-sm">
+<span>Peminjam: Divisi Persekutuan</span>
+<span class="text-primary font-medium hover:underline cursor-pointer">Detail Tiket</span>
+</div>
+</div>
+<!-- Peminjaman Item 3 -->
+<div class="p-3 rounded-lg bg-surface border border-outline-variant/40 flex flex-col gap-2">
+<div class="flex items-start justify-between gap-2">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Projector Epson EB-X500</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-xs text-outline">calendar_month</span>
+                Pinjam: 20-07-2026
+              </p>
+</div>
+<!-- Status Badge: Sedang Dipinjam -->
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FEF7DA] text-[#875A00] border border-[#E8D58C] font-label-sm text-label-sm whitespace-nowrap">
+<span class="w-1.5 h-1.5 rounded-full bg-[#875A00]"></span>
+              Sedang Dipinjam
+            </span>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-outline-variant/30 text-outline font-label-sm text-label-sm">
+<span>Peminjam: Panitia Dies Natalis</span>
+<span class="text-primary font-medium hover:underline cursor-pointer">Detail Tiket</span>
+</div>
+</div>
+<!-- Action Button -->
+<button class="w-full h-11 bg-primary-container text-on-primary rounded-lg font-label-lg text-label-lg flex items-center justify-center gap-2 hover:bg-primary transition-all active:scale-[0.98] shadow-xs">
+<span class="material-symbols-outlined text-lg">add_circle</span>
+          + Ajukan Peminjaman
+        </button>
+</div>
+</section>
+<!-- SECTION 2: Inventaris Barang (Master Aset Organisasi) -->
+<section class="flex flex-col gap-3">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<div class="w-2.5 h-2.5 rounded-full bg-primary-container"></div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Inventaris Barang</h2>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">Master Aset</span>
+</div>
+<button class="font-label-sm text-label-sm text-primary flex items-center gap-0.5 hover:underline">
+<span class="material-symbols-outlined text-sm">download</span> Unduh PDF
+        </button>
+</div>
+<!-- Master Ledger Table -->
+<div class="bg-surface-container-lowest border border-secondary-container rounded-xl overflow-hidden shadow-sm">
+<!-- Table Column Headers -->
+<div class="bg-[#F0E9DC] px-3.5 py-2.5 border-b border-[#E2D7C5] grid grid-cols-12 gap-1 text-[11px] font-bold text-primary uppercase tracking-wider">
+<div class="col-span-5">Nama Barang</div>
+<div class="col-span-2 text-center">Jumlah</div>
+<div class="col-span-2 text-center">Kondisi</div>
+<div class="col-span-3 text-right">Lokasi</div>
+</div>
+<!-- Table Rows -->
+<div class="divide-y divide-[#F3ECE2]">
+<!-- Row 1: Drum Elektrik -->
+<div class="px-3.5 py-3 grid grid-cols-12 gap-1 items-center bg-surface-container-lowest hover:bg-[#FDFBF7] transition-colors">
+<div class="col-span-5 flex flex-col">
+<span class="font-headline-sm text-body-md text-on-surface font-semibold truncate">Drum Elektrik</span>
+<span class="font-label-sm text-label-sm text-outline truncate">Inv-001/LOG</span>
+</div>
+<div class="col-span-2 text-center">
+<span class="font-body-md text-body-md text-on-surface font-medium">1 Unit</span>
+</div>
+<div class="col-span-2 text-center">
+<span class="inline-block px-1.5 py-0.5 rounded bg-[#EDF7F1] text-[#205E3F] text-[10px] font-bold border border-[#BCDDC8]">Baik</span>
+</div>
+<div class="col-span-3 text-right">
+<span class="font-body-sm text-body-sm text-on-surface-variant block truncate">Sekretariat PMK</span>
+</div>
+</div>
+<!-- Row 2: Kabel Jack Audio 10m -->
+<div class="px-3.5 py-3 grid grid-cols-12 gap-1 items-center bg-[#FDFBF7] hover:bg-[#F9F5EC] transition-colors">
+<div class="col-span-5 flex flex-col">
+<span class="font-headline-sm text-body-md text-on-surface font-semibold truncate">Kabel Jack Audio 10m</span>
+<span class="font-label-sm text-label-sm text-outline truncate">Inv-004/AUD</span>
+</div>
+<div class="col-span-2 text-center">
+<span class="font-body-md text-body-md text-on-surface font-medium">5 Unit</span>
+</div>
+<div class="col-span-2 text-center">
+<span class="inline-block px-1.5 py-0.5 rounded bg-[#EDF7F1] text-[#205E3F] text-[10px] font-bold border border-[#BCDDC8]">Baik</span>
+</div>
+<div class="col-span-3 text-right">
+<span class="font-body-sm text-body-sm text-on-surface-variant block truncate">Box Audio GK 1</span>
+</div>
+</div>
+<!-- Row 3: Stand Mic Boom -->
+<div class="px-3.5 py-3 grid grid-cols-12 gap-1 items-center bg-surface-container-lowest hover:bg-[#FDFBF7] transition-colors">
+<div class="col-span-5 flex flex-col">
+<span class="font-headline-sm text-body-md text-on-surface font-semibold truncate">Stand Mic Boom</span>
+<span class="font-label-sm text-label-sm text-outline truncate">Inv-009/AUD</span>
+</div>
+<div class="col-span-2 text-center">
+<span class="font-body-md text-body-md text-on-surface font-medium">4 Unit</span>
+</div>
+<div class="col-span-2 text-center">
+<span class="inline-block px-1.5 py-0.5 rounded bg-[#FEF7DA] text-[#875A00] text-[10px] font-bold border border-[#E8D58C]">Servis</span>
+</div>
+<div class="col-span-3 text-right">
+<span class="font-body-sm text-body-sm text-on-surface-variant block truncate">Lemari BPH</span>
+</div>
+</div>
+<!-- Row 4: Banner & Rollup Dies -->
+<div class="px-3.5 py-3 grid grid-cols-12 gap-1 items-center bg-[#FDFBF7] hover:bg-[#F9F5EC] transition-colors">
+<div class="col-span-5 flex flex-col">
+<span class="font-headline-sm text-body-md text-on-surface font-semibold truncate">Banner &amp; Rollup</span>
+<span class="font-label-sm text-label-sm text-outline truncate">Inv-012/PUB</span>
+</div>
+<div class="col-span-2 text-center">
+<span class="font-body-md text-body-md text-on-surface font-medium">2 Unit</span>
+</div>
+<div class="col-span-2 text-center">
+<span class="inline-block px-1.5 py-0.5 rounded bg-[#EDF7F1] text-[#205E3F] text-[10px] font-bold border border-[#BCDDC8]">Baik</span>
+</div>
+<div class="col-span-3 text-right">
+<span class="font-body-sm text-body-sm text-on-surface-variant block truncate">Ruang Logistik</span>
+</div>
+</div>
+</div>
+<!-- Institutional Table Footer Pagination -->
+<div class="px-3.5 py-2.5 bg-surface-container-low border-t border-[#E2D7C5] flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-outline">Menampilkan 4 dari 12 Aset</span>
+<div class="flex items-center gap-1">
+<button class="w-7 h-7 rounded border border-outline-variant bg-surface-container-lowest flex items-center justify-center text-outline hover:text-on-surface disabled:opacity-40" disabled="">
+<span class="material-symbols-outlined text-base">chevron_left</span>
+</button>
+<span class="font-label-sm text-label-sm px-2 text-on-surface font-semibold">1</span>
+<button class="w-7 h-7 rounded border border-outline-variant bg-surface-container-lowest flex items-center justify-center text-on-surface hover:bg-surface-container">
+<span class="material-symbols-outlined text-base">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Logistics Notice Note -->
+<div class="p-3 rounded-lg bg-surface-container border border-outline-variant/50 flex gap-2.5 items-start">
+<span class="material-symbols-outlined text-tertiary text-xl mt-0.5">info</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+        Peminjaman barang wajib diajukan maksimal <span class="font-semibold text-on-surface">H-3 kegiatan</span> dan diverifikasi oleh Koordinator Inventaris Divisi Logistik PMK ITERA.
+      </p>
+</div>
+</main>
+<!-- Drawer Micro-Interactions Script -->
+<script>
+    const openBtn = document.getElementById('open-drawer-btn');
+    const closeBtn = document.getElementById('close-drawer-btn');
+    const drawer = document.getElementById('drawer');
+    const backdrop = document.getElementById('drawer-backdrop');
+
+    function toggleDrawer(show) {
+      if (show) {
+        backdrop.classList.remove('hidden');
+        drawer.classList.remove('-translate-x-full');
+      } else {
+        backdrop.classList.add('hidden');
+        drawer.classList.add('-translate-x-full');
+      }
+    }
+
+    if (openBtn) openBtn.addEventListener('click', () => toggleDrawer(true));
+    if (closeBtn) closeBtn.addEventListener('click', () => toggleDrawer(false));
+    if (backdrop) backdrop.addEventListener('click', () => toggleDrawer(false));
+  </script>
+</body></html>

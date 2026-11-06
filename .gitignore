@@ -1,0 +1,38 @@
+# Secrets: never commit environment files (service role key, DB URLs).
+.env*
+!.env.example
+
+# Database dumps contain PI-CORE personal data (emails, phones, NIM). Never commit.
+*.dump
+*.sql.gz
+*.backup
+backups/
+
+# Next.js / Node
+node_modules/
+.next/
+out/
+build/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Supabase local state
+supabase/.branches/
+supabase/.temp/
+
+# Test output
+test-results/
+playwright-report/
+
+# Original setup bundle (outdated copy of CLAUDE.md and agent files; the live versions are tracked)
+files.zip
+
+# Claude Code per-user settings
+.claude/settings.local.json
+
+# OS / editor
+.DS_Store
+*.log
+.vscode/
+.idea/
