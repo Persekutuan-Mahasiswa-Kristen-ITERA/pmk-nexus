@@ -1,19 +1,21 @@
 import type { LucideIcon } from "lucide-react";
-import { CircleAlert, Clock, Info, TriangleAlert, WifiOff } from "lucide-react";
+import { CircleAlert, CircleCheck, Clock, Info, TriangleAlert, WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
  * Inline message in three tones, always icon plus text (never colour alone):
- * error = the person typed something wrong; warning = not their fault, try again; info = just read.
+ * error = the person typed something wrong; warning = not their fault, try again; info = just read;
+ * success = a save went through (docs/design/inventory-borrowing.md X9, Stitch success palette).
  * docs/design/login.md 2.5a.
  */
-export type AlertTone = "error" | "warning" | "info";
-export type AlertIcon = "error" | "warning" | "schedule" | "wifi_off" | "info";
+export type AlertTone = "error" | "warning" | "info" | "success";
+export type AlertIcon = "error" | "warning" | "schedule" | "wifi_off" | "info" | "success";
 
 const toneClass: Record<AlertTone, string> = {
   error: "bg-danger-soft text-danger",
   warning: "border border-warn-line bg-warn-soft text-warn",
   info: "border border-ivory-line bg-ivory text-walnut",
+  success: "border border-success-line bg-success-soft text-success",
 };
 
 const icons: Record<AlertIcon, LucideIcon> = {
@@ -22,12 +24,14 @@ const icons: Record<AlertIcon, LucideIcon> = {
   schedule: Clock,
   wifi_off: WifiOff,
   info: Info,
+  success: CircleCheck,
 };
 
 const defaultIcon: Record<AlertTone, AlertIcon> = {
   error: "error",
   warning: "warning",
   info: "info",
+  success: "success",
 };
 
 type AlertMessageProps = {

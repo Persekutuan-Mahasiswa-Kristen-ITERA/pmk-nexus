@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Dialog } from "radix-ui";
-import { LayoutDashboard, Menu, Users, X, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Menu, Package, Users, X, type LucideIcon } from "lucide-react";
 import { SignOutAction } from "@/components/auth/sign-out-action";
 import { cn } from "@/lib/utils";
 import { isActiveHref, type NavData, type NavIcon } from "./nav";
@@ -12,6 +12,7 @@ import { isActiveHref, type NavData, type NavIcon } from "./nav";
 const ICONS: Record<NavIcon, LucideIcon> = {
   dashboard: LayoutDashboard,
   group: Users,
+  inventory: Package, // a box: the drawer item for items and loans (design 4.1)
 };
 
 // 44 px hit area on the walnut bar (Stitch draws 40 px; raised for touch, R-03).

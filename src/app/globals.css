@@ -50,6 +50,10 @@
   --nx-success: #205E3F;
   --nx-success-soft: #EDF7F1;
   --nx-success-line: #BCDDC8;
+  /* Grey "ended" chip (Dibatalkan, Hilang): Stitch screen 04 "Alumni" chip, design X10 / A-IB40. */
+  --nx-grey: #4A463D;
+  --nx-grey-soft: #E9E2D5;
+  --nx-grey-line: #D3C4B7;
 
   /* Elevation (Stitch levels 1 and 2) */
   --nx-elevation-1: 0 1px 3px rgba(98, 67, 31, 0.05), 0 4px 12px rgba(98, 67, 31, 0.03);
@@ -128,6 +132,9 @@
   --color-success: var(--nx-success);
   --color-success-soft: var(--nx-success-soft);
   --color-success-line: var(--nx-success-line);
+  --color-grey: var(--nx-grey);
+  --color-grey-soft: var(--nx-grey-soft);
+  --color-grey-line: var(--nx-grey-line);
 
   --shadow-elevation-1: var(--nx-elevation-1);
   --shadow-elevation-2: var(--nx-elevation-2);
