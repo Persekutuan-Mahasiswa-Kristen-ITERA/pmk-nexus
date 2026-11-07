@@ -1,8 +1,8 @@
 # Inventory and Borrowing / Manajemen & Inventaris Barang (module spec)
 
-> Status: **Ready for owner approval (revision 2, 2026-11-07).** The owner answered all questions IB1-IB15 on 2026-11-07 (section 12); recorded as D-022 in `docs/DECISIONS.md`. Step 1 of `CLAUDE.md` section 9 (user flow and rules). Nothing is built. The access-control amendment of the same date (`docs/modules/access-control.md`: key `borrowing.handle`, rules D34-D36) has no migration yet.
+> Status: **Approved; DB layer built 2026-11-07 (not on hosted).** The owner answered all questions IB1-IB15 on 2026-11-07 (section 12); recorded as D-022 in `docs/DECISIONS.md`, with a follow-up of the same date (caps, date cap, single correction, restore permission, field limits; section 11c). The database layer is committed as 7a8399a: `20261107100000_nexus_borrowing_access_rules.sql` (key `borrowing.handle`, rules D34-D36, D30 retired), `20261107100100_nexus_inventory_borrowing.sql` (16 tables, 44 functions) and `20261107100200_nexus_inventory_storage.sql` (private bucket `nexus-borrowing-evidence`, 1.5 MiB, JPG/PNG/WebP, 2 policies). None of the three is applied to the hosted project yet (pre-apply checks: `supabase/README.md` step 10). Backend logic and UI are not built. Security review of the DB layer: no CRITICAL or HIGH findings; L7 (no export rate limit) is accepted, as F5.
 > Sources: `CLAUDE.md` (4-8, 11, 14), `docs/PMK-NEXUS-context.md` (4, 5.1, 5.6, 6, 8), `docs/DECISIONS.md` (D-007, D-010, D-011, D-013, D-014, D-019, D-020, D-021, D-022), `docs/modules/access-control.md` (keys, D01, D09-D11, D28, D29, D31, D34-D36, L1, L4-L12, R3, R11, A-n5, B29), `docs/modules/member-data.md` (format and export pattern), `docs/design/stitch/screens.md` (12, 13, 14) and `html/12-*.html`, `html/13-*.html`, `docs/OPEN_QUESTIONS.md` (A6, A7, B4, C7, C9, section H), `docs/picore/schema-report.md` (org units and positions).
-> Tags: **[ASSUMPTION]** = my guess, still needs the owner (A-IB2 to A-IB36, section 10, `docs/OPEN_QUESTIONS.md` section H). **[UNKNOWN]** = no source; never guessed. **IB1-IB15** (no dash) = the owner's answered questions, section 12. **IB-01 to IB-48** (dash, two digits) = acceptance criteria, section 11. Rule numbers "R1..." are local; access-control rules are written "access control R3" or by AC/L/D number.
+> Tags: **[ASSUMPTION]** = my guess, still needs the owner (A-IB2 to A-IB49, section 10, `docs/OPEN_QUESTIONS.md` section H). **[UNKNOWN]** = no source; never guessed. **IB1-IB15** (no dash) = the owner's answered questions, section 12. **IB-01 to IB-57** (dash, two digits) = acceptance criteria, section 11. Do not confuse the access-control rule number "L7" (old periods) with the security-review finding "L7" (export rate limit); the second is always written "review L7". Rule numbers "R1..." are local; access-control rules are written "access control R3" or by AC/L/D number.
 > No code, no SQL, no visual design. PMK facts (item names, categories, locations) are NOT invented here. Everything Stitch shows (Drum Elektrik, Sekretariat PMK, Koordinator Logistik, Inv-001/LOG, 80%) is filler.
 
 ---
@@ -43,11 +43,11 @@ Rights come from permission keys (access-control amendment 2026-11-07), never fr
 | Key | Unlocks | Default holders |
 |---|---|---|
 | `inventory.view` | Open the module; read the catalog (items, units, stock, condition, location, codes, availability by date); the Dashboard "Inventaris Status" card | **Every active member** (D01, baseline) |
-| `inventory.manage` | Add, edit, archive and reactivate items and units; change stock and condition; write off; maintain the category and location lists [A-IB2]. Includes view | Every Operations holder (D28). Power key: written reason (L12) |
+| `inventory.manage` | Add, edit, archive and reactivate items and units; change stock and condition; write off; **restore a written-off unit** (needs an active item, section 11c); maintain the category and location lists [A-IB2]. Includes view | Every Operations holder (D28). Power key: written reason (L12) |
 | `inventory.export` | Export the catalog | BPH (D09), Operations (D29) |
 | `borrowing.view_all` | See every request (own are always visible, L9) | BPH (D10); included in `approve` and `handle` |
 | `borrowing.approve` | **Approve, reject, extend.** Includes view_all. Never on own requests (L6). Power key | Heads only (D34, D35) |
-| `borrowing.handle` | **New key.** Record handover; record return (good, damaged, lost); cancel an approved request not yet picked up (reason); correct a wrong handover or return (reason); record a request for an outside party. Includes view_all. NOT limited by L6. Power key (L12) | Every Operations holder (D36) |
+| `borrowing.handle` | **New key.** Record handover; record return (good, damaged, lost); cancel an approved request not yet picked up (reason); correct a wrong **return** (reason, once per request, section 11c; a handover cannot be corrected); record a request for an outside party. Includes view_all. NOT limited by L6. Power key (L12) | Every Operations holder (D36) |
 | `borrowing.export` | Export borrowing requests | BPH (D11), Operations (D31) |
 | fixed (L9, no key) | Submit a request; see own requests (status, decision note, timeline); cancel own request until pick-up | Every active member, cannot be disabled |
 
@@ -86,18 +86,18 @@ Common: every step runs on the server. Each page and action first checks session
 1. The manager taps "Tambah barang" (design missing) and **chooses the mode**: individually tracked or quantity-based. The mode cannot be changed once the item has borrowing history [A-IB25].
 2. Common fields: name (required), description, category and location from the lists.
 3. Individually tracked: add one or more units (each gets its own `INV-` code, its own condition, its own location). Quantity-based: enter the count per condition (Baik, Perlu servis, Rusak); the item gets one `INV-` code. The server assigns codes (IB11); nobody types or edits a code.
-4. The server validates (name 1-120 characters, whole numbers from 0 to a fixed maximum, list values, fixed conditions) and writes a history row "dibuat".
+4. The server validates (name 1-120 characters, description up to 1000, category up to 60, location up to 80, whole numbers from 0 to 9999 per condition, list values, fixed conditions; section 11c) and writes a history row "dibuat".
 5. **Edit** any field. Every change of stock or condition writes a history row (who, when, from, to, optional note) [A-IB6]. A quantity moved to a worse condition or written off needs a note. Moving a quantity or a unit out of Baik cannot reduce the lendable quantity below what is reserved by approved or borrowed requests for any day (R3).
-6. **Write-off (hilang, dibuang):** an individual unit gets status Hilang (its code stays in history, never reused); a counted item loses that quantity from its total. Note required. Never a delete (L5).
+6. **Write-off (hilang, dibuang):** an individual unit gets status Hilang (its code stays in history, never reused); a counted item loses that quantity from its total. Note required. Never a delete (L5). **Restore ("Ditemukan kembali")**: a written-off unit can be brought back by a holder of `inventory.manage` (not by `borrowing.handle`, owner decision 2026-11-07 after the security review, amends A-IB45); the item must be active; reason required; the history row keeps the original write-off.
 7. **Archive** ("Nonaktifkan") an item or a unit: blocked while it has an open request line or is on loan. The message names the count, never the borrower. Archived entries disappear from members' lists and from request forms; managers see them with the filter "Nonaktif"; exports include them only with the filter. "Aktifkan kembali" restores.
 8. **Lists.** A manager adds, renames or deactivates categories and locations. Both lists start empty; the owner supplies the first values (IB10). A deactivated entry stays on the items that use it.
 9. A manager who is not a holder of `borrowing.view_all` (custom rules only) sees only "masih ada peminjaman terbuka" when blocked, no names.
 
 ### F3. A member requests a borrowing (every active member)
 1. The member taps "+ Ajukan Peminjaman" (screen missing; Stitch has the button only).
-2. Form: choose one or more items and a quantity per item (an individually tracked item is requested by quantity, the specific units are chosen at handover [A-IB29]); start date and end date (planned return day, inclusive); "Keperluan / kegiatan" free text (what it is for; a team or event name goes here); optional note. No lead time and no maximum duration apply (IB4, IB5).
+2. Form: choose one or more items and a quantity per item (an individually tracked item is requested by quantity, the specific units are chosen at handover [A-IB29]); start date and end date (planned return day, inclusive); "Keperluan / kegiatan" free text (what it is for; a team or event name goes here); optional note. No lead time applies (IB4) and no loan length is limited in practice (IB5), except the technical date cap: the end date is at most 365 days after the start date (section 11c). At most 50 lines per request, at most 200 units per line; purpose and note up to 500 characters.
 3. For each line the form shows live availability for the range (R3, R4) and blocks quantities above what is free. Start date cannot be in the past (Jakarta date). Only items in Baik condition and active are offered.
-4. The server re-validates everything (never trusts the form): active member, active period exists (R11), items active, quantities, dates, availability. It saves status **Diajukan**, period = active period, requester = session member (never client input).
+4. The server re-validates everything (never trusts the form): active member, active period exists (R11), items active, quantities, dates, availability, and the caps of section 11c (at most 5 open Diajukan requests per member; at most 20 new requests per Jakarta day). It saves status **Diajukan**, period = active period, requester = session member (never client input).
 5. The member lands on the request detail ("Detail Tiket"): reference, lines, dates, status timeline, and the text "Cek statusnya di Peminjaman Saya."
 6. No active period: "Belum ada periode aktif. Pengajuan belum bisa dibuat." If availability changed between form and save: "Stok berubah. Cek lagi" and the form keeps the input.
 
@@ -118,9 +118,10 @@ Common: every step runs on the server. Each page and action first checks session
 ### F6. Return (`borrowing.handle`)
 1. An Operations member opens a borrowed request (also their own) and taps "Terima pengembalian".
 2. Per line (or per chosen unit for individually tracked items) the member records one outcome for the outstanding quantity: **kembali baik** (tick, note optional), **kembali rusak** or **hilang**. For **rusak** the member states the resulting condition (Perlu servis or Rusak) [A-IB30]. For **rusak and hilang**, a note AND at least one photo are required; the save is refused without both (IB8). Photos are resized in the browser before upload [A-IB31] and kept for good in a private bucket.
-3. Server effects: kembali baik frees the stock. Rusak moves that unit or quantity to the stated condition and writes a history row linked to the request. Hilang writes the unit off (status Hilang, code stays) or reduces the counted total, with a history row. Nothing is deleted.
+3. Server effects: kembali baik frees the stock **immediately**: the unit or quantity is lendable again the moment the return is recorded, even for a request that includes the same day (A-IB18 answered). Rusak moves that unit or quantity to the stated condition and writes a history row linked to the request. Hilang writes the unit off (status Hilang, code stays) or reduces the counted total, with a history row. Nothing is deleted.
 4. A partial return is allowed: lines keep their outstanding quantity and the request stays **Dipinjam** ("Sebagian kembali") until nothing is outstanding. Then **Dikembalikan**; a flag "ada masalah" shows when any line was rusak or hilang.
 5. NEXUS tracks no deposit, fine or replacement (IB8). The note and the photo are the record.
+6. **Correction (only for returns).** A `borrowing.handle` holder may correct a wrong return once per request, with a reason. It is refused if the stock of the item changed since the return was recorded (for example the unit was lent again or its condition was edited). There is no correction of a handover; a mistaken handover is handled by the normal flow and a note.
 
 ### F7. Cancel
 1. **Requester, Diajukan:** "Batalkan pengajuan" (L9); reason optional. Status **Dibatalkan**.
@@ -131,7 +132,7 @@ Common: every step runs on the server. Each page and action first checks session
 ### F8. Extend (`borrowing.approve`)
 1. A head opens an approved or borrowed request and taps "Ubah tanggal kembali", picks a later end date and writes a note (required).
 2. The server checks availability for the added days like a new approval (R5) [A-IB26]. If an approved request conflicts: "Bentrok dengan pengajuan lain".
-3. The end date changes; an extension history row stores old date, new date, who, when, note; the status does not change. A head cannot extend their own loan (L6); another head does. There is no maximum duration (IB5).
+3. The end date changes; an extension history row stores old date, new date, who, when, note; the status does not change. A head cannot extend their own loan (L6); another head does. There is no loan maximum (IB5) beyond the date cap: the new end date is at most 365 days after the ORIGINAL start date; a longer loan needs a new request (section 11c).
 
 ### F9. Overdue (derived, nothing stored or sent)
 1. A request is **Terlambat** when its status is Dipinjam, some line still has outstanding quantity, and the end date is before today (Asia/Jakarta).
@@ -206,7 +207,7 @@ All tables: RLS on, default deny, explicit policies (CLAUDE.md 11). Creator ids 
 | Disetujui | Dipinjam | `borrowing.handle` holder (including the requester themselves) | At least one line handed over |
 | Dipinjam | Dipinjam (sebagian kembali) | `borrowing.handle` holder | Some, not all, outstanding quantity closed |
 | Dipinjam | Dikembalikan | same | Outstanding = 0 on every line; note and photo recorded for every rusak/hilang |
-| Dikembalikan | Dipinjam | `borrowing.handle` holder, reason required | Correction of a wrong click only, logged [A-IB15] |
+| Dikembalikan | Dipinjam | `borrowing.handle` holder, reason required | Correction of a wrong RETURN only; once per request; refused if the stock changed since the return (section 11c); logged [A-IB15] |
 | Dibatalkan, Ditolak | none | - | Terminal. A new request is the way forward |
 
 **Actions that change data but not the status**
@@ -216,7 +217,7 @@ All tables: RLS on, default deny, explicit policies (CLAUDE.md 11). Creator ids 
 | Extend the end date (Disetujui or Dipinjam) | `borrowing.approve` holder, not the requester (L6) | Note required; availability checked; extension history row |
 | Edit a submitted request | nobody | Cancel and resubmit instead [A-IB7] |
 
-Not allowed: skipping states; any backward move except the one correction; any delete; editing lines of a processed request.
+Not allowed: skipping states; any backward move except the one return correction per request; any delete; editing lines of a processed request.
 
 With no active period no transition works: creating needs a period, and the Operations rules (S3) match nothing, so even open requests cannot be processed until a period is active (R11, R12, access control E4). With an active period, open requests of older periods stay actionable by current holders (L7).
 
@@ -231,7 +232,7 @@ With no active period no transition works: creating needs a period, and the Oper
 | R1 | Who may request | Any active member (L9), including Operations, BPH, lecturers and the admin; requester = the signed-in member. Outside parties are recorded by an Operations member (F10), never by themselves |
 | R2 | One request, several items | Allowed. Each line is checked and closed on its own; the request is Dikembalikan only when all lines are closed |
 | R3 | Quantity check | Requested quantity per line is a whole number from 1 up to the free quantity for the whole date range. Free = lendable quantity (units or count in Baik, active) minus outstanding quantity of overlapping requests that are Disetujui or Dipinjam. Items in Perlu servis or Rusak are not lendable (IB10) |
-| R4 | Overlap and overdue | Two ranges overlap if they share at least one day (end date inclusive). An item returned on day D is free from D+1 [A-IB18]. An overdue line holds its quantity until actually returned |
+| R4 | Overlap and overdue | Two ranges overlap if they share at least one day (end date inclusive). A returned item is free again immediately, not from D+1 (owner 2026-11-07, A-IB18 answered). An overdue line holds its quantity until actually returned |
 | R5 | Double booking | The database, not only the page, prevents over-booking: approval and extension re-check free quantity while holding a lock on the item, and a database rule rejects any state in which approved plus borrowed quantity exceeds the lendable stock on any day. Two heads at the same time: the second gets "Stok tidak cukup" |
 | R6 | Pending requests and stock | Diajukan requests hold nothing (IB6); only Disetujui and Dipinjam hold stock. The review screen warns about overlapping pending requests |
 | R7 | Borrowing your own unit's items | Items have no owner unit (IB3). A member borrowing for their department is a normal request. An Operations member requests like anyone; a head must approve (another head if the requester is a head) |
@@ -252,10 +253,13 @@ With no active period no transition works: creating needs a period, and the Oper
 | R22 | Mode of an item | Individual or counted, chosen at creation, locked after the first borrowing history [A-IB25]. To change it, create a new item |
 | R23 | Codes | `INV-` codes are assigned by the database, are unique, never reused and never edited, including for archived and lost units (IB11) |
 | R24 | Evidence photos | Required for every rusak or hilang outcome, never for good returns. Resized in the browser, stored privately, never purged (IB9). A deactivated requester's photos stay |
-| R25 | Mistaken handover or return | One reasoned correction (A-IB15); every other fix is a new history row and a note |
+| R25 | Mistaken return (or handover) | A wrong RETURN has one reasoned correction per request, refused if the stock changed since (A-IB15, section 11c). A handover has no correction; every other fix is a new history row and a note |
 | R26 | Outside-party request | The requester of record is the recording Operations member (F10). Organisation and contact person name are the only data about the outside party; no phone or email is stored (IB14, L4). If the recorder is deactivated, the request stays and any Operations member hands over and takes back |
 | R27 | Old-period records | Read per L8; own requests always readable (L9); no edit (L7) except open items |
 | R28 | Holder of `inventory.manage` without `borrowing.view_all` | Possible only with custom rules; sees no requests; see F2 step 9 |
+| R29 | Request caps | Per member: at most 5 open (Diajukan) requests and at most 20 new requests per Jakarta day. A request recorded for an outside party counts toward the RECORDER's caps. Over the cap: the request is refused with a clear message (section 11c) |
+| R30 | Date cap | `end_date` is at most `start_date` + 365 days, on submit and on every extension (counted from the original start date). A longer loan needs a new request |
+| R31 | Size limits | Field, stock, line and photo limits of section 11c, enforced by the database as well as the page |
 
 ---
 
@@ -335,7 +339,7 @@ Stitch 12/13/14 give one landing page that mixes everything. None of the followi
 
 ## 10. Assumptions
 
-Active assumptions (all [ASSUMPTION] until the owner confirms; copied to `docs/OPEN_QUESTIONS.md` section H). **Answered by the owner and therefore no longer assumptions:** A-IB1 (IB2), A-IB4 (IB3), A-IB9 (IB7), A-IB10 (IB5), A-IB13 and A-IB23 (IB10), A-IB17 (IB15), A-IB19 (IB6).
+Active assumptions (all [ASSUMPTION] until the owner confirms; copied to `docs/OPEN_QUESTIONS.md` section H). **Answered by the owner and therefore no longer assumptions:** A-IB1 (IB2), A-IB4 (IB3), A-IB9 (IB7), A-IB10 (IB5), A-IB13 and A-IB23 (IB10), A-IB17 (IB15), A-IB19 (IB6). **Also answered or decided on 2026-11-07 (follow-up):** A-IB18 (a returned item is free immediately), A-IB36 (decided by the database engineer), A-IB43 (limits, section 11c), A-IB45 (amended: `inventory.manage`), plus the caps and the date cap (A-IB47, A-IB48).
 
 | Id | Assumption |
 |---|---|
@@ -348,9 +352,9 @@ Active assumptions (all [ASSUMPTION] until the owner confirms; copied to `docs/O
 | A-IB11 | The queue and work list have a "Belum selesai (semua periode)" filter and an open-loans export for period handover |
 | A-IB12 | Export header shows the period label and export date in WIB, like Member Data |
 | A-IB14 | A head may approve a lower quantity per line, with a note |
-| A-IB15 | One reasoned correction exists: Dikembalikan back to Dipinjam, by a `borrowing.handle` holder |
+| A-IB15 | One reasoned correction exists: Dikembalikan back to Dipinjam, by a `borrowing.handle` holder. **Narrowed by the owner 2026-11-07:** returns only (no handover correction), once per request, refused if the stock changed since the return |
 | A-IB16 | Progja can later link to a request by id without a rewrite |
-| A-IB18 | A date range is inclusive; an item returned on day D is free from D+1 |
+| A-IB18 | A date range is inclusive. **Answered 2026-11-07:** a returned item is free again immediately (replaces "free from D+1") |
 | A-IB20 | Page size 20 |
 | A-IB21 | Drawer badge and Dashboard line for waiting approvals are proposals for other modules |
 | A-IB22 | Members cannot export their own requests |
@@ -361,12 +365,17 @@ Active assumptions (all [ASSUMPTION] until the owner confirms; copied to `docs/O
 | A-IB28 | APPROVED by the owner 2026-11-07: an outside-party request stores organisation name and contact person name only; the recording Operations member is the requester of record; L6 blocks them from approving it; any Operations holder may record one |
 | A-IB29 | For individually tracked items the requester picks the item and a quantity; stock is reserved by quantity at approval; the Operations member chooses the specific units (by code) at handover |
 | A-IB30 | A damaged return states the resulting condition (Perlu servis or Rusak). A lost unit is a write-off: it stays in history with status Hilang and its code; for counted items the total drops |
-| A-IB31 | Evidence photos: 1 to 3 per damaged or lost outcome, resized in the browser to a long side of about 1280 px (about 1 MB each at most); private bucket; viewable by `borrowing.view_all` holders and the requester; never purged. Free-tier note: Supabase storage is about 1 GB (`docs/OPEN_QUESTIONS.md` C9, verify before launch); at 300 KB a photo, even 100 damaged returns a year with 2 photos is about 60 MB a year |
+| A-IB31 | Evidence photos: 1 to 3 per damaged or lost outcome, resized in the browser to a long side of about 1280 px (the database and the bucket accept at most 1.5 MiB each, JPG, PNG or WebP only, A-IB43); private bucket; viewable by `borrowing.view_all` holders and the requester; never purged. Free-tier note: Supabase storage is about 1 GB (`docs/OPEN_QUESTIONS.md` C9, verify before launch); at 300 KB a photo, even 100 damaged returns a year with 2 photos is about 60 MB a year |
 | A-IB32 | Dashboard counts: units in Baik (including on loan), units on loan now, units in Perlu servis; archived and lost excluded; Rusak not on the card; wording at design time |
 | A-IB33 | The export log has one row per successful export of the catalog or of borrowing; sharing the Member Data table is the database engineer's call; readable only through the database until the log screen exists; no export without a log row |
 | A-IB34 | A `borrowing.handle` holder may cancel an approved request not picked up (reason required); a head rejects a Diajukan request of a deactivated member with a note |
 | A-IB35 | Any head of Operations may approve any request, not only requests for their own division |
-| A-IB36 | `borrowing.handle` is treated like `borrowing.approve` in the catalog: never grantable to "every active member", written reason required (L12). Whether the sensitive flag is also set is left to the database engineer |
+| A-IB36 | **Decided 2026-11-07 (database engineer; reason in the header of migration `20261107100000`):** `borrowing.handle` is treated like `borrowing.approve` in the catalog: never grantable to "every active member", written reason required (L12). It is NOT sensitive (`is_sensitive` = false) and never baseline |
+| A-IB43 | **Decided 2026-11-07:** limits listed in section 11c (item name 120, description 1000, purpose and notes 500, category 60, location 80, outside-party names 120; stock 0-9999 per condition; at most 50 lines per request, 200 units per line; 1-3 photos of 1.5 MiB; at most 10 unattached uploads per request folder) |
+| A-IB45 | **Amended 2026-11-07 (tech lead decision after the security review):** a written-off (Hilang) unit is restored ("Ditemukan kembali") by a holder of `inventory.manage`, only when the item is active; no longer by `borrowing.handle` |
+| A-IB47 | **Answered 2026-11-07:** per member at most 5 open (Diajukan) requests and at most 20 new requests per Jakarta day; outside-party requests count toward the recorder's caps |
+| A-IB48 | **Answered 2026-11-07:** `end_date` is at most `start_date` + 365 days, also for extensions (counted from the original start); a longer loan needs a new request |
+| A-IB49 | [ASSUMPTION] The "open" cap of 5 counts Diajukan requests only (not Disetujui or Dipinjam); the daily cap of 20 counts every request created that Jakarta day, even if it is cancelled later. Needs the owner's confirmation |
 
 ---
 
@@ -394,7 +403,7 @@ Personas: `docs/modules/access-control.md` section 9. Defaults D01, D09-D11, D28
 **Requests (L9, IB4, IB5, IB6, IB7)**
 - IB-14 Any active member can submit a request for active items within availability; the saved requester is the session member, never a client-supplied id.
 - IB-15 P-PLAIN reads only their own requests, status, decision note and timeline; another member's request is not returned by the API (AC-27).
-- IB-16 (IB4, IB5) A request starting today or tomorrow is accepted (no lead time), and a request spanning 90 days is accepted (no maximum). A request is rejected with a clear message when: no active period (AC-43), item archived or not in Baik, quantity above the free quantity, quantity below 1 or not a whole number, end before start, start before today (Asia/Jakarta), or the same item twice.
+- IB-16 (IB4, IB5) A request starting today or tomorrow is accepted (no lead time), and a request spanning 90 days is accepted (no practical maximum; only the 365-day date cap of IB-51 applies). A request is rejected with a clear message when: no active period (AC-43), item archived or not in Baik, quantity above the free quantity, quantity below 1 or not a whole number, end before start, start before today (Asia/Jakarta), or the same item twice.
 - IB-17 (IB7) The requester can cancel their own request while Diajukan; while Disetujui and not picked up, cancel works only with a reason; after Dipinjam no cancel exists. Another member cannot cancel it (AC-30). A cancelled request stays in history and cannot be reopened.
 - IB-18 Members see availability counts and dates for an item but never who holds it.
 - IB-19 (IB6) A Diajukan request does not reduce availability for others; a Disetujui or Dipinjam request does.
@@ -424,7 +433,6 @@ Personas: `docs/modules/access-control.md` section 9. Defaults D01, D09-D11, D28
 - IB-35 A request that is Dipinjam with an end date before today (Asia/Jakarta) shows "Terlambat" to the requester, the queue, the work list and BPH; nothing is stored or sent. A test at 23:30 UTC (06:30 WIB next day) uses the Jakarta date.
 - IB-36 An overdue line keeps blocking its quantity: a new request overlapping the day after the old end date cannot take it until it is returned.
 - IB-37 Two ranges that share only one day are treated as overlapping.
-
 **Edge cases**
 - IB-38 After the active period switches, open requests keep their old period and can be processed by current holders (heads for approve/reject/extend, Operations for handover/return); P-OLD cannot (AC-42, L7). Closed requests of the old period are read-only; a current `borrowing.view_all` holder can read them; the requester reads their own.
 - IB-39 When a requester is deactivated, their open requests remain, Operations can still record the return, their name still shows, nothing is deleted or auto-cancelled; they cannot sign in (AC-44, AC-45).
@@ -444,11 +452,56 @@ Personas: `docs/modules/access-control.md` section 9. Defaults D01, D09-D11, D28
 - IB-47 At 390 px width every screen of this module works without horizontal page scroll; fields are at least 44 px high with 16 px text (D-017).
 - IB-48 A pgTAP test per persona proves RLS: zero rows for denied users on requests, lines, returns, evidence, history and export log; the availability function returns counts only; every `nexus` table of this module has RLS enabled. The same request cannot be approved or returned twice: the second action fails with "Data sudah berubah" and the history has one row.
 
+**Follow-up criteria (owner decisions of 2026-11-07, section 11c)**
+- IB-49 A member with 5 requests in status Diajukan cannot submit a sixth, by UI or by a direct call; after one is decided or cancelled they can. Requests in Disetujui or Dipinjam do not count [A-IB49].
+- IB-50 A member who has created 20 requests on one Jakarta day cannot create a 21st that day; the count restarts on the next Jakarta day (a request saved at 23:30 UTC belongs to the next Jakarta day). An outside-party request recorded by an Operations member counts toward the recorder's caps, not toward any other person.
+- IB-51 A request whose end date is later than start date + 365 days is refused; start + 365 days is accepted. An extension is refused when the new end date is later than the ORIGINAL start date + 365 days, whatever earlier extensions did. The message tells the user to make a new request.
+- IB-52 After a return of a unit or quantity in good condition is recorded, the next free-quantity check counts it as available at once, including for a request whose range contains today or the original end date.
+- IB-53 A return can be corrected only by a `borrowing.handle` holder, with a reason, only once per request; a second correction is refused. The correction is refused when the stock of the item changed since the return. No function corrects a handover.
+- IB-54 Restoring a written-off (Hilang) unit works for a holder of `inventory.manage` and only when the item is active; a holder of `borrowing.handle` without `inventory.manage` is refused; a restore on an archived item is refused; a reason is required and the original write-off history row stays.
+- IB-55 Over-long input is refused by the database even when the page is bypassed: item name above 120, description above 1000, purpose or notes above 500, category above 60, location above 80, outside-party organisation or contact name above 120 characters; stock below 0 or above 9999 in any condition; more than 50 lines in a request; more than 200 units in a line.
+- IB-56 A damaged or lost outcome accepts 1 to 3 photos, each at most 1.5 MiB and of type JPG, PNG or WebP; a fourth photo, a larger file or another type is refused; more than 10 unattached uploads in one request folder are refused. Photos are in the private bucket `nexus-borrowing-evidence` and are readable only through signed URLs by `borrowing.view_all` holders and the requester.
+- IB-57 After the DB-layer migrations are applied, the permission catalog has 22 keys, the default rules are 35 enabled plus 1 retired (D30), and "restore default access rules" does not re-enable D30 (access control AC-77).
+
 ---
 
 ## 11b. Design decisions (2026-11-07)
 
 From the design review of `docs/design/inventory-borrowing.md` (section 23): stock changes only through reasoned dialogs (P6); request reference `PJM-0001` (one sequence, never reused, set by the database); optional "Tersedia pada tanggal" catalog filter backed by a bulk availability function; Dashboard card "{n} unit baik, {m} di antaranya sedang dipinjam" + "{k} perlu servis". Further design assumptions: A-IB37..A-IB46 (`docs/OPEN_QUESTIONS.md` section H). A-IB24 (request reference format) is answered by `PJM-0001`.
+
+## 11c. Owner decisions of 2026-11-07 (follow-up, recorded in D-022)
+
+Taken after the DB layer was written. They replace or sharpen earlier wording; where this section and an earlier section disagree, this section wins.
+
+| Topic | Decision |
+|---|---|
+| Open requests | At most 5 open (Diajukan) requests per member [A-IB49: Diajukan only] |
+| Daily cap | At most 20 new requests per member per Jakarta day |
+| Outside parties | Requests recorded for an outside party count toward the recorder's caps |
+| Date cap | `end_date` is at most `start_date` + 365 days. Extensions are counted from the ORIGINAL start date; a longer loan needs a new request |
+| Return frees stock | A returned item is free again immediately (replaces "free from D+1" in A-IB18) |
+| Correction | Only for returns; only once per request; refused if the stock changed since the return. No handover correction |
+| Restore a written-off unit | Needs `inventory.manage` and an active item (tech lead decision after the security review; replaces `borrowing.handle` in A-IB45) |
+
+**Field limits (A-IB43)**
+
+| Field | Limit |
+|---|---|
+| Item name | 120 characters |
+| Item description | 1000 characters |
+| Request purpose and notes (all notes) | 500 characters |
+| Category | 60 characters |
+| Location | 80 characters |
+| Outside-party organisation and contact person names | 120 characters each |
+| Stock | 0 to 9999 per condition |
+| Lines per request | at most 50 |
+| Units per line | at most 200 |
+| Photos per damaged or lost outcome | 1 to 3, each at most 1.5 MiB, JPG, PNG or WebP |
+| Unattached uploads | at most 10 per request folder (uploads never attached to a saved return, A-IB39) |
+
+Note on IB5: the owner's "no maximum duration" is kept; the 365-day cap is a technical guard against typing errors and runaway extensions, not a business limit on normal loans.
+
+---
 
 ## 12. Questions and owner answers (record)
 

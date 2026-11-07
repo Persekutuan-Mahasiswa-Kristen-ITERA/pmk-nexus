@@ -26,7 +26,7 @@ Priority: **P0** blocks the next step, **P1** blocks a specific module, **P2** c
 | B1 | Who is "System Admin" in NEXUS? | **[ANSWERED]** 2026-11-05 | - | Only manually appointed `access_level` `admin` or `super_admin`. Positions never grant it. See `DECISIONS.md` D-007. |
 | B2 | Who manages Letters and Meeting Minutes? | **[ANSWERED]** 2026-11-05 | - | BPH secretaries: everything. Department/bureau secretaries: only their own unit's minutes. See `DECISIONS.md` D-008. |
 | B3 | Treasurer = only Bendahara Umum 1/2 (role `bendahara`)? | [ASSUMPTION] yes | P1 (Finance) | No department-level treasurers exist in PI-CORE. |
-| B4 | "Operations Department Head and staff" = Kepala Departemen of `Departemen Operasional` + Kepala Divisi + Staff of its divisions `Logistik` and `Akomodasi` (+ Sekretaris Departemen?) | **[ANSWERED]** 2026-11-07 (D-022, IB2 option b) | - | Every position in the Operations units (including Sekretaris Departemen Operasional) manages inventory and records handover/return (`borrowing.handle`). Only Kepala Departemen and Kepala Divisi approve, reject, extend (`borrowing.approve`). Still to verify before applying: that the Kepala Divisi positions of Logistik and Akomodasi are filled in the real data. Migration not written yet. |
+| B4 | "Operations Department Head and staff" = Kepala Departemen of `Departemen Operasional` + Kepala Divisi + Staff of its divisions `Logistik` and `Akomodasi` (+ Sekretaris Departemen?) | **[ANSWERED]** 2026-11-07 (D-022, IB2 option b) | - | Every position in the Operations units (including Sekretaris Departemen Operasional) manages inventory and records handover/return (`borrowing.handle`). Only Kepala Departemen and Kepala Divisi approve, reject, extend (`borrowing.approve`). Still to verify before applying: that the Kepala Divisi positions of Logistik and Akomodasi are filled in the real data. Migration written 2026-11-07 (`20261107100000`, commit 7a8399a), not yet applied to hosted. |
 | B5 | How to identify `Departemen Operasional` safely? | **[ANSWERED]** 2026-11-05 | - | NEXUS-side settings table storing PI-CORE org unit IDs. See `DECISIONS.md` D-009. |
 | B6 | "BPH view all" = everyone holding role `bph` (Ketua Umum, Sekjen, Sekum 1/2, Bendahara Umum 1/2)? | [ASSUMPTION] yes | P1 | |
 | B7 | Committee (panitia): needed in NEXUS? PI-CORE has no such role. | [UNKNOWN] | P2 | Context doc lists "Committee" as a role. |
@@ -154,7 +154,7 @@ Spec: `docs/modules/member-data.md` section 8 (M1-M8 are answered, D-019). These
 
 ## H. Inventory and Borrowing assumptions (2026-11-07)
 
-Spec: `docs/modules/inventory-borrowing.md` section 10 (IB1-IB15 are answered, D-022). These are the details the owner did not decide; they stay [ASSUMPTION] until confirmed. Answered and no longer assumptions: A-IB1 (own handover and return allowed, IB2), A-IB4 (one catalog, IB3), A-IB9 (cancel after approval, IB7), A-IB10 (extension, IB5 and A-IB26), A-IB13 and A-IB23 (conditions, IB10), A-IB17 (outside parties, IB15 and A-IB28), A-IB19 (stock held from approval, IB6).
+Spec: `docs/modules/inventory-borrowing.md` section 10 (IB1-IB15 are answered, D-022). These are the details the owner did not decide; they stay [ASSUMPTION] until confirmed. Answered and no longer assumptions: A-IB1 (own handover and return allowed, IB2), A-IB4 (one catalog, IB3), A-IB9 (cancel after approval, IB7), A-IB10 (extension, IB5 and A-IB26), A-IB13 and A-IB23 (conditions, IB10), A-IB17 (outside parties, IB15 and A-IB28), A-IB19 (stock held from approval, IB6). Answered or decided in the 2026-11-07 follow-up (D-022): A-IB18, A-IB36, A-IB43, A-IB45 (amended), A-IB47, A-IB48.
 
 | # | Assumption | Status | Priority |
 |---|---|---|---|
@@ -167,9 +167,9 @@ Spec: `docs/modules/inventory-borrowing.md` section 10 (IB1-IB15 are answered, D
 | A-IB11 | The queue has a "Belum selesai (semua periode)" filter and an open-loans export for period handover (belongs in the new-period guide). | [ASSUMPTION] | P1 |
 | A-IB12 | Export header shows period label and export date in WIB, like Member Data. | [ASSUMPTION] | P2 |
 | A-IB14 | A head may approve a lower quantity per line, with a note. | [ASSUMPTION] | P2 |
-| A-IB15 | One reasoned correction exists: Dikembalikan back to Dipinjam, by a `borrowing.handle` holder. | **[ANSWERED]** 2026-11-07: owner approved with the spec | - |
+| A-IB15 | One reasoned correction exists: Dikembalikan back to Dipinjam, by a `borrowing.handle` holder. | **[ANSWERED]** 2026-11-07: owner approved with the spec. **Narrowed 2026-11-07:** returns only, once per request, refused if the stock changed since the return; no handover correction | - |
 | A-IB16 | Progja can later link to a request by id without a rewrite. | [ASSUMPTION] | P2 |
-| A-IB18 | Date ranges are inclusive; an item returned on day D is free from D+1. | [ASSUMPTION] | P1 |
+| A-IB18 | Date ranges are inclusive. A returned item is free again immediately (was: free from D+1). | **[ANSWERED]** 2026-11-07: owner, free immediately | - |
 | A-IB20 | Page size 20. | [ASSUMPTION] | P2 |
 | A-IB21 | Drawer badge and Dashboard line for waiting approvals are proposals for the Dashboard module. | [ASSUMPTION] | P2 |
 | A-IB22 | Members cannot export their own requests. | [ASSUMPTION] | P2 |
@@ -180,20 +180,23 @@ Spec: `docs/modules/inventory-borrowing.md` section 10 (IB1-IB15 are answered, D
 | A-IB28 | Outside-party request stores organisation name and contact person name only (no phone or email); the Ops member who records it is the requester of record (so L6 blocks them from approving it); it then follows the normal approval by a head. | **[ANSWERED]** 2026-11-07: owner approved as written (D-022) | - |
 | A-IB29 | For individually tracked items the requester picks the item and a quantity; stock is reserved by quantity at approval; the Operations member chooses the specific units (by INV code) at handover. | **[ANSWERED]** 2026-11-07: owner approved with the spec | - |
 | A-IB30 | A damaged return states the resulting condition (Perlu servis or Rusak). A lost unit is a write-off: the unit stays in history with status Hilang and its code; for counted items the total drops. | **[ANSWERED]** 2026-11-07: owner approved with the spec | - |
-| A-IB31 | Evidence photos: 1 to 3 per damaged or lost line, resized in the browser to a long side of about 1280 px (about 1 MB each at most); private bucket; viewable by `borrowing.view_all` holders and the requester; never purged. | [ASSUMPTION] | P1 |
+| A-IB31 | Evidence photos: 1 to 3 per damaged or lost line, resized in the browser to a long side of about 1280 px (the database and the bucket accept at most 1.5 MiB each, JPG, PNG or WebP, A-IB43); private bucket; viewable by `borrowing.view_all` holders and the requester; never purged. | [ASSUMPTION] | P1 |
 | A-IB32 | Dashboard card counts: units in Baik (including those on loan), units on loan now, units in Perlu servis; archived and lost excluded; Rusak not on the card; exact wording at design time. | [ASSUMPTION] | P2 |
 | A-IB33 | Export log: one append-only row per successful export of the catalog or of borrowing (module, who, when, format, filters, period; no PII). Whether it shares the Member Data table is the database engineer's call. Until the log screen exists it is readable only through the database. | [ASSUMPTION] | P2 |
 | A-IB34 | A `borrowing.handle` holder may cancel an approved request that was not picked up (reason required), for example when the requester is deactivated. A Diajukan request of a deactivated member is rejected by a head with a note. | [ASSUMPTION] | P2 |
 | A-IB35 | Any head of the Operations unit may approve any request (not only for their own division). | **[ANSWERED]** 2026-11-07: owner approved with the spec | - |
-| A-IB36 | The new key `borrowing.handle` is treated like `borrowing.approve` in the catalog: not grantable to "every active member", written reason required (L12). Whether the `is_sensitive` flag is also set is left to the database engineer. | [ASSUMPTION] | P1 |
+| A-IB36 | The new key `borrowing.handle` is treated like `borrowing.approve` in the catalog: not grantable to "every active member", written reason required (L12). `is_sensitive` = false and never baseline. | **[DECIDED]** 2026-11-07: by the database engineer; the reason is in the header of migration `20261107100000_nexus_borrowing_access_rules.sql` | - |
 | A-IB37 | Inventory module navigation: four route-based segments (Katalog, Peminjaman Saya, Antrean, Kelola Barang), role-aware; filter card folded on phones (design P1, P3). | [ASSUMPTION] | P2 |
 | A-IB38 | Item category and location are optional while the lists are new; one location per item, not per stock row (design P4, G1). | [ASSUMPTION] | P2 |
 | A-IB39 | Evidence photos upload when picked; uploaded files never attached to a saved return are not evidence and may be cleaned up (design P8, G5). | [ASSUMPTION] | P2 |
 | A-IB40 | Chip colours: Dikembalikan green (same tone as Disetujui); grey chip from Stitch 04 added to the theme (design P9). | [ASSUMPTION] | P2 |
 | A-IB41 | A damaged return line records ONE resulting condition (Perlu servis or Rusak); split the line if pieces differ (design P10, G11). | [ASSUMPTION] | P2 |
 | A-IB42 | Rejected or cancelled requests offer a prefilled "Ajukan lagi"; detail screen titled "Detail Pengajuan"; a confirm step before saving a return (design P11, P14, P15). | [ASSUMPTION] | P2 |
-| A-IB43 | Field length limits and maximum stock numbers are set by the database engineer and shown in copy as {max} (G4). | [ASSUMPTION] | P2 |
+| A-IB43 | Field length limits and maximum stock numbers. Limits: item name 120 characters, description 1000, purpose and notes 500, category 60, location 80, outside-party names 120; stock 0-9999 per condition; at most 50 lines per request, 200 units per line; 1-3 photos per damaged or lost outcome, 1.5 MiB each (JPG, PNG, WebP); at most 10 unattached uploads per request folder. Copy may use these numbers instead of {max} (G4). | **[DECIDED]** 2026-11-07: owner (D-022 follow-up) | - |
 | A-IB44 | Category and location lists sort A-Z; no reorder screen (G6). | [ASSUMPTION] | P2 |
-| A-IB45 | A written-off (Hilang) unit can be restored ("Ditemukan kembali") by a `borrowing.handle` holder through a reasoned correction (G7). | [ASSUMPTION] | P2 |
+| A-IB45 | A written-off (Hilang) unit can be restored ("Ditemukan kembali") through a reasoned correction (G7). **Amended 2026-11-07:** by a holder of `inventory.manage`, and only when the item is active (was: `borrowing.handle`). | **[AMENDED]** 2026-11-07: tech lead decision after the security review (listed in the D-022 follow-up) | - |
 | A-IB46 | The requester's timeline shows the names of the approver and the Ops members who recorded handover and return (G8). | [ASSUMPTION] | P2 |
+| A-IB47 | Request caps per member: at most 5 open (Diajukan) requests and at most 20 new requests per Jakarta day; an outside-party request counts toward the recorder's caps. | **[ANSWERED]** 2026-11-07: owner (D-022 follow-up) | - |
+| A-IB48 | Date cap: `end_date` is at most `start_date` + 365 days, also for extensions (counted from the original start); a longer loan needs a new request. | **[ANSWERED]** 2026-11-07: owner (D-022 follow-up) | - |
+| A-IB49 | Detail of A-IB47: the cap of 5 counts Diajukan requests only (not Disetujui or Dipinjam); the cap of 20 counts every request created that Jakarta day, even if it is cancelled later. | [ASSUMPTION] | P2 |
 

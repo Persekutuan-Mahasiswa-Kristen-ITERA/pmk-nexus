@@ -56,8 +56,14 @@ All accounts use the same dev password: **`NexusLocal2026`**. Emails end in `@ne
 | `kadep@nexus.test` | Kepala Departemen, Departemen Operasional | Member Data view (rule D32), no export. |
 | `kabiro@nexus.test` | Kepala Biro, Biro Kewirausahaan | Member Data view (rule D32), no export. |
 | `pembina@nexus.test` | Lecturer (`member_type = 'lecturer'`), no assignment | Listed with the "Pembina" marker; limited access. |
+| `kadiv.logistik@nexus.test` | Kepala Divisi Logistik (Operations head) | Can approve borrowing requests (rule D35), also handles and manages inventory. Cannot approve their own request. |
+| `staff.ops@nexus.test` | Staff Akomodasi (Operations staff) | Can record handover and return (`borrowing.handle`, rule D36) and manage inventory, but cannot approve (Staff is not a head). |
 
-The seed is re-run by every `pnpm db:migrate` (and `scripts/dev-db.sh migrate`), so the accounts and the bulk members below are restored if they are missing. It is safe to run more than once. Not seeded yet (so you cannot test these by logging in): a System Admin who is also BPH, a Sekretaris Departemen, Operations staff with a login, and a student with a login but no assignment.
+The seed is re-run by every `pnpm db:migrate` (and `scripts/dev-db.sh migrate`), so the accounts and the bulk members below are restored if they are missing. It is safe to run more than once. Not seeded yet (so you cannot test these by logging in): a System Admin who is also BPH, a Sekretaris Departemen, and a student with a login but no assignment. (Operations staff and an Operations head now have logins: `staff.ops@nexus.test` and `kadiv.logistik@nexus.test`.)
+
+Also seeded for Inventory and Borrowing (fake, local only): categories "Kategori Uji A" and "Kategori Uji B", locations "Lokasi Uji 1" and "Lokasi Uji 2", and five items: "Barang Uji 01" to "Barang Uji 03" (quantity-based) and "Barang Uji 04" and "Barang Uji 05" (individually tracked, with units). Use them to try the catalog, requests, approval, handover and return once the screens exist. The real category, location and item lists start empty on hosted (IB10).
+
+**Storage is off on the local stack** (`supabase/config.toml`, see section 5). The bucket `nexus-borrowing-evidence` is created by migration `20261107100200_nexus_inventory_storage.sql`, which does nothing where Storage is not installed (the local stack), so **photo uploads for damaged or lost returns cannot be tried locally**. To try them you must set `enabled = true` in the `[storage]` section of `supabase/config.toml` and restart the stack (this uses more RAM). Until then, test the photo rules with the database tests only.
 
 Also seeded: 40 login-less members `Bulk Anggota 01`-`40` (`bulkNN@nexus.test`, no password, cannot sign in): 10 Staff (Bulk 11 holds Staff Musik + Staff Logistik and shows Musik, the tie-break case), 3 inactive (05, 21, 37), 2 lecturers (13, 29). With the default Aktif filter, Data Anggota shows 45 members on 3 pages.
 

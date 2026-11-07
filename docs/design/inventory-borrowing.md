@@ -1130,7 +1130,7 @@ Conflict: "Bentrok dengan pengajuan lain pada {tanggal}. Tanggal belum diubah." 
 | Serahkan barang | `borrowing.handle` | Disetujui (screen 9) |
 | Terima pengembalian | `borrowing.handle` | Dipinjam with outstanding quantity (screen 10) |
 | Batalkan pengajuan | `borrowing.handle` or the requester | Disetujui and not picked up (cancel dialog, reason wajib) |
-| Koreksi pengembalian | `borrowing.handle` | Dikembalikan. Dialog: title "Kembalikan status ke Dipinjam?", text "Pakai ini hanya untuk memperbaiki salah klik. Tindakan ini tercatat.", field "Alasan (wajib)", error "Tulis alasan koreksi.", button "Koreksi pengembalian". |
+| Koreksi pengembalian | `borrowing.handle` | Dikembalikan. Dialog: title "Kembalikan status ke Dipinjam?", text "Pakai ini hanya untuk memperbaiki salah catat pengembalian. Koreksi hanya bisa sekali per pengajuan, dan ditolak kalau stok barang sudah berubah. Tindakan ini tercatat.", field "Alasan (wajib)", error "Tulis alasan koreksi.", button "Koreksi pengembalian". |
 
 Buttons that the viewer may not use are absent, never grey (K9). Handover and return of the viewer's own request are allowed; the page says so (screens 9 and 10).
 
@@ -1345,7 +1345,7 @@ A line with both Rusak and Hilang gets two evidence blocks (one per outcome), as
 | Choice | "Ambil foto" opens the phone camera (file input with `capture`, rear camera). "Pilih dari galeri" opens the gallery (several photos allowed up to the limit). On a computer both open the file chooser; "Ambil foto" is hidden there. At 3 photos both buttons disappear and a line says "Maksimal 3 foto." |
 | Accepted | JPG, PNG, WebP. Other types: "Format foto tidak didukung. Pakai JPG, PNG, atau WebP." (Phone gallery pickers convert HEIC to JPG when the input asks for these types.) |
 | Size before resizing | Up to {max} MB per original ([PROPOSAL P8b]: 15 MB). Over it: "Foto terlalu besar. Pakai foto di bawah {max} MB." |
-| Resize | In the browser, before upload: long side about 1280 px, quality lowered in steps until the file is at most about 1 MB (A-IB31). The tile shows "Memperkecil..." with a static spinner. If it cannot get under the limit: "Foto masih terlalu besar setelah diperkecil. Coba foto lain." |
+| Resize | In the browser, before upload: long side about 1280 px, quality lowered in steps until the file is at most 1.5 MiB, the bucket limit (A-IB31, A-IB43). The tile shows "Memperkecil..." with a static spinner. If it cannot get under the limit: "Foto masih terlalu besar setelah diperkecil. Coba foto lain." |
 | Upload | Starts as soon as the resize ends (the person learns about a bad connection while still standing at the desk). Tile shows "Mengunggah {n}%" and a flat progress bar (`role=progressbar`, `aria-valuenow`). |
 | Done | "Terunggah" with a check icon and the thumbnail. |
 | Failure | "Gagal diunggah." with "Coba lagi" (sends the resized photo again, no new pick) and "Hapus". Network-specific: "Tidak bisa terhubung. Periksa internetmu lalu coba lagi." |
@@ -1707,4 +1707,4 @@ Asked and answered by the owner:
 
 Taken as recommended (recorded as assumptions A-IB37..A-IB46 in `docs/OPEN_QUESTIONS.md` section H; the owner can change them):
 - P1 (a) four route-based segments; P3 filter card folded on phones; P4 (a) category and location optional; P5 (a) recording mode never changes; P8 (a) evidence photo uploads when picked, files never attached to a saved return are not evidence and may be cleaned up; P9 Dikembalikan chip green; P10 one resulting condition per damaged line; P11 "Ajukan lagi" prefilled; P12 Antrean count as designed; P14 "Detail Pengajuan"; P15 confirm before saving a return.
-- G1: one location per item (not per stock row). G4: field length limits set by the database engineer and shown as `{max}`. G6: list order A-Z, no reorder screen. G7: a written-off (Hilang) unit can be restored by a `borrowing.handle` holder through a reasoned correction ("Ditemukan kembali"). G8: the requester sees the names of the approver and the Ops members who recorded handover and return in the timeline. G12: icons stay Lucide (as built).
+- G1: one location per item (not per stock row). G4: field length limits set by the database engineer and shown as `{max}`. G6: list order A-Z, no reorder screen. G7: a written-off (Hilang) unit can be restored ("Ditemukan kembali") with a reason by an `inventory.manage` holder, item must be active (amended 2026-11-07 after the DB security review, A-IB45). G8: the requester sees the names of the approver and the Ops members who recorded handover and return in the timeline. G12: icons stay Lucide (as built).
