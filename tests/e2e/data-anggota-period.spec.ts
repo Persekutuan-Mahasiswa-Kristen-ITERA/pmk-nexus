@@ -17,12 +17,15 @@ import {
   logCount,
   logRowsAfter,
   main,
+  memberCounts,
   namesOnPage,
   noHorizontalScroll,
   openList,
   pdfText,
   readCsv,
   removeAssignment,
+  rowsOnPage,
+  expectedNames,
   searchBox,
   tableRows,
   xlsxNames,
@@ -47,9 +50,10 @@ test.describe("MD-07, MD-20, F7: period switch changes access by itself; old ass
     const regular = await signedInContext(browser, "regular");
     let assignmentId: string | null = null;
     try {
+      const { active } = memberCounts();
       // Before the switch
       await openList(ketum.page);
-      await expectTotal(ketum.page, 45);
+      await expectTotal(ketum.page, active);
       await expect(ketum.page.getByText("Periode 2026/2027").first()).toBeVisible();
       expect(await drawerItems(ketum.page)).toEqual(["Dashboard", "Data Anggota"]);
       await regular.page.goto(LIST_PATH);
@@ -59,8 +63,9 @@ test.describe("MD-07, MD-20, F7: period switch changes access by itself; old ass
       // Previous period: member.regular was Kepala Departemen Operasional in 2025/2026 only (a seeded "officer of a previous period" would be
       // the same situation mirrored; ketum is the P-OLD of the NEW period here)
       const history2627 = assignmentCount("2026/2027");
+      const history2526 = assignmentCount("2025/2026");
       assignmentId = addPreviousPeriodOfficer("member.regular@nexus.test");
-      expect(assignmentCount("2025/2026")).toBe(1);
+      expect(assignmentCount("2025/2026")).toBe(history2526 + 1);
 
       setActivePeriod("2025/2026");
 
@@ -85,7 +90,7 @@ test.describe("MD-07, MD-20, F7: period switch changes access by itself; old ass
       await expect(regular.page.getByText("Periode 2025/2026").first()).toBeVisible();
       expect(await drawerItems(regular.page)).toEqual(["Dashboard", "Data Anggota"]);
       await expect(exportButton(regular.page)).toHaveCount(0);
-      await expectTotal(regular.page, 45); // the member list itself does not depend on the period
+      await expectTotal(regular.page, active); // the member list itself does not depend on the period
       // MD-20: history never leaks. Only the previous-period officer shows a unit; everybody else (including ketum, Bulk 11) shows "-"
       await regular.page.goto(`${LIST_PATH}?q=Test+Ketua`);
       await expect(tableRows(regular.page).first().locator("td").nth(2)).toHaveText("-");
@@ -94,10 +99,20 @@ test.describe("MD-07, MD-20, F7: period switch changes access by itself; old ass
       await regular.page.goto(`${LIST_PATH}?q=Sandi+Sementara`);
       await expect(tableRows(regular.page).first().locator("td").nth(2)).toHaveText("-"); // Staff Desain in 2026/2027 only
       await regular.page.goto(`${LIST_PATH}?unit=${sql("select id from public.org_units where name='Departemen Operasional'")}`);
-      await expectTotal(regular.page, 1); // Operasional now holds only the previous-period officer, in the new active period
-      await expect(tableRows(regular.page).first()).toContainText("Test Anggota Biasa"); // member.regular itself
-      await expect(tableRows(regular.page).first().locator("td").nth(2)).toContainText("Departemen Operasional");
-      await expect(tableRows(regular.page).first().locator("td").nth(2)).toContainText("Kepala Departemen");
+      // Operasional in the NEW active period (2025/2026) holds exactly what the database says: the previous-period officer
+      // and anybody the seed assigned to 2025/2026 (derived, so seeding the current period never changes it)
+      const opsThen = expectedNames({ unitName: "Departemen Operasional", periodLabel: "2025/2026" });
+      expect(opsThen).toContain("Test Anggota Biasa"); // member.regular itself
+      await expectTotal(regular.page, opsThen.length);
+      const shown = await namesOnPage(regular.page);
+      expect(shown).toEqual(opsThen.slice(0, 20));
+      // MD-20: nobody who is in Operasional only in 2026/2027 shows up through the filter
+      for (const name of expectedNames({ unitName: "Departemen Operasional", periodLabel: "2026/2027" })) {
+        if (!opsThen.includes(name)) expect(shown, name).not.toContain(name);
+      }
+      const regularRow = tableRows(regular.page).filter({ hasText: "Test Anggota Biasa" });
+      await expect(regularRow.locator("td").nth(2)).toContainText("Departemen Operasional");
+      await expect(regularRow.locator("td").nth(2)).toContainText("Kepala Departemen");
 
       // Old data stays as history: the 2026/2027 assignments are untouched
       expect(assignmentCount("2026/2027")).toBe(history2627);
@@ -106,7 +121,7 @@ test.describe("MD-07, MD-20, F7: period switch changes access by itself; old ass
       setActivePeriod("2026/2027");
       await ketum.page.reload();
       await expect(main(ketum.page).getByRole("heading", { level: 1, name: "Data Anggota" })).toBeVisible();
-      await expect(tableRows(ketum.page)).toHaveCount(20);
+      await expect(tableRows(ketum.page)).toHaveCount(rowsOnPage(active, 1));
       await expect(exportButton(ketum.page)).toBeVisible();
       expect(await drawerItems(ketum.page)).toEqual(["Dashboard", "Data Anggota"]);
       await regular.page.goto(LIST_PATH);
@@ -125,8 +140,9 @@ test.describe("MD-07, MD-20, F7: period switch changes access by itself; old ass
     const ketum = await signedInContext(browser, "ketum");
     const admin = await signedInContext(browser, "admin");
     try {
+      const { active } = memberCounts();
       await openList(ketum.page);
-      await expectTotal(ketum.page, 45);
+      await expectTotal(ketum.page, active);
       setActivePeriod(null);
       for (const { page } of [ketum, admin]) {
         await page.goto(LIST_PATH);
@@ -139,7 +155,7 @@ test.describe("MD-07, MD-20, F7: period switch changes access by itself; old ass
       expect(res.status()).toBe(403);
       setActivePeriod("2026/2027");
       await ketum.page.goto(LIST_PATH);
-      await expectTotal(ketum.page, 45);
+      await expectTotal(ketum.page, active);
     } finally {
       setActivePeriod("2026/2027");
       await ketum.context.close();
@@ -160,8 +176,9 @@ test.describe("MD-28, MD-35, A-MD12: when the database part fails the screen say
     test(`${label} not answering: 'Terjadi gangguan', not 'no access', no sign-out; 'Coba lagi' recovers`, async ({ browser }) => {
       const { context, page } = await signedInContext(browser, "ketum");
       try {
+        const { active } = memberCounts();
         await openList(page);
-        await expectTotal(page, 45);
+        await expectTotal(page, active);
         revoke(fn);
         await page.reload();
         await expect(main(page).getByRole("alert")).toHaveText("Terjadi gangguan. Coba lagi sebentar lagi.");
@@ -183,7 +200,7 @@ test.describe("MD-28, MD-35, A-MD12: when the database part fails the screen say
 
         grant(fn);
         await main(page).getByRole("button", { name: "Coba lagi" }).click();
-        await expectTotal(page, 45);
+        await expectTotal(page, active);
         await expect(main(page).getByRole("alert")).toHaveCount(0);
       } finally {
         grant(fn);
@@ -207,7 +224,7 @@ test.describe("MD-28, MD-35, A-MD12: when the database part fails the screen say
       expect(logCount()).toBe(before);
       grant(EXPORT_FN);
       const csv = await downloadExport(page, "CSV (.csv)");
-      expect(readCsv(csv.path).rows).toHaveLength(45);
+      expect(readCsv(csv.path).rows).toHaveLength(memberCounts().active);
       expect(logCount()).toBe(before + 1);
     } finally {
       grant(EXPORT_FN);
@@ -283,9 +300,10 @@ test.describe("R12, MD-10 safety, very long and unusual names (temporary members
       void d.dismiss();
     });
     try {
+      const { active } = memberCounts(); // before the temporary members exist
       insert();
       await openList(page);
-      await expectTotal(page, 45 + names.length);
+      await expectTotal(page, active + names.length);
       // Duplicates: two rows with the same name (R12)
       await searchBox(page).fill("Qa Kembar Nama");
       await expectTotal(page, 2);
@@ -328,16 +346,17 @@ test.describe("R12, MD-10 safety, very long and unusual names (temporary members
     test.setTimeout(180_000);
     const { context, page } = await signedInContext(browser, "ketum");
     try {
+      const { all } = memberCounts(); // before the temporary members exist
       insert();
       // All the temporary members share no word; use status all + a search that hits each: the e-mail is not searchable, so
       // export the whole list and pick the rows out.
       await openList(page, "?status=all");
-      await expectTotal(page, 49 + names.length);
+      await expectTotal(page, all + names.length);
       const before = lastLogId();
 
       const csv = await downloadExport(page, "CSV (.csv)");
       const file = readCsv(csv.path);
-      expect(file.rows).toHaveLength(49 + names.length);
+      expect(file.rows).toHaveLength(all + names.length);
       const cells = file.rows.map((r) => r[1]);
       // Formula-looking names get an apostrophe prefix in CSV; others are written as they are
       expect(cells).toContain(`'=HYPERLINK("http://evil.example/x","Klik")`);
@@ -356,7 +375,7 @@ test.describe("R12, MD-10 safety, very long and unusual names (temporary members
 
       const xlsx = await downloadExport(page, "Excel (.xlsx)");
       const book = xlsxNames(xlsx.path);
-      expect(book.names).toHaveLength(49 + names.length);
+      expect(book.names).toHaveLength(all + names.length);
       for (const name of names) expect(book.names).toContain(name); // exact text, stored as text
       expect(book.xml).not.toMatch(/<f[ >\/]/);
 

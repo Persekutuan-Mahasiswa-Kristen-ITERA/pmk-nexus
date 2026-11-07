@@ -1,14 +1,20 @@
 // Data Anggota (Member Data) on a 390 px phone: access per persona, drawer, list, filters, content, privacy, layout, drawer a11y.
 // Spec: docs/modules/member-data.md. Criteria in the titles: MD-01 .. MD-28, MD-40, D-021.
-// Personas: docs/ops/local-setup.md section 3. Seed: 49 members, 45 active (3 lecturers), 4 inactive.
+// Personas: docs/ops/local-setup.md section 3. Seed counts are NOT hard-coded: every number comes from the local database at test time
+// (member-data-helpers.ts: memberCounts, expectedNames, counterLabel...), so adding seed members cannot break these tests.
 // This file only READS data. Specs that change data: data-anggota-period.spec.ts. Exports: data-anggota-export.spec.ts.
 import { expect, test, type Page } from "@playwright/test";
 import { sql } from "../support/local-stack";
 import { PERSONAS, signedInContext, type PersonaKey } from "./helpers";
 import {
   LIST_PATH,
+  counterLabel,
   counterText,
   countMembers,
+  expectedNames,
+  memberCounts,
+  pagesFor,
+  rowsOnPage,
   exportButton,
   main,
   namesOnPage,
@@ -26,9 +32,6 @@ import {
   unitSelect,
 } from "./member-data-helpers";
 
-const ACTIVE_TOTAL = 45;
-const ALL_TOTAL = 49;
-const INACTIVE_TOTAL = 4;
 const allNames = () => sql("select full_name from public.members").split("\n").filter(Boolean);
 
 async function openDrawer(page: Page) {
@@ -46,7 +49,7 @@ test.describe("MD-01, MD-02, MD-04: personas that may view (drawer item, list, e
     ["kabiro", "Kepala Biro Kewirausahaan (rule D32)", false],
   ];
   for (const [persona, label, canExport] of cases) {
-    test(`${persona} (${label}): drawer shows Data Anggota, list opens with ${ACTIVE_TOTAL} members, Ekspor ${canExport ? "visible" : "absent"}`, async ({ browser }) => {
+    test(`${persona} (${label}): drawer shows Data Anggota, list opens with every active member, Ekspor ${canExport ? "visible" : "absent"}`, async ({ browser }) => {
       const { context, page } = await signedInContext(browser, persona);
       try {
         await page.goto("/");
@@ -57,8 +60,9 @@ test.describe("MD-01, MD-02, MD-04: personas that may view (drawer item, list, e
         await expect(page.getByRole("dialog")).toHaveCount(0); // the drawer closes after navigating
         await expect(page.getByRole("heading", { level: 1, name: "Data Anggota" })).toBeVisible();
         await expect(page.getByText("Periode 2026/2027").first()).toBeVisible();
-        await expectTotal(page, ACTIVE_TOTAL);
-        await expect(tableRows(page)).toHaveCount(20);
+        const { active } = memberCounts();
+        await expectTotal(page, active);
+        await expect(tableRows(page)).toHaveCount(rowsOnPage(active, 1));
         if (canExport) await expect(exportButton(page)).toBeVisible();
         else {
           await expect(exportButton(page)).toHaveCount(0);
@@ -152,17 +156,20 @@ test.describe("MD-05, MD-06: gate screens win over the page (no data, no names)"
 
 // ---------------------------------------------------------------------------------------------
 test.describe("List as Ketua Umum: pagination, counter, order (MD-15, MD-23, MD-26, MD-27)", () => {
-  test("default view: Aktif, 45 results, counter, 20/20/5 rows, running numbers, Prev/Next states", async ({ browser }) => {
+  test("default view: Aktif, every active member, counter, 20 rows per full page, running numbers, Prev/Next states", async ({ browser }) => {
     const { context, page } = await signedInContext(browser, "ketum");
     try {
+      const { active } = memberCounts();
+      const pages = pagesFor(active);
+      expect(pages, "the seed must have at least 3 pages of active members for the pager test").toBeGreaterThanOrEqual(3);
       await openList(page);
-      await expectTotal(page, ACTIVE_TOTAL);
-      await expect(resultBox(page)).toHaveText(/Hasil\s*45\s*anggota/);
-      await expect(counterText(page)).toHaveText("Menampilkan 1-20 dari 45 anggota");
+      await expectTotal(page, active);
+      await expect(resultBox(page)).toHaveText(new RegExp(`Hasil\\s*${active}\\s*anggota`));
+      await expect(counterText(page)).toHaveText(counterLabel(active, 1));
       await expect(statusSelect(page)).toHaveValue("active");
       await expect(unitSelect(page)).toHaveValue("");
-      await expect(tableRows(page)).toHaveCount(20);
-      expect(await numbersOnPage(page)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
+      await expect(tableRows(page)).toHaveCount(rowsOnPage(active, 1));
+      expect(await numbersOnPage(page)).toEqual(Array.from({ length: rowsOnPage(active, 1) }, (_, i) => i + 1));
 
       const pager = page.getByRole("navigation", { name: "Halaman daftar anggota" });
       // Page 1: Prev is disabled (not a link), Next is a link; the current page is marked
@@ -172,47 +179,46 @@ test.describe("List as Ketua Umum: pagination, counter, order (MD-15, MD-23, MD-
       await expect(pager.getByRole("link", { name: "Halaman sebelumnya" })).toHaveCount(0);
       await expect(pager.locator("[aria-current='page']:visible")).toHaveText(/1/); // the phone and the wide list of numbers both exist; one is hidden
 
-      await pager.getByRole("link", { name: "Halaman berikutnya" }).click();
-      await expect(page).toHaveURL(/\?page=2$/);
-      await expect(counterText(page)).toHaveText("Menampilkan 21-40 dari 45 anggota");
-      await expect(tableRows(page)).toHaveCount(20);
-      expect(await numbersOnPage(page)).toEqual(Array.from({ length: 20 }, (_, i) => i + 21));
-      await expect(pager.getByRole("link", { name: "Halaman sebelumnya" })).toBeVisible();
-      await expect(pager.getByRole("link", { name: "Halaman berikutnya" })).toBeVisible();
-
-      await pager.getByRole("link", { name: "Halaman berikutnya" }).click();
-      await expect(page).toHaveURL(/\?page=3$/);
-      await expect(counterText(page)).toHaveText("Menampilkan 41-45 dari 45 anggota");
-      await expect(tableRows(page)).toHaveCount(5);
-      expect(await numbersOnPage(page)).toEqual([41, 42, 43, 44, 45]);
+      // Forward through every page: counter, row count and running numbers of each
+      for (let n = 2; n <= pages; n++) {
+        await pager.getByRole("link", { name: "Halaman berikutnya" }).click();
+        await expect(page).toHaveURL(new RegExp(`\\?page=${n}$`));
+        await expect(counterText(page)).toHaveText(counterLabel(active, n));
+        await expect(tableRows(page)).toHaveCount(rowsOnPage(active, n));
+        expect(await numbersOnPage(page)).toEqual(Array.from({ length: rowsOnPage(active, n) }, (_, i) => (n - 1) * 20 + i + 1));
+        await expect(pager.getByRole("link", { name: "Halaman sebelumnya" })).toBeVisible();
+        if (n < pages) await expect(pager.getByRole("link", { name: "Halaman berikutnya" })).toBeVisible();
+      }
+      // Last page: Next is disabled
       await expect(pager.locator("[aria-disabled='true']")).toHaveText("Next");
       await expect(pager.getByRole("link", { name: "Halaman berikutnya" })).toHaveCount(0);
 
-      await pager.getByRole("link", { name: "Halaman sebelumnya" }).click();
-      await expect(counterText(page)).toHaveText("Menampilkan 21-40 dari 45 anggota");
-      await pager.getByRole("link", { name: "Halaman sebelumnya" }).click();
-      await expect(counterText(page)).toHaveText("Menampilkan 1-20 dari 45 anggota");
+      // Back to page 1
+      for (let n = pages - 1; n >= 1; n--) {
+        await pager.getByRole("link", { name: "Halaman sebelumnya" }).click();
+        await expect(counterText(page)).toHaveText(counterLabel(active, n));
+      }
     } finally {
       await context.close();
     }
   });
 
-  test("MD-27 / MD-15: across the three pages every member appears exactly once, A-Z, case-insensitive", async ({ browser }) => {
+  test("MD-27 / MD-15: across all pages every member appears exactly once, A-Z, case-insensitive, exactly the database's order", async ({ browser }) => {
     const { context, page } = await signedInContext(browser, "ketum");
     try {
+      const { active } = memberCounts();
       const seen: string[] = [];
-      for (const n of [1, 2, 3]) {
+      for (let n = 1; n <= pagesFor(active); n++) {
         await openList(page, n === 1 ? "" : `?page=${n}`);
         await expect(counterText(page)).toBeVisible();
         seen.push(...(await namesOnPage(page)));
       }
-      expect(seen).toHaveLength(ACTIVE_TOTAL);
-      expect(new Set(seen).size).toBe(ACTIVE_TOTAL);
+      expect(seen).toHaveLength(active);
+      expect(new Set(seen).size).toBe(active);
       const sorted = [...seen].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase(), "en"));
       expect(seen).toEqual(sorted);
-      // Exactly the active members of PI-CORE
-      const expected = sql("select full_name from public.members where is_active").split("\n").sort();
-      expect([...seen].sort()).toEqual(expected);
+      // Exactly the active members of PI-CORE, in the order of the database oracle (case-insensitive A-Z, then id)
+      expect(seen).toEqual(expectedNames({ status: "active" }));
     } finally {
       await context.close();
     }
@@ -221,18 +227,20 @@ test.describe("List as Ketua Umum: pagination, counter, order (MD-15, MD-23, MD-
   test("a page beyond the last shows the last page; a bad or huge page number is page 1 or last; the page size cannot be raised (MD-26)", async ({ browser }) => {
     const { context, page } = await signedInContext(browser, "ketum");
     try {
+      const { active } = memberCounts();
+      const last = pagesFor(active);
       await openList(page, "?page=999");
-      await expect(counterText(page)).toHaveText("Menampilkan 41-45 dari 45 anggota");
+      await expect(counterText(page)).toHaveText(counterLabel(active, last));
       await openList(page, "?page=999999999999");
-      await expect(counterText(page)).toHaveText("Menampilkan 1-20 dari 45 anggota"); // not a plain 9-digit number: page 1
+      await expect(counterText(page)).toHaveText(counterLabel(active, 1)); // not a plain 9-digit number: page 1
       for (const bad of ["?page=0", "?page=-3", "?page=abc", "?page=1e3", "?page=2.5", "?page="]) {
         await openList(page, bad);
-        await expect(counterText(page), bad).toHaveText("Menampilkan 1-20 dari 45 anggota");
+        await expect(counterText(page), bad).toHaveText(counterLabel(active, 1));
       }
       for (const size of ["?pageSize=500", "?page_size=500&limit=500", "?pageSize=1"]) {
         await openList(page, size);
-        await expect(tableRows(page), size).toHaveCount(20);
-        await expect(counterText(page), size).toHaveText("Menampilkan 1-20 dari 45 anggota");
+        await expect(tableRows(page), size).toHaveCount(rowsOnPage(active, 1));
+        await expect(counterText(page), size).toHaveText(counterLabel(active, 1));
       }
     } finally {
       await context.close();
@@ -244,28 +252,33 @@ test.describe("Search, filters, reset, Back (MD-12, MD-21, MD-22, MD-23, MD-25)"
   test("search by part of a name, case-insensitive, over all pages; combines with filters; resets to page 1", async ({ browser }) => {
     const { context, page } = await signedInContext(browser, "ketum");
     try {
-      await openList(page, "?page=3");
-      await expect(counterText(page)).toHaveText("Menampilkan 41-45 dari 45 anggota");
+      const { active } = memberCounts();
+      const last = pagesFor(active);
+      await openList(page, `?page=${last}`);
+      await expect(counterText(page)).toHaveText(counterLabel(active, last));
 
       await searchBox(page).fill("bulk anggota 11");
       await expect(page).toHaveURL(/\?q=bulk\+anggota\+11$/); // page reset to 1, search in the address
-      await expectTotal(page, 1);
-      await expect(namesOnPage(page)).resolves.toEqual(["Bulk Anggota 11"]);
+      const bulk11 = expectedNames({ search: "bulk anggota 11" });
+      expect(bulk11).toContain("Bulk Anggota 11");
+      await expectTotal(page, bulk11.length);
+      await expect(namesOnPage(page)).resolves.toEqual(bulk11.slice(0, 20));
 
-      // part of a name, mixed case, extra spaces; must match names across pages: all Anggota (37 Bulk + 2 Test)
+      // part of a name, mixed case, extra spaces; must match names across pages: every active "anggota" (Bulk and Test)
       await searchBox(page).fill("  ANGGOTA   ");
-      const anggota = countMembers("is_active and full_name ilike '%anggota%'");
-      await expectTotal(page, anggota);
-      expect(anggota).toBe(39);
-      await expect(tableRows(page)).toHaveCount(20);
-      await expect(counterText(page)).toHaveText("Menampilkan 1-20 dari 39 anggota");
+      const anggota = expectedNames({ search: "anggota" });
+      await expectTotal(page, anggota.length);
+      await expect(tableRows(page)).toHaveCount(rowsOnPage(anggota.length, 1));
+      await expect(counterText(page)).toHaveText(counterLabel(anggota.length, 1));
 
-      // Combine with unit (AND): Bulk members who belong to Operasional (Bulk 11 Logistik, 23 Akomodasi, 39 Logistik)
+      // Combine with unit (AND): the Bulk members who belong to Operasional or one of its divisions
       await unitSelect(page).selectOption({ label: "Departemen Operasional" });
       await expect(page).toHaveURL(/unit=/);
       await searchBox(page).fill("bulk");
-      await expectTotal(page, 3);
-      await expect(namesOnPage(page)).resolves.toEqual(["Bulk Anggota 11", "Bulk Anggota 23", "Bulk Anggota 39"]);
+      const bulkOps = expectedNames({ search: "bulk", unitName: "Departemen Operasional" });
+      expect(bulkOps).toEqual(expect.arrayContaining(["Bulk Anggota 11", "Bulk Anggota 23", "Bulk Anggota 39"])); // seed facts (R6)
+      await expectTotal(page, bulkOps.length);
+      await expect(namesOnPage(page)).resolves.toEqual(bulkOps.slice(0, 20));
     } finally {
       await context.close();
     }
@@ -295,21 +308,22 @@ test.describe("Search, filters, reset, Back (MD-12, MD-21, MD-22, MD-23, MD-25)"
       await expect(exportButton(page)).toHaveCount(0); // nothing to export
       await expect(page.getByRole("navigation", { name: "Halaman daftar anggota" })).toHaveCount(0);
       await expect(counterText(page)).toHaveCount(0);
+      const { active } = memberCounts();
       await page.getByRole("link", { name: "Hapus pencarian" }).click();
-      await expectTotal(page, ACTIVE_TOTAL);
+      await expectTotal(page, active);
       await expect(searchBox(page)).toHaveValue("");
 
       await searchBox(page).fill("zzzz tidak ada");
       await expectTotal(page, 0);
       await main(page).getByRole("link", { name: "Reset" }).last().click();
-      await expectTotal(page, ACTIVE_TOTAL);
+      await expectTotal(page, active);
       await expect(page).toHaveURL(/\/data-anggota$/);
 
       // Typing and deleting again empties the search without a stuck state
       await searchBox(page).fill("Bulk");
-      await expectTotal(page, 37);
+      await expectTotal(page, expectedNames({ search: "bulk" }).length);
       await searchBox(page).fill("");
-      await expectTotal(page, ACTIVE_TOTAL);
+      await expectTotal(page, active);
     } finally {
       await context.close();
     }
@@ -336,13 +350,14 @@ test.describe("Search, filters, reset, Back (MD-12, MD-21, MD-22, MD-23, MD-25)"
         dialogs.push(d.message());
         void d.dismiss();
       });
+      const allBefore = memberCounts().all;
       for (const q of ["%", "_", "%%", "\\", "'", '"', "'; drop table members;--", "<script>alert(1)</script>", '"><img src=x onerror=alert(1)>', "名前", "😀"]) {
         await openList(page, `?q=${encodeURIComponent(q)}&status=all`);
         await expectTotal(page, 0);
         await expect(page.locator("img[src='x']")).toHaveCount(0);
       }
       expect(dialogs).toEqual([]);
-      expect(countMembers("true")).toBe(ALL_TOTAL); // still there
+      expect(countMembers("true")).toBe(allBefore); // still there
     } finally {
       await context.close();
     }
@@ -352,16 +367,16 @@ test.describe("Search, filters, reset, Back (MD-12, MD-21, MD-22, MD-23, MD-25)"
     const { context, page } = await signedInContext(browser, "ketum");
     try {
       await openList(page, "?q=%20%20%20");
-      await expectTotal(page, ACTIVE_TOTAL);
+      await expectTotal(page, memberCounts().active);
       await expect(main(page).getByRole("alert")).toHaveCount(0);
       await openList(page, `?q=${encodeURIComponent("  bulk     anggota   11  ")}`);
-      await expectTotal(page, 1);
+      await expectTotal(page, expectedNames({ search: "bulk anggota 11" }).length);
     } finally {
       await context.close();
     }
   });
 
-  test("MD-21 unit filter options equal the PI-CORE units; Departemen Operasional returns 4 people including Bulk Anggota 11 (R6)", async ({ browser }) => {
+  test("MD-21 unit filter options equal the PI-CORE units; Departemen Operasional returns exactly its people (derived), including Bulk Anggota 11 (R6)", async ({ browser }) => {
     const { context, page } = await signedInContext(browser, "ketum");
     try {
       await openList(page);
@@ -374,19 +389,15 @@ test.describe("Search, filters, reset, Back (MD-12, MD-21, MD-22, MD-23, MD-25)"
 
       await unitSelect(page).selectOption({ label: "Departemen Operasional" });
       await expect(page).toHaveURL(new RegExp(`\\?unit=${unitId("Departemen Operasional")}$`));
-      await expectTotal(page, 4);
+      // Oracle: active members with ANY active-period assignment in Operasional or one of its divisions, A-Z
+      const expected = expectedNames({ unitName: "Departemen Operasional" });
+      await expectTotal(page, expected.length);
       const names = await namesOnPage(page);
       expect(names).toContain("Bulk Anggota 11");
-      expect(names).toEqual(["Bulk Anggota 11", "Bulk Anggota 23", "Bulk Anggota 39", "Test Kepala Departemen"]);
+      // Seed facts that must stay in the result whatever else the seed adds (R6 and the department head)
+      expect(expected).toEqual(expect.arrayContaining(["Bulk Anggota 11", "Bulk Anggota 23", "Bulk Anggota 39", "Test Kepala Departemen"]));
       expect(new Set(names).size).toBe(names.length); // one row per person, even with two assignments (MD-15)
-      // Oracle: active members with ANY active-period assignment in Operasional or one of its divisions
-      const expected = sql(`
-        select m.full_name from public.members m where m.is_active and exists (
-          select 1 from public.assignments a join public.periods p on p.id = a.period_id and p.is_active
-          join public.org_units u on u.id = a.org_unit_id
-          where a.member_id = m.id and (u.id = '${unitId("Departemen Operasional")}' or u.parent_id = '${unitId("Departemen Operasional")}'))
-        order by lower(m.full_name)`).split("\n");
-      expect(names).toEqual(expected);
+      expect(names).toEqual(expected.slice(0, 20)); // first page, A-Z
 
       // Bulk 11 also holds Staff in Musik (Pelayanan Khusus): appears under that filter too (MD-22), but only once
       await unitSelect(page).selectOption({ label: "Departemen Pelayanan Khusus" });
@@ -401,36 +412,65 @@ test.describe("Search, filters, reset, Back (MD-12, MD-21, MD-22, MD-23, MD-25)"
     }
   });
 
-  test("Status filter: exactly Aktif / Nonaktif / Semua; Nonaktif = 4, Semua = 49; chips match; Reset returns to Aktif", async ({ browser }) => {
+  test("MD-21 / MD-22: EVERY unit option returns exactly its people (derived from PI-CORE), Aktif and Semua, one page of rows in A-Z order", async ({ browser }) => {
+    test.setTimeout(240_000);
+    const { context, page } = await signedInContext(browser, "ketum");
+    try {
+      const units = unitOptionNames();
+      expect(units.length).toBeGreaterThan(3);
+      for (const unit of units) {
+        for (const status of ["active", "all"] as const) {
+          const expected = expectedNames({ status, unitName: unit });
+          const query = `?unit=${unitId(unit)}${status === "all" ? "&status=all" : ""}`;
+          await openList(page, query);
+          await expectTotal(page, expected.length);
+          if (expected.length > 0) {
+            await expect(counterText(page)).toHaveText(counterLabel(expected.length, 1));
+            expect(await namesOnPage(page), `${unit} (${status})`).toEqual(expected.slice(0, 20));
+          }
+          await expect(unitSelect(page)).toHaveValue(unitId(unit));
+        }
+      }
+    } finally {
+      await context.close();
+    }
+  });
+
+  test("Status filter: exactly Aktif / Nonaktif / Semua; Nonaktif and Semua equal the database counts; chips match; Reset returns to Aktif", async ({ browser }) => {
     const { context, page } = await signedInContext(browser, "ketum");
     try {
       await openList(page);
       expect((await statusSelect(page).locator("option").allInnerTexts()).map((t) => t.trim())).toEqual(["Aktif", "Nonaktif", "Semua"]);
+      const { active, inactive, all } = memberCounts();
+      expect(inactive, "the seed must hold at least one deactivated member").toBeGreaterThan(0);
+      expect(inactive).toBeLessThanOrEqual(20); // the chip checks below read one page
       // Default Aktif: nobody inactive is listed
       expect(await tableRows(page).filter({ hasText: "Nonaktif" }).count()).toBe(0);
 
       await statusSelect(page).selectOption({ label: "Nonaktif" });
       await expect(page).toHaveURL(/\?status=inactive$/);
-      await expectTotal(page, INACTIVE_TOTAL);
-      expect(countMembers("not is_active")).toBe(INACTIVE_TOTAL);
-      await expect(tableRows(page)).toHaveCount(INACTIVE_TOTAL);
-      await expect(tableRows(page).getByText("Nonaktif", { exact: true })).toHaveCount(INACTIVE_TOTAL);
+      await expectTotal(page, inactive);
+      expect(countMembers("not is_active")).toBe(inactive);
+      await expect(tableRows(page)).toHaveCount(inactive);
+      await expect(tableRows(page).getByText("Nonaktif", { exact: true })).toHaveCount(inactive);
       await expect(tableRows(page).getByText("Aktif", { exact: true })).toHaveCount(0);
       // R9: a deactivated member's unit is what PI-CORE records (A-MD3); the row is never removed
       await expect(tableRows(page).filter({ hasText: "Test Anggota Nonaktif" })).toContainText("Pubdok");
 
       await statusSelect(page).selectOption({ label: "Semua" });
       await expect(page).toHaveURL(/\?status=all$/);
-      await expectTotal(page, ALL_TOTAL);
-      await expect(counterText(page)).toHaveText("Menampilkan 1-20 dari 49 anggota");
+      await expectTotal(page, all);
+      await expect(counterText(page)).toHaveText(counterLabel(all, 1));
 
       // Reset from a combined state
       await unitSelect(page).selectOption({ label: "Biro Kewirausahaan" });
       await searchBox(page).fill("Kepala");
-      await expectTotal(page, 1);
+      const kepalaBiro = expectedNames({ status: "all", search: "kepala", unitName: "Biro Kewirausahaan" });
+      expect(kepalaBiro).toContain("Test Kepala Biro");
+      await expectTotal(page, kepalaBiro.length);
       await main(page).getByRole("link", { name: "Reset" }).first().click();
       await expect(page).toHaveURL(/\/data-anggota$/);
-      await expectTotal(page, ACTIVE_TOTAL);
+      await expectTotal(page, active);
       await expect(statusSelect(page)).toHaveValue("active");
       await expect(unitSelect(page)).toHaveValue("");
       await expect(searchBox(page)).toHaveValue("");
@@ -442,10 +482,11 @@ test.describe("Search, filters, reset, Back (MD-12, MD-21, MD-22, MD-23, MD-25)"
   test("changing a filter goes back to page 1", async ({ browser }) => {
     const { context, page } = await signedInContext(browser, "ketum");
     try {
-      await openList(page, "?page=3");
+      const { active, all } = memberCounts();
+      await openList(page, `?page=${pagesFor(active)}`);
       await statusSelect(page).selectOption({ label: "Semua" });
       await expect(page).toHaveURL(/\?status=all$/); // no page parameter
-      await expect(counterText(page)).toHaveText("Menampilkan 1-20 dari 49 anggota");
+      await expect(counterText(page)).toHaveText(counterLabel(all, 1));
     } finally {
       await context.close();
     }
@@ -454,34 +495,36 @@ test.describe("Search, filters, reset, Back (MD-12, MD-21, MD-22, MD-23, MD-25)"
   test("Back and Forward restore filters and fields; a refresh keeps the view (F3 step 4)", async ({ browser }) => {
     const { context, page } = await signedInContext(browser, "ketum");
     try {
+      const { active, all } = memberCounts();
+      expect(all, "needs more than one page to test the page link history").toBeGreaterThan(20);
       await openList(page);
       await statusSelect(page).selectOption({ label: "Semua" });
-      await expectTotal(page, ALL_TOTAL);
+      await expectTotal(page, all);
       await unitSelect(page).selectOption({ label: "Departemen Operasional" });
-      await expectTotal(page, 4); // Operasional has no inactive member, so Semua gives the same 4
+      await expectTotal(page, expectedNames({ status: "all", unitName: "Departemen Operasional" }).length);
 
       await page.goBack();
       await expect(page).toHaveURL(/\?status=all$/);
-      await expectTotal(page, ALL_TOTAL);
+      await expectTotal(page, all);
       await expect(statusSelect(page)).toHaveValue("all");
       await expect(unitSelect(page)).toHaveValue("");
 
       await page.goBack();
       await expect(page).toHaveURL(/\/data-anggota$/);
-      await expectTotal(page, ACTIVE_TOTAL);
+      await expectTotal(page, active);
       await expect(statusSelect(page)).toHaveValue("active");
 
       await page.goForward();
       await expect(statusSelect(page)).toHaveValue("all");
       await page.reload();
       await expect(statusSelect(page)).toHaveValue("all");
-      await expectTotal(page, ALL_TOTAL);
+      await expectTotal(page, all);
 
       // Page links are real history entries too
       await page.getByRole("navigation", { name: "Halaman daftar anggota" }).getByRole("link", { name: "Halaman berikutnya" }).click();
-      await expect(counterText(page)).toHaveText("Menampilkan 21-40 dari 49 anggota");
+      await expect(counterText(page)).toHaveText(counterLabel(all, 2));
       await page.goBack();
-      await expect(counterText(page)).toHaveText("Menampilkan 1-20 dari 49 anggota");
+      await expect(counterText(page)).toHaveText(counterLabel(all, 1));
     } finally {
       await context.close();
     }
@@ -497,7 +540,7 @@ test.describe("Search, filters, reset, Back (MD-12, MD-21, MD-22, MD-23, MD-25)"
       }
       await openList(page, "?status=weird");
       await expect(statusSelect(page)).toHaveValue("active");
-      await expectTotal(page, ACTIVE_TOTAL);
+      await expectTotal(page, memberCounts().active);
       await openList(page, "?unit=not-a-guid");
       await expect(unitSelect(page)).toHaveValue("");
       // A well-formed unit id that does not exist: an honest empty result, not an error
@@ -523,7 +566,7 @@ test.describe("Search, filters, reset, Back (MD-12, MD-21, MD-22, MD-23, MD-25)"
         await expect(page.getByText("Tidak punya akses")).toHaveCount(0);
       }
       await page.getByRole("link", { name: "Hapus pencarian" }).click();
-      await expectTotal(page, ACTIVE_TOTAL);
+      await expectTotal(page, memberCounts().active);
       await expect(main(page).getByRole("alert")).toHaveCount(0); // (Next's own route announcer is outside <main>)
 
       // Typing: the input stops at 120 characters, and exactly 120 is accepted
@@ -589,7 +632,7 @@ test.describe("Row content (MD-16, MD-18, MD-19, MD-20, MD-24)", () => {
       const withUnitInDb = Number(sql(`select count(distinct a.member_id) from public.assignments a join public.periods p on p.id=a.period_id and p.is_active join public.members m on m.id=a.member_id where m.is_active`));
       await openList(page, "?status=all");
       let withUnit = 0;
-      for (const n of [1, 2, 3]) {
+      for (let n = 1; n <= pagesFor(memberCounts().all); n++) {
         await openList(page, `?status=all&page=${n}`);
         for (const cell of await tableRows(page).locator("td:nth-child(3)").allInnerTexts()) if (cell.trim() !== "-") withUnit++;
       }
@@ -602,7 +645,7 @@ test.describe("Row content (MD-16, MD-18, MD-19, MD-20, MD-24)", () => {
     }
   });
 
-  test("MD-24: lecturers carry the Pembina marker and '-' (3 active lecturers); students never do; no NIP", async ({ browser }) => {
+  test("MD-24: lecturers carry the Pembina marker and '-' (every active lecturer); students never do; no NIP", async ({ browser }) => {
     const { context, page } = await signedInContext(browser, "ketum");
     try {
       await openList(page, "?q=Dosen+Pembina");
@@ -612,7 +655,9 @@ test.describe("Row content (MD-16, MD-18, MD-19, MD-20, MD-24)", () => {
 
       let markers = 0;
       const markedNames: string[] = [];
-      for (const n of [1, 2, 3]) {
+      const { active, activeLecturers } = memberCounts();
+      expect(activeLecturers, "the seed must hold at least one active lecturer").toBeGreaterThan(0);
+      for (let n = 1; n <= pagesFor(active); n++) {
         await openList(page, n === 1 ? "" : `?page=${n}`);
         await expect(counterText(page)).toBeVisible();
         for (const r of await tableRows(page).all()) {
@@ -623,7 +668,7 @@ test.describe("Row content (MD-16, MD-18, MD-19, MD-20, MD-24)", () => {
           }
         }
       }
-      expect(markers).toBe(3);
+      expect(markers).toBe(activeLecturers);
       expect(markedNames.sort()).toEqual(sql("select full_name from public.members where member_type = 'lecturer' and is_active").split("\n").sort());
       expect(markedNames).toContain("Test Dosen Pembina");
     } finally {
@@ -644,7 +689,7 @@ test.describe("Row content (MD-16, MD-18, MD-19, MD-20, MD-24)", () => {
       expect(page.url()).toBe(before);
       // Column headers per spec (Stitch "Departemen", NIM etc. are not used)
       await expect(page.getByRole("columnheader")).toHaveText(["No", "Nama Lengkap", "Unit / Jabatan", "Status"]);
-      await expect(page.getByRole("table")).toHaveAccessibleName("Daftar anggota, halaman 1 dari 3");
+      await expect(page.getByRole("table")).toHaveAccessibleName(`Daftar anggota, halaman 1 dari ${pagesFor(memberCounts().active)}`);
     } finally {
       await context.close();
     }

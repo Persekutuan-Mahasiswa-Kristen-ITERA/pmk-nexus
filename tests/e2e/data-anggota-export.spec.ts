@@ -10,11 +10,11 @@ import {
   LIST_PATH,
   ORIGIN,
   activePeriodId,
-  countMembers,
   counterText,
   downloadExport,
   errorCodeOf,
   exportButton,
+  expectedNames,
   expectTotal,
   hasPdftotext,
   jakartaDay,
@@ -22,6 +22,8 @@ import {
   logCount,
   logRowsAfter,
   main,
+  MAX_PAGE_SIZE,
+  memberCounts,
   memberId,
   namesOnPage,
   openList,
@@ -62,14 +64,16 @@ function assertDateInName(fileName: string, before: Date, after: Date) {
 
 // ---------------------------------------------------------------------------------------------
 test.describe("MD-29, MD-30, MD-31, MD-10: export through the real menu as Ketua Umum", () => {
-  test("Excel, CSV and PDF of the default view: name, type, 45 rows in screen order, one log row each, no personal data", async ({ browser }) => {
+  test("Excel, CSV and PDF of the default view: name, type, every active member in screen order, one log row each, no personal data", async ({ browser }) => {
     test.setTimeout(180_000);
     const { context, page } = await signedInContext(browser, "ketum");
     try {
+      const { active, activeLecturers } = memberCounts();
       await openList(page);
-      await expectTotal(page, 45);
+      await expectTotal(page, active);
       const screenNames = await allNamesOnScreen(page);
-      expect(screenNames).toHaveLength(45);
+      expect(screenNames).toHaveLength(active);
+      expect(screenNames).toEqual(expectedNames({ status: "active" })); // the screen order is the database A-Z order
       await openList(page);
       const exporter = memberId("ketum@nexus.test");
       const period = activePeriodId();
@@ -87,11 +91,11 @@ test.describe("MD-29, MD-30, MD-31, MD-10: export through the real menu as Ketua
       expect(csvFile.raw).toContain("\r\n");
       expect(csvFile.raw.replace(/\r\n/g, "")).not.toMatch(/[\r\n]/);
       expect(csvFile.header).toEqual(HEADER);
-      expect(csvFile.rows).toHaveLength(45);
+      expect(csvFile.rows).toHaveLength(active);
       expect(csvFile.rows.every((r) => r.length === 6)).toBe(true);
       expect(csvFile.rows.map((r) => r[1])).toEqual(screenNames); // same order as the screen (MD-29)
-      expect(csvFile.rows.map((r) => Number(r[0]))).toEqual(Array.from({ length: 45 }, (_, i) => i + 1));
-      expect(csvFile.rows.filter((r) => r[2] === "Ya")).toHaveLength(3); // the lecturers (MD-24)
+      expect(csvFile.rows.map((r) => Number(r[0]))).toEqual(Array.from({ length: active }, (_, i) => i + 1));
+      expect(csvFile.rows.filter((r) => r[2] === "Ya")).toHaveLength(activeLecturers); // the lecturers (MD-24)
       expect(csvFile.rows.filter((r) => r[2] !== "Ya").every((r) => r[2] === "")).toBe(true);
       expect(new Set(csvFile.rows.map((r) => r[5]))).toEqual(new Set(["Aktif"]));
       const bulk11 = csvFile.rows.find((r) => r[1] === "Bulk Anggota 11")!;
@@ -128,7 +132,7 @@ test.describe("MD-29, MD-30, MD-31, MD-10: export through the real menu as Ketua
         expect(text).toContain("Periode 2026/2027");
         expect(text).toMatch(/Diekspor \d{4}-\d{2}-\d{2} \d{2}:\d{2} WIB/);
         expect(text).toMatch(/Halaman 1 dari \d+/);
-        expect(text.match(/\bAktif\b/g) ?? []).toHaveLength(45); // one status per row
+        expect(text.match(/\bAktif\b/g) ?? []).toHaveLength(active); // one status per row
         expect(text).not.toMatch(/\bNonaktif\b/);
         expect(text).toContain("Bulk Anggota 11");
         for (const s of secrets) expect(text, "pdf").not.toContain(s);
@@ -152,29 +156,34 @@ test.describe("MD-29, MD-30, MD-31, MD-10: export through the real menu as Ketua
     }
   });
 
-  test("the export follows the filters, not only the page on screen: Semua = 49, Nonaktif = 4, Operasional = 4, search + unit", async ({ browser }) => {
+  test("the export follows the filters, not only the page on screen: Semua, Nonaktif, Operasional, search + unit (every count derived)", async ({ browser }) => {
     test.setTimeout(180_000);
     const { context, page } = await signedInContext(browser, "ketum");
     try {
       const ops = unitId("Departemen Operasional");
+      const counts = memberCounts();
+      const opsNames = expectedNames({ unitName: "Departemen Operasional" });
+      const bulkOps = expectedNames({ status: "all", search: "bulk", unitName: "Departemen Operasional" });
+      const dosen = expectedNames({ search: "Dosen" });
       const cases: { query: string; total: number; status: string; unit: string | null; search: boolean; rowTest?: (rows: string[][]) => void }[] = [
-        { query: "?status=all", total: 49, status: "all", unit: null, search: false, rowTest: (r) => expect(r.filter((x) => x[5] === "Nonaktif")).toHaveLength(4) },
-        { query: "?status=inactive", total: 4, status: "inactive", unit: null, search: false, rowTest: (r) => expect(new Set(r.map((x) => x[5]))).toEqual(new Set(["Nonaktif"])) },
+        { query: "?status=all", total: counts.all, status: "all", unit: null, search: false, rowTest: (r) => expect(r.filter((x) => x[5] === "Nonaktif")).toHaveLength(counts.inactive) },
+        { query: "?status=inactive", total: counts.inactive, status: "inactive", unit: null, search: false, rowTest: (r) => expect(new Set(r.map((x) => x[5]))).toEqual(new Set(["Nonaktif"])) },
         {
           query: `?unit=${ops}`,
-          total: 4,
+          total: opsNames.length,
           status: "active",
           unit: ops,
           search: false,
           rowTest: (r) => {
-            expect(r.map((x) => x[1])).toEqual(["Bulk Anggota 11", "Bulk Anggota 23", "Bulk Anggota 39", "Test Kepala Departemen"]);
+            expect(r.map((x) => x[1])).toEqual(opsNames);
+            expect(opsNames).toEqual(expect.arrayContaining(["Bulk Anggota 11", "Bulk Anggota 23", "Bulk Anggota 39", "Test Kepala Departemen"])); // seed facts
             // R6: the row still shows Bulk 11's PRIMARY assignment (Musik), although the filter matched Logistik
             expect(r.find((x) => x[1] === "Bulk Anggota 11")![3]).toBe("Departemen Pelayanan Khusus · Musik");
           },
         },
-        { query: `?q=bulk&unit=${ops}&status=all`, total: 3, status: "all", unit: ops, search: true },
-        { query: "?q=Dosen", total: 1, status: "active", unit: null, search: true, rowTest: (r) => expect(r[0].slice(1, 5)).toEqual(["Test Dosen Pembina", "Ya", "-", "-"]) },
-        { query: "?q=ANGGOTA&status=all", total: countMembers("full_name ilike '%anggota%'"), status: "all", unit: null, search: true },
+        { query: `?q=bulk&unit=${ops}&status=all`, total: bulkOps.length, status: "all", unit: ops, search: true },
+        { query: "?q=Dosen", total: dosen.length, status: "active", unit: null, search: true, rowTest: (r) => expect(r[0].slice(1, 5)).toEqual(["Test Dosen Pembina", "Ya", "-", "-"]) },
+        { query: "?q=ANGGOTA&status=all", total: expectedNames({ status: "all", search: "anggota" }).length, status: "all", unit: null, search: true },
       ];
       for (const c of cases) {
         await openList(page, c.query);
@@ -198,23 +207,25 @@ test.describe("MD-29, MD-30, MD-31, MD-10: export through the real menu as Ketua
     }
   });
 
-  test("Excel and PDF also hold exactly the filtered rows (Semua, 49)", async ({ browser }) => {
+  test("Excel and PDF also hold exactly the filtered rows (Semua)", async ({ browser }) => {
     test.setTimeout(120_000);
     const { context, page } = await signedInContext(browser, "ketum");
     try {
+      const { all, active, inactive } = memberCounts();
       await openList(page, "?status=all");
-      await expectTotal(page, 49);
+      await expectTotal(page, all);
       const xlsx = await downloadExport(page, "Excel (.xlsx)");
       const names = xlsxNames(xlsx.path).names;
-      expect(names).toHaveLength(49);
-      expect(new Set(names).size).toBe(49);
+      expect(names).toHaveLength(all);
+      expect(new Set(names).size).toBe(all);
+      expect(names).toEqual(expectedNames({ status: "all" })); // every member, A-Z
       const pdf = await downloadExport(page, "PDF (.pdf)");
       if (hasPdftotext) {
         const text = pdfText(pdf.path);
-        expect((text.match(/\bAktif\b/g) ?? []).length).toBe(45);
+        expect((text.match(/\bAktif\b/g) ?? []).length).toBe(active);
         // "Test Anggota Nonaktif" also holds the word in its NAME, so count the status column (end of line) only
-        expect((text.match(/Nonaktif[ \t]*$/gm) ?? []).length).toBe(4);
-        expect(text).toMatch(/Halaman \d+ dari [2-9]/); // 49 rows span several pages
+        expect((text.match(/Nonaktif[ \t]*$/gm) ?? []).length).toBe(inactive);
+        expect(text).toMatch(/Halaman \d+ dari [2-9]/); // the whole list spans several PDF pages
       }
     } finally {
       await context.close();
@@ -227,7 +238,7 @@ test.describe("MD-29, MD-30, MD-31, MD-10: export through the real menu as Ketua
       await openList(page);
       const before = logCount();
       const csv = await downloadExport(page, "CSV (.csv)");
-      expect(readCsv(csv.path).rows).toHaveLength(45);
+      expect(readCsv(csv.path).rows).toHaveLength(memberCounts().active);
       expect(logCount()).toBe(before + 1);
       const row = logRowsAfter(lastLogId() - 1)[0];
       expect(row.exporter_member_id).toBe(memberId("bendahara@nexus.test"));
@@ -345,7 +356,7 @@ test.describe("MD-29, MD-30, MD-31, MD-10: export through the real menu as Ketua
         expect(h["x-content-type-options"]).toBe("nosniff");
         const bytes = await res.body();
         expect(Number(h["content-length"])).toBe(bytes.byteLength);
-        if (format === "csv") expect(parseCsv(bytes.toString("utf8").replace(/^\uFEFF/, ""))).toHaveLength(5); // header + 4 inactive
+        if (format === "csv") expect(parseCsv(bytes.toString("utf8").replace(/^\uFEFF/, ""))).toHaveLength(memberCounts().inactive + 1); // header + every inactive member
       }
       expect(logCount()).toBe(before + 3);
     } finally {
@@ -503,10 +514,10 @@ test.describe("MD-03, MD-05, MD-06, MD-10: database functions called directly wi
       const t = await token(persona);
       const list = await db(t, "rpc/member_data_list", { body: {} });
       expect(list.status).toBe(200);
-      expect(list.body).toHaveLength(20);
+      expect(list.body).toHaveLength(Math.min(20, memberCounts().active)); // the default page size
       expect((await db(t, "rpc/member_data_unit_options", { body: {} })).status).toBe(200);
       const count = await db(t, "rpc/member_data_active_count", { body: {} });
-      expect(count.body as unknown).toBe(45);
+      expect(count.body as unknown).toBe(memberCounts().active);
       const before = logCount();
       const exp = await db(t, "rpc/member_data_export", { body: { p_format: "csv" } });
       expect(exp.status).toBe(403);
@@ -519,10 +530,13 @@ test.describe("MD-03, MD-05, MD-06, MD-10: database functions called directly wi
 
   test("MD-10: what Ketua Umum's list returns has only whitelisted columns and no identifier values; MD-38: count = list total", async () => {
     const t = await token("ketum");
-    const res = await db(t, "rpc/member_data_list", { body: { p_page_size: 50 } });
+    const { active } = memberCounts();
+    expect(active, "this test reads the whole list in one call, so it must fit the server maximum").toBeLessThanOrEqual(MAX_PAGE_SIZE);
+    const res = await db(t, "rpc/member_data_list", { body: { p_page_size: MAX_PAGE_SIZE } });
     expect(res.status).toBe(200);
     const rows = res.body as unknown as Record<string, unknown>[];
-    expect(rows).toHaveLength(45);
+    expect(rows).toHaveLength(active);
+    expect(rows.map((r) => r.full_name)).toEqual(expectedNames({ status: "active" })); // the function's order is the A-Z order
     for (const row of rows) {
       for (const key of Object.keys(row)) {
         expect(ROW_KEYS.has(key), `column ${key}`).toBe(true);
@@ -531,10 +545,10 @@ test.describe("MD-03, MD-05, MD-06, MD-10: database functions called directly wi
     }
     const text = JSON.stringify(rows);
     for (const s of secretValues()) expect(text).not.toContain(s);
-    expect(rows[0].total_count).toBe(45);
-    expect((await db(t, "rpc/member_data_active_count", { body: {} })).body as unknown).toBe(45);
+    expect(rows[0].total_count).toBe(active);
+    expect((await db(t, "rpc/member_data_active_count", { body: {} })).body as unknown).toBe(active);
     // The page size cannot be raised above the server maximum (MD-26): refused, not clamped
-    const big = await db(t, "rpc/member_data_list", { body: { p_page_size: 51 } });
+    const big = await db(t, "rpc/member_data_list", { body: { p_page_size: MAX_PAGE_SIZE + 1 } });
     expect(big.status).toBe(400);
     expect(big.body.hint).toBe("invalid_page_size");
     const zero = await db(t, "rpc/member_data_list", { body: { p_page: 0 } });

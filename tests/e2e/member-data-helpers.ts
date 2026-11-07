@@ -42,6 +42,59 @@ export const countMembers = (where: string) => Number(sql(`select count(*) from 
 export const unitOptionNames = () =>
   sql("select name from public.org_units where type in ('bph','department','bureau') and is_active order by sort_order").split("\n").filter(Boolean);
 export const unitId = (name: string) => sql(`select id from public.org_units where name = '${name}'`);
+// ---------------------------------------------------------------------------------------------
+// DATA-DRIVEN expectations. Every number the list tests compare against is computed HERE, at test time, from the
+// local database with read-only SELECTs, so a seed addition (a new persona, more bulk members) cannot break a spec.
+// Only the numbers are derived; what the page must DO with them (A-Z order, 20 per page, no personal data...) is
+// still asserted as strictly as before. Call these inside a test, not at import time (temporary members come and go).
+// ---------------------------------------------------------------------------------------------
+export const PAGE_SIZE = 20; // the list's fixed page size (MD-26); the server maximum is MAX_PAGE_SIZE
+export const MAX_PAGE_SIZE = 50;
+export type StatusKey = "active" | "inactive" | "all";
+const statusSql = (status: StatusKey) => (status === "active" ? "m.is_active" : status === "inactive" ? "not m.is_active" : "true");
+const fmt = (n: number) => n.toLocaleString("id-ID");
+
+export type MemberCounts = { all: number; active: number; inactive: number; activeLecturers: number };
+export function memberCounts(): MemberCounts {
+  const [all, active, activeLecturers] = sql(
+    "select count(*), count(*) filter (where is_active), count(*) filter (where is_active and member_type = 'lecturer') from public.members",
+  )
+    .split("|")
+    .map(Number);
+  return { all, active, inactive: all - active, activeLecturers };
+}
+
+/**
+ * Names the list SHOULD show for these filters, in the list's order: case-insensitive A-Z, then id for equal names.
+ * `unitName`: members with ANY assignment in the unit or one of its divisions in the period (default: the active one).
+ * `search`: part of the name, case-insensitive (spaces are not collapsed here, pass what the server would see).
+ */
+export function expectedNames(opts: { status?: StatusKey; search?: string; unitName?: string; periodLabel?: string } = {}): string[] {
+  const { status = "active", search, unitName, periodLabel } = opts;
+  const where = [statusSql(status)];
+  if (search) where.push(`m.full_name ilike '%' || $q$${search}$q$ || '%'`);
+  if (unitName) {
+    const period = periodLabel ? `p.label = '${periodLabel}'` : "p.is_active";
+    where.push(`exists (
+      select 1 from public.assignments a join public.periods p on p.id = a.period_id and ${period}
+      join public.org_units u on u.id = a.org_unit_id
+      where a.member_id = m.id and (u.id = '${unitId(unitName)}' or u.parent_id = '${unitId(unitName)}'))`);
+  }
+  const out = sql(`select m.full_name from public.members m where ${where.join(" and ")} order by lower(m.full_name) collate "C", m.id`);
+  return out ? out.split("\n") : [];
+}
+
+/** Number of pages (min 1) for a result of `total` rows. */
+export const pagesFor = (total: number) => Math.max(1, Math.ceil(total / PAGE_SIZE));
+/** Rows on page `page` (1-based) of a result of `total` rows. */
+export const rowsOnPage = (total: number, page: number) => Math.max(0, Math.min(PAGE_SIZE, total - (page - 1) * PAGE_SIZE));
+/** The counter text the list shows for page `page`, e.g. "Menampilkan 41-47 dari 47 anggota". */
+export function counterLabel(total: number, page: number): string {
+  const from = (page - 1) * PAGE_SIZE + 1;
+  const to = Math.min(total, page * PAGE_SIZE);
+  return `Menampilkan ${from}-${to} dari ${fmt(total)} anggota`;
+}
+
 /** Every identifier value in the local data that must never reach a page or a file. */
 export function secretValues(): string[] {
   const rows = sql("select coalesce(email,''), coalesce(nim,''), coalesce(phone,''), coalesce(nip,'') from public.members").split("\n");
