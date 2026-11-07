@@ -2,6 +2,9 @@
 --   20261107100000_nexus_borrowing_access_rules.sql  (key borrowing.handle, D30 retired, D34-D36)
 --   20261107100100_nexus_inventory_borrowing.sql     (tables, RLS, state machine, reads, exports)
 --   20261107100200_nexus_inventory_storage.sql       (private evidence bucket + Storage policies)
+--   20261108100000_nexus_inventory_borrowing_fixes.sql (detail by reference, once-only correction and
+--                                                      its hints, catalog export = list, borrowing period
+--                                                      filter; section 15)
 -- Spec: docs/modules/inventory-borrowing.md (rev. 2) sections 2-5, 8, 11 (IB-01..IB-48), 11b; D-022.
 --
 -- LOCAL / THROWAWAY DATABASE ONLY. Same guards as the other two files: it refuses to run without
@@ -350,8 +353,8 @@ select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.
                   or exists (select 1 from aclexplode(p.proacl) a where a.grantee = 0))), 0,
   'module API: EXECUTE for authenticated only (not anon, service_role, PUBLIC)');
 select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-           where n.nspname = 'nexus' and (p.proname like 'inventory\_%' or p.proname like 'borrowing\_%')), 44,
-  'module API has 44 functions');
+           where n.nspname = 'nexus' and (p.proname like 'inventory\_%' or p.proname like 'borrowing\_%')), 46,
+  'module API has 46 functions (44 + borrowing_request_detail_by_ref + borrowing_period_list, 2026-11-08)');
 select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
            where n.nspname = 'nexus' and p.prosecdef and not coalesce(p.proconfig @> array['search_path=""'], false)), 0,
   'D-010: every SECURITY DEFINER function pins search_path to empty');
@@ -370,8 +373,12 @@ select is((select count(*)::int from information_schema.columns c
   'IB-31: no deposit, fine or payment column exists');
 select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
            where n.nspname = 'nexus' and (p.proname like 'inventory\_%' or p.proname like 'borrowing\_%')
+             and p.oid <> 'nexus.borrowing_request_detail_by_ref(text)'::regprocedure
              and (p.proargnames && array['p_code', 'p_reference', 'p_requester_member_id', 'p_requester', 'p_member_id'])), 0,
   'IB-09/IB-14: no function lets a client type a code, a reference or a requester id');
+select ok((select p.provolatile = 's' and p.prosecdef and p.pronargs = 1
+           from pg_proc p where p.oid = 'nexus.borrowing_request_detail_by_ref(text)'::regprocedure),
+  'Fix 1 (2026-11-08): the only function that takes a reference is the read-only (STABLE) detail lookup');
 select is((select array_agg(p.proname::text order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
            where n.nspname = 'nexus' and p.proname !~ '^_' and 'p_mode' = any (p.proargnames)), array['inventory_item_create'],
   'IB-08/R22: the mode is only ever given at creation');
@@ -1244,7 +1251,7 @@ select is(nexus_test.hint_of(format('select * from nexus.borrowing_request_corre
 -- Review L1: one correction per request (r1 was corrected once and returned again)
 reset role; select nexus_test.login_as(8);
 select is(nexus_test.hint_of(format('select * from nexus.borrowing_request_correct_return(%L, %s, %L)', nexus_test.id('r1'), nexus_test.ver('r1'), 'lagi')),
-  'correction_conflict', 'L1: a second correction of the same request is refused');
+  'already_corrected', 'L1/Fix 2b: a second correction of the same request is refused with its own hint');
 -- Review L2: correcting a counted "lost" outcome
 reset role; select nexus_test.login_as(11);
 select nexus_test.put('r16', request_id) from nexus.borrowing_request_create(nexus_test.d(0), nexus_test.d(0), 'Uji hilang 1',
@@ -1768,6 +1775,244 @@ release savepoint unscoped_policy;  -- back to the main transaction (no lingerin
 select case when nexus_test.has_storage()
   then is(:'unscoped_hint'::text, 'storage_policy_unscoped', 'M2: a Storage policy without a bucket_id condition stops the migration')
   else skip('Storage not installed', 1) end;
+
+-- =============================================================================================
+-- 15. Fixes approved by the owner 2026-11-08 (migration 20261108100000_nexus_inventory_borrowing_fixes)
+--     Active period here: period 2. r1 and r16 were corrected once and returned again; r7 and r17 were
+--     never corrected (their stock changed since); r8 is a plain returned request; r15 is Dipinjam
+--     (Q4 x1); r_p3 is a waiting request of period 3.
+-- =============================================================================================
+reset role; select nexus_test.logout();
+-- SQLSTATE | hint | message | detail of a statement ('no_error' if it succeeds; rolled back either way).
+create function nexus_test.err_of(p_sql text) returns text language plpgsql
+as $$
+declare
+  v_state text; v_msg text; v_hint text; v_detail text;
+begin
+  execute p_sql;
+  return 'no_error';
+exception when others then
+  get stacked diagnostics v_state = returned_sqlstate, v_msg = message_text, v_hint = pg_exception_hint, v_detail = pg_exception_detail;
+  return v_state || '|' || coalesce(v_hint, '') || '|' || v_msg || '|' || coalesce(v_detail, '');
+end
+$$;
+grant execute on function nexus_test.err_of(text) to authenticated;
+create function nexus_test.out_cols_bpl() returns text[] language sql stable
+as $$
+  select array_agg(a.n order by a.i)
+  from pg_proc f, unnest(f.proargnames, f.proargmodes::text[]) with ordinality as a(n, m, i)
+  where f.oid = 'nexus.borrowing_period_list()'::regprocedure and a.m = 't'
+$$;
+grant execute on function nexus_test.out_cols_bpl() to authenticated;
+select reference as ref_r1 from nexus.borrowing_requests where id = nexus_test.id('r1') \gset
+select reference as ref_r17 from nexus.borrowing_requests where id = nexus_test.id('r17') \gset
+select reference as ref_r8 from nexus.borrowing_requests where id = nexus_test.id('r8') \gset
+
+-- Structure: one overload per changed function (the old ones were dropped), API grants as before.
+select ok(to_regprocedure('nexus.borrowing_queue(text,text,date,date,uuid,integer,integer)') is null
+          and to_regprocedure('nexus.borrowing_export(text,text,text,date,date,uuid)') is null
+          and to_regprocedure('nexus._ib_queue_rows(text,text,date,date,uuid)') is null
+          and to_regprocedure('nexus.borrowing_queue(text,text,date,date,uuid,integer,integer,uuid)') is not null
+          and to_regprocedure('nexus.borrowing_export(text,text,text,date,date,uuid,uuid)') is not null
+          and to_regprocedure('nexus._ib_queue_rows(text,text,date,date,uuid,uuid)') is not null,
+  'Fix 4: the old queue/export overloads are gone; the new ones take p_period_id');
+select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = 'nexus' and p.proname in ('borrowing_queue', 'borrowing_export', '_ib_queue_rows',
+                                                        'borrowing_request_detail_by_ref', '_ib_was_corrected',
+                                                        'borrowing_period_list')), 6,
+  'Fix 1/4: exactly one version of each new or changed function');
+select ok(has_function_privilege('authenticated', 'nexus.borrowing_request_detail_by_ref(text)', 'execute')
+          and not has_function_privilege('anon', 'nexus.borrowing_request_detail_by_ref(text)', 'execute')
+          and not has_function_privilege('authenticated', 'nexus._ib_was_corrected(uuid)', 'execute')
+          and not has_function_privilege('authenticated', 'nexus._ib_queue_rows(text,text,date,date,uuid,uuid)', 'execute'),
+  'Fix 1/4: the lookup is client API (authenticated only); the helpers are internal');
+
+-- Fix 1: detail by reference (same JSON, same visibility, no existence probing)
+select nexus_test.login_as(11);
+select is(nexus.borrowing_request_detail_by_ref(:'ref_r1'), nexus.borrowing_request_detail(nexus_test.id('r1')),
+  'Fix 1: the requester gets exactly the detail JSON by reference (L9)');
+select is(nexus.borrowing_request_detail_by_ref('  ' || lower(:'ref_r1') || ' ') ->> 'request_id', nexus_test.id('r1')::text,
+  'Fix 1: a typed reference is trimmed and upper-cased');
+select is(nexus_test.hint_of(format('select nexus.borrowing_request_detail_by_ref(%L)', :'ref_r8')), 'request_not_found',
+  'Fix 1: a reference of another member''s request (r8 of P-STAFF-LOG) is "not found"');
+select is(nexus_test.err_of(format('select nexus.borrowing_request_detail_by_ref(%L)', :'ref_r8')),
+          nexus_test.err_of($$select nexus.borrowing_request_detail_by_ref('PJM-9999999999')$$),
+  'Fix 1: "not yours" and "does not exist" give the identical code, hint, message and detail');
+select is(nexus_test.err_of($$select nexus.borrowing_request_detail_by_ref('PJM-9999999999')$$), 'P0002|request_not_found|Request not found|',
+  'Fix 1: ... which is the plain request_not_found of borrowing_request_detail');
+select is(array[nexus_test.hint_of($$select nexus.borrowing_request_detail_by_ref('PJM-1')$$),
+                nexus_test.hint_of($$select nexus.borrowing_request_detail_by_ref('INV-0001')$$),
+                nexus_test.hint_of($$select nexus.borrowing_request_detail_by_ref('PJM-0001''; select 1')$$),
+                nexus_test.hint_of($$select nexus.borrowing_request_detail_by_ref('PJM-00000000000000001')$$),
+                nexus_test.hint_of($$select nexus.borrowing_request_detail_by_ref(repeat('9', 5000))$$),
+                nexus_test.hint_of($$select nexus.borrowing_request_detail_by_ref('')$$),
+                nexus_test.hint_of($$select nexus.borrowing_request_detail_by_ref(null)$$)],
+          array_fill('invalid_input'::text, array[7]),
+  'Fix 1: a malformed, empty, null or over-long reference is invalid_input');
+reset role; select nexus_test.login_as(10);
+select is(nexus_test.hint_of(format('select nexus.borrowing_request_detail_by_ref(%L)', :'ref_r1')), 'request_not_found',
+  'Fix 1/IB-15: P-STAFF-PUB cannot read r1 by reference');
+reset role; select nexus_test.login_as(1);
+select is(nexus_test.hint_of(format('select nexus.borrowing_request_detail_by_ref(%L)', :'ref_r1')), 'request_not_found',
+  'Fix 1/B18: P-ADMIN without assignment cannot read it either');
+reset role; select nexus_test.login_as(3);
+select is(nexus.borrowing_request_detail_by_ref(:'ref_r17'), nexus.borrowing_request_detail(nexus_test.id('r17')),
+  'Fix 1/IB-04: a borrowing.view_all holder (P-KETUM) reads any request by reference');
+reset role; select nexus_test.login_as(15);
+select is(nexus_test.hint_of(format('select nexus.borrowing_request_detail_by_ref(%L)', :'ref_r1')), 'not_active_member',
+  'Fix 1/IB-03: P-INACTIVE gets nothing');
+reset role; select nexus_test.login_as(17);
+select is(nexus_test.hint_of($$select nexus.borrowing_request_detail_by_ref('PJM-0001')$$), 'not_active_member',
+  'Fix 1/IB-03: P-UNLINKED gets nothing (checked before any lookup)');
+reset role; select nexus_test.logout();
+set local role anon;
+select throws_ok(format('select nexus.borrowing_request_detail_by_ref(%L)', :'ref_r1'), '42501', null,
+  'Fix 1: anon cannot call the lookup');
+reset role;
+
+-- Fix 2: one correction per request, visible on the detail; distinct hints
+select nexus_test.login_as(8);
+select is(array[(nexus.borrowing_request_detail(nexus_test.id('r1')) -> 'actions' ->> 'can_correct_return')::boolean,
+                (nexus.borrowing_request_detail(nexus_test.id('r16')) -> 'actions' ->> 'can_correct_return')::boolean],
+          array[false, false],
+  'Fix 2a/11c: no correction button on a request that was already corrected once (r1, r16)');
+select is(array[(nexus.borrowing_request_detail(nexus_test.id('r8')) -> 'actions' ->> 'can_correct_return')::boolean,
+                (nexus.borrowing_request_detail(nexus_test.id('r17')) -> 'actions' ->> 'can_correct_return')::boolean],
+          array[true, true],
+  'Fix 2a: the button stays for returned requests never corrected (r8; r17 is refused only when pressed: stock changed)');
+select is(array[nexus_test.hint_of(format('select * from nexus.borrowing_request_correct_return(%L, %s, %L)', nexus_test.id('r16'), nexus_test.ver('r16'), 'lagi')),
+                nexus_test.hint_of(format('select * from nexus.borrowing_request_correct_return(%L, %s, %L)', nexus_test.id('r17'), nexus_test.ver('r17'), 'lagi')),
+                nexus_test.hint_of(format('select * from nexus.borrowing_request_correct_return(%L, %s, %L)', nexus_test.id('r7'), nexus_test.ver('r7'), 'lagi'))],
+          array['already_corrected', 'correction_conflict', 'correction_conflict'],
+  'Fix 2b: already corrected -> already_corrected; stock or unit changed since the return -> correction_conflict');
+reset role; select nexus_test.login_as(3);
+select ok(not (nexus.borrowing_request_detail(nexus_test.id('r8')) -> 'actions' ->> 'can_correct_return')::boolean,
+  'Fix 2a: no correction button without borrowing.handle (P-KETUM)');
+-- The return's own stock guard: Q4 good stock pulled below the loan by hand (owner), then a "lost" return.
+reset role; select nexus_test.logout();
+select nexus_test.stock('q4', 'good') as q4_good \gset
+update nexus.inventory_stock set quantity = 0 where item_id = nexus_test.id('q4') and condition = 'good';
+select nexus_test.login_as(8);
+select is(nexus_test.hint_of(format('select * from nexus.borrowing_request_return(%L, %s, %L)', nexus_test.id('r15'), nexus_test.ver('r15'),
+                                    jsonb_build_array(nexus_test.q(nexus_test.line('r15', 'q4'), 'lost', 1, null, 'hilang', array[nexus_test.photo('r15')])))),
+  'stock_mismatch', 'Fix 2b: a return whose stock no longer matches the loan answers stock_mismatch (not correction_conflict)');
+reset role; select nexus_test.logout();
+update nexus.inventory_stock set quantity = :q4_good where item_id = nexus_test.id('q4') and condition = 'good';
+select is(nexus_test.st('r15'), 'borrowed', 'Fix 2b: the refused return changed nothing');
+
+-- Fix 3: catalog export = catalog list, per caller (archived "Nonaktif" and lost "Hilang" units for managers)
+create function nexus_test.list_keys(p_search text default null, p_status text default 'active') returns text[] language sql
+as $$
+  select coalesce(array_agg(l.item_id::text || ':' || coalesce(u ->> 'code', '') || ':' || coalesce(u ->> 'status', '')
+                            order by l.row_no, u ->> 'code'), '{}')
+  from nexus.inventory_item_list(p_search => p_search, p_status => p_status, p_page_size => 50) l
+  left join lateral jsonb_array_elements(case when l.mode = 'tracked' then l.units end) u on true
+$$;
+create function nexus_test.export_keys(p_search text default null, p_status text default 'active') returns text[] language sql
+as $$
+  select coalesce(array_agg(e.item_id::text || ':' || case when e.mode = 'tracked' then coalesce(e.code, '') else '' end
+                            || ':' || coalesce(e.unit_status, '') order by e.row_no), '{}')
+  from nexus.inventory_export('csv', p_search => p_search, p_status => p_status) e
+$$;
+grant execute on function nexus_test.list_keys(text, text), nexus_test.export_keys(text, text) to authenticated;
+select nexus_test.login_as(8);
+select lives_ok($$select nexus.inventory_unit_set_active(nexus_test.unit_n('t2', 1), false, 'uji ekspor')$$,
+  'Fix 3 setup: archive a unit of T2 (T1 already has a lost unit)');
+select ok(nexus_test.export_keys() @> array[nexus_test.id('t2')::text || ':' || (nexus_test.unit_row(nexus_test.unit_n('t2', 1))).code || ':archived',
+                                            nexus_test.id('t1')::text || ':' || (nexus_test.unit_row(nexus_test.unit_n('t1', 1))).code || ':lost'],
+  'Fix 3: under the default filter a manager''s export holds the archived (Nonaktif) and the lost (Hilang) unit');
+select is(nexus_test.export_keys(), nexus_test.list_keys(),
+  'Fix 3/F12.2: manager, default filter: export rows = list rows (items and units), same order');
+select is(nexus_test.export_keys('Uji T'), nexus_test.list_keys('Uji T'), 'Fix 3: ... with a search');
+select is(nexus_test.export_keys(null, 'all'), nexus_test.list_keys(null, 'all'), 'Fix 3: ... with the "all" status filter');
+select is(nexus_test.export_keys(null, 'archived'), nexus_test.list_keys(null, 'archived'), 'Fix 3: ... with the "archived" filter');
+reset role; select nexus_test.login_as(3);
+select is(nexus_test.export_keys(), nexus_test.list_keys(), 'Fix 3: non-manager with inventory.export (P-KETUM): export = list');
+select ok(not exists (select 1 from nexus.inventory_export('csv') e where e.unit_status in ('archived', 'lost') or not e.item_is_active),
+  'Fix 3/A-IB5: a non-manager never exports archived or lost entries');
+reset role; select nexus_test.login_as(8);
+select ok(nexus.inventory_unit_set_active(nexus_test.unit_n('t2', 1), true), 'Fix 3 cleanup: reactivate the unit');
+
+-- Fix 4: borrowing period filter (queue and export hold the same rows; logged; view_all only)
+select is((select array_agg(reference order by row_no) from nexus.borrowing_queue('pending', p_period_id => nexus_test.period(3))),
+          (select array_agg(reference) from nexus.borrowing_requests where id = nexus_test.id('r_p3')),
+  'Fix 4: queue "pending" filtered on period 3 = only the waiting request created in period 3');
+select ok((select bool_and(period_id = nexus_test.period(3)) and count(*) >= 1
+           from nexus.borrowing_queue('all', p_period_id => nexus_test.period(3), p_page_size => 50)),
+  'Fix 4: "all" with a period = everything of THAT period');
+select ok(not exists (select 1 from nexus.borrowing_queue('all', p_page_size => 50) where period_id <> nexus_test.period(2))
+          and exists (select 1 from nexus.borrowing_queue('pending', p_page_size => 50) where request_id = nexus_test.id('r_p3')),
+  'Fix 4: without the filter nothing changed ("all" = active period, "pending" spans all periods)');
+select is((select array_agg(reference order by row_no) from nexus.borrowing_export('csv', 'all', p_period_id => nexus_test.period(3))),
+          (select array_agg(reference order by row_no) from nexus.borrowing_queue('all', p_period_id => nexus_test.period(3), p_page_size => 50)),
+  'Fix 4/section 8: export with the period filter = the screen rows, same order');
+select is((select array_agg(reference order by row_no) from nexus.borrowing_export('csv', 'pending', p_period_id => nexus_test.period(2))),
+          (select array_agg(reference order by row_no) from nexus.borrowing_queue('pending', p_period_id => nexus_test.period(2), p_page_size => 50)),
+  'Fix 4: ... also for another view and period');
+select is((select count(*)::int from nexus.borrowing_export('csv', 'all', p_period_id => nexus_test.period(1))), 0,
+  'Fix 4: a period without requests exports zero rows (no error)');
+reset role; select nexus_test.logout();
+select ok((select filters ->> 'period_id' = nexus_test.period(1)::text and row_count = 0 and module = 'borrowing'
+           from nexus.inventory_borrowing_export_logs order by id desc limit 1),
+  'Fix 4/IB-44: the log records the chosen period like the other filters');
+select ok((select (filters ? 'period_id') and filters -> 'period_id' = 'null'::jsonb
+           from nexus.inventory_borrowing_export_logs where module = 'borrowing'
+             and filters ->> 'view' = 'all' and filters ->> 'period_id' is null order by id desc limit 1),
+  'Fix 4: an export without the filter logs period_id = null');
+select nexus_test.log_count() as logs_before_bad_period \gset
+select nexus_test.login_as(8);
+select is(array[nexus_test.hint_of(format('select * from nexus.borrowing_queue(p_period_id => %L)', gen_random_uuid())),
+                nexus_test.hint_of(format('select * from nexus.borrowing_export(%L, p_period_id => %L)', 'csv', gen_random_uuid()))],
+          array['invalid_period', 'invalid_period'],
+  'Fix 4: an unknown period id is refused (queue and export)');
+reset role; select nexus_test.logout();
+select is(nexus_test.log_count(), :logs_before_bad_period, 'Fix 4/IB-44: the refused export wrote no log row');
+select nexus_test.login_as(10);
+select is(array[nexus_test.hint_of(format('select * from nexus.borrowing_queue(p_period_id => %L)', nexus_test.period(2))),
+                nexus_test.hint_of(format('select * from nexus.borrowing_export(%L, p_period_id => %L)', 'csv', nexus_test.period(2)))],
+          array['permission_required', 'permission_required'],
+  'Fix 4: without borrowing.view_all / borrowing.export the period filter is refused (P-STAFF-PUB)');
+-- Period choices for the filter (borrowing_period_list): view_all holders only, newest first
+reset role; select nexus_test.logout();
+select array_agg(id::text order by label desc, id) as all_periods from public.periods \gset
+select count(*)::int as period_count from public.periods \gset
+select nexus_test.login_as(8);
+select is((select array_agg(t.period_id::text order by t.ord) from nexus.borrowing_period_list() with ordinality as t(period_id, label, starts_on, ends_on, is_active, ord)),
+          :'all_periods'::text[],
+  'period list: a view_all holder (P-STAFF-LOG) gets every PI-CORE period, newest first');
+select ok((select count(*) = :period_count and count(*) filter (where is_active) = 1
+                  and bool_and(is_active = (period_id = nexus_test.period(2)))
+           from nexus.borrowing_period_list()),
+  'period list: exactly the active period is flagged is_active');
+select is((select label from nexus.borrowing_period_list() where period_id = nexus_test.period(3)), '2092/2093',
+  'period list: labels come from PI-CORE');
+select is(nexus_test.out_cols_bpl(), array['period_id', 'label', 'starts_on', 'ends_on', 'is_active'],
+  'period list: returns only id, label, dates and the active flag');
+reset role; select nexus_test.login_as(3);
+select ok((select count(*) = :period_count from nexus.borrowing_period_list()), 'period list: BPH (view_all) may read it');
+reset role; select nexus_test.login_as(11);
+select is(nexus_test.err_of($$select * from nexus.borrowing_period_list()$$), nexus_test.err_of($$select * from nexus.borrowing_queue()$$),
+  'period list: a plain member gets exactly the queue''s forbidden error');
+select is(nexus_test.hint_of($$select * from nexus.borrowing_period_list()$$), 'permission_required',
+  'period list: ... which is permission_required');
+reset role; select nexus_test.login_as(15);
+select is(nexus_test.hint_of($$select * from nexus.borrowing_period_list()$$), 'permission_required', 'period list: P-INACTIVE refused');
+reset role; select nexus_test.login_as(17);
+select is(nexus_test.hint_of($$select * from nexus.borrowing_period_list()$$), 'permission_required', 'period list: P-UNLINKED refused');
+reset role; select nexus_test.logout();
+select ok(has_function_privilege('authenticated', 'nexus.borrowing_period_list()', 'execute')
+          and not has_function_privilege('anon', 'nexus.borrowing_period_list()', 'execute')
+          and not has_function_privilege('service_role', 'nexus.borrowing_period_list()', 'execute')
+          and not exists (select 1 from pg_proc p, aclexplode(p.proacl) a where p.oid = 'nexus.borrowing_period_list()'::regprocedure and a.grantee = 0),
+  'period list: EXECUTE for authenticated only (not anon, service_role, PUBLIC)');
+set local role anon;
+select throws_ok($$select * from nexus.borrowing_period_list()$$, '42501', null, 'period list: anon refused');
+reset role;
+reset role; select nexus_test.login_as(3);
+select is((select count(*)::int from nexus.borrowing_export('pdf', 'all', p_period_id => nexus_test.period(3))),
+          (select count(*)::int from nexus.borrowing_queue('all', p_period_id => nexus_test.period(3), p_page_size => 50)),
+  'Fix 4: BPH (view_all + export) may use the period filter');
+reset role;
 
 select * from finish();
 rollback;

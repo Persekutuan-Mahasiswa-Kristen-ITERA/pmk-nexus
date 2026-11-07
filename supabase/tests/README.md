@@ -34,6 +34,8 @@ A `-c "set ..."` before `-f` does NOT work: each `-c`/`-f` item is separate and 
 
 Assumes a fresh NEXUS install (exactly the 36 default rules D01-D36 with D30 retired, 36 seed log rows + 1 retirement row, empty export logs, an empty catalog, and no members other than the test personas). Sequences (INV-/PJM- numbers) are not rolled back by Postgres; the inventory file therefore checks code format and order, never fixed numbers, and can run repeatedly in the same container.
 
+**Status 2026-11-08 (fixes migration 20261108100000, section 15 of the inventory file):** `nexus_access_control.test.sql` **247/247**, `nexus_member_data.test.sql` **198/198**, `nexus_inventory_borrowing.test.sql` **522/522** (468 + 54: detail by reference, once-only correction button and the hints `already_corrected` / `correction_conflict` / `stock_mismatch`, catalog export = list per caller, borrowing period filter and its period list `borrowing_period_list()`, structure) in a FRESH throwaway `supabase/postgres:17.11.0.003` container WITH the Storage stub, after PI-CORE's 5 migrations and the 8 NEXUS migrations. Fault check: with the four old function bodies loaded inside the test transaction, exactly 7 checks fail (Fix 2 and Fix 3), as expected.
+
 **Status 2026-11-07, review version** (owner caps, date cap, single correction, lost-correction conflict, restore = `inventory.manage`, array caps, upload flood guard, bucket/policy guards, stub refuses @nexus.test, faster request lists): `nexus_access_control.test.sql` **247/247**, `nexus_member_data.test.sql` **198/198**, `nexus_inventory_borrowing.test.sql` **468/468** in a FRESH throwaway container WITH the Storage stub, and the same counts WITHOUT it (then 20 Storage checks report `# SKIP`). Also 247/198/468 on a database that first ran the earlier draft of M5-M7 and then the review version (upgrade path of the dev stack). Idempotence: M4-M7 applied a second time; `pg_dump` of schema `nexus` (DDL + data) plus counts of rules, log rows, policies, buckets, functions, tables and constraints identical (7,867 lines). The inventory output contains ONE expected `ERROR` line: the stub refusing a `@nexus.test` member (test 2). Count results with `grep -c '^ok [0-9]'`.
 
 **Status 2026-11-07 (first version of migrations 20261107100000-100200, D-022):** `nexus_access_control.test.sql` **247/247**, `nexus_member_data.test.sql` **198/198**, `nexus_inventory_borrowing.test.sql` **417/417** (with the Storage stub; without it the 12 Storage policy checks are reported as `skip`) in a FRESH throwaway `supabase/postgres:17.11.0.003` container after PI-CORE's 5 migrations and the 7 NEXUS migrations. The engine file's expectations changed with D-022: 22 keys, 35 enabled + 1 retired default rule, 36 seed log rows + the D30 retirement, P-STAFF-LOG and P-OPS-BPH handle but no longer approve, `borrowing.approve` has one holder in the fixtures (warning `single_holder`), restore re-enables 35 and never D30 (+3 tests). Idempotence: M4-M7 applied a second time on the same database; a `pg_dump` of schema `nexus` (DDL + all data) plus counts of rules, log rows, keys, policies, buckets, functions and tables was identical before and after. Fault checks: item lock removed -> 1 failure (the lock test); L6 guard removed -> 6 failures. A two-session run (outside pgTAP) showed a second head's overlapping approval waiting on the item lock until the first committed, then refused with `insufficient_stock`.
@@ -130,6 +132,8 @@ Member-data file adds P-KABIRO (19, Kepala Biro in Biro Kewirausahaan) and P-MUL
 | P-PLAIN, P-STAFF-PUB, P-LECT, P-ADMIN, P-OLD | yes | no | yes | no | no | no | no | IB-01, IB-05, IB-15, IB-38 |
 | P-INACTIVE, P-UNLINKED, no subject, anon | no | no | no | no | no | no | no | IB-03 |
 
+Fixes 2026-11-08 (section 15): `borrowing_request_detail_by_ref` follows the same rows as `borrowing_request_detail` (requester or `borrowing.view_all`; P-STAFF-PUB and P-ADMIN get `request_not_found` for r1, P-INACTIVE/P-UNLINKED `not_active_member`, anon 42501). `inventory_export` returns exactly the `inventory_item_list` rows of the same caller (managers: archived and lost units; P-KETUM: active only). The borrowing period filter works only with `borrowing.view_all` (P-STAFF-PUB refused) and is logged as `filters.period_id`. `borrowing_period_list()`: view_all holders (P-STAFF-LOG, P-KETUM) get every period newest first; P-PLAIN gets the queue's `permission_required`, as do P-INACTIVE and P-UNLINKED; anon 42501.
+
 ### Storage bucket `nexus-borrowing-evidence` (private; policies on `storage.objects`)
 | Action | Allowed | Must be refused | Test |
 |---|---|---|---|
@@ -148,7 +152,11 @@ Member-data file adds P-KABIRO (19, Kepala Biro in Biro Kewirausahaan) and P-MUL
 | End later than start + 365 days, on create or extension (from the ORIGINAL start; also a table constraint) | `date_range_too_long` (constraint: 23514) | sections 4, 5 |
 | Infinity or a date before 2000 | `invalid_dates` | section 4, 5 |
 | More than 50 lines (create, approve, hand over), 200 unit ids per line | `too_many_lines`, `too_many_units` | sections 4, 6, 8 |
-| A second return correction; a counted "lost" correction after later stock history | `correction_conflict` | section 7 |
+| A second return correction | `already_corrected` (detail: `can_correct_return` false) | sections 7, 15 |
+| A correction after the unit, the stock or a counted "lost" changed since the return | `correction_conflict` | sections 7, 15 |
+| A damaged/lost return whose good stock no longer covers the loan (hand-edited stock) | `stock_mismatch` | section 15 |
+| Detail by reference: malformed / unknown or not visible | `invalid_input` / `request_not_found` (identical for both) | section 15 |
+| Borrowing period filter with an unknown period id; without `borrowing.view_all` | `invalid_period`; `permission_required` | section 15 |
 | Restore a lost unit without `inventory.manage`, or of an archived item | `permission_required`, `item_archived` | section 3 |
 
 ### Functions
