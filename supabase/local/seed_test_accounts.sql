@@ -11,7 +11,9 @@
 -- Safe to run more than once: rows that already exist are skipped, nothing is deleted.
 -- Every account has the same dev password (documented in docs/ops/local-setup.md), emails end in
 -- @nexus.test so they can never be real people. Section 6 adds 40 "Bulk Anggota NN" member rows with
--- NO login (for Member Data pagination/filter tests). PI-CORE triggers stay ON; this file works with them:
+-- NO login (for Member Data pagination/filter tests). Section 7 adds a small FAKE inventory ("Barang Uji
+-- NN", "Kategori Uji X", "Lokasi Uji N") through the real nexus functions, if the Inventory and
+-- Borrowing migration is applied. PI-CORE triggers stay ON; this file works with them:
 --   * assignments are refused for inactive members, so the deactivated member is deactivated AFTER
 --     getting an assignment;
 --   * the first period ever created becomes the active one, so 2026/2027 is inserted first.
@@ -85,7 +87,12 @@ insert into _persona values
   -- Member Data (docs/modules/member-data.md section 7): department/bureau heads see the list (D32)
   -- but cannot export.
   (8, 'kadep@nexus.test',           'Test Kepala Departemen',    '123450008', 'member', false, true,  'Departemen Operasional', 'department', 'Kepala Departemen', false),
-  (9, 'kabiro@nexus.test',          'Test Kepala Biro',          '123450009', 'member', false, true,  'Biro Kewirausahaan',     'bureau',     'Kepala Biro',       false);
+  (9, 'kabiro@nexus.test',          'Test Kepala Biro',          '123450009', 'member', false, true,  'Biro Kewirausahaan',     'bureau',     'Kepala Biro',       false),
+  -- Inventory and Borrowing (docs/modules/inventory-borrowing.md section 2, D-022): a second head
+  -- (Kepala Divisi Logistik, approves via D35) so a head's own request can be approved by another
+  -- head, and an Operations staff member (handles via D36, does not approve).
+  (11, 'kadiv.logistik@nexus.test', 'Test Kepala Divisi Logistik', '123450011', 'member', false, true, 'Logistik',  'division', 'Kepala Divisi', false),
+  (12, 'staff.ops@nexus.test',      'Test Staff Operasional',     '123450012', 'member', false, true, 'Akomodasi', 'division', 'Staff',         false);
 -- Lecturer: listed with the "Pembina" marker, no NIM, no assignment (separate insert: different row width).
 insert into _persona values
   (10, 'pembina@nexus.test',        'Test Dosen Pembina',        null,        'member', false, true,  null,            null,       null,               false, 'lecturer');
@@ -231,6 +238,68 @@ update public.members m
 set is_active = false
 from _bulk b
 where b.deactivate and m.email = 'bulk' || lpad(b.n::text, 2, '0') || '@nexus.test' and m.is_active;
+
+-- 7. FAKE inventory for the Inventory and Borrowing module (local only). Written through the real nexus
+--    functions as "Test Kepala Departemen" (kadep@nexus.test, inventory.manage via D28), so codes,
+--    history rows and checks are exactly what the app would produce. Skipped (with a notice) when the
+--    module migration is not applied. Idempotent: an entry that already exists by name is left alone.
+--    The functions read the caller from the JWT claim settings below (auth.uid()), not from the SQL role.
+do $$
+declare
+  v_kadep uuid := (select u.id from auth.users u where u.email = 'kadep@nexus.test');
+  v_cat_a uuid;
+  v_cat_b uuid;
+  v_loc_1 uuid;
+  v_loc_2 uuid;
+begin
+  if to_regprocedure('nexus.inventory_item_create(text, text, text, uuid, uuid, jsonb, jsonb, text)') is null then
+    raise notice 'seed_test_accounts.sql: Inventory and Borrowing migration not applied; fake inventory skipped.';
+    return;
+  end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_kadep, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claim.sub', v_kadep::text, true);
+  if not nexus.has_permission('inventory.manage') then
+    raise warning 'seed_test_accounts.sql: kadep@nexus.test has no inventory.manage (rules or period differ); fake inventory skipped.';
+    return;
+  end if;
+
+  select c.id into v_cat_a from nexus.inventory_categories c where c.name = 'Kategori Uji A';
+  if v_cat_a is null then v_cat_a := nexus.inventory_category_add('Kategori Uji A'); end if;
+  select c.id into v_cat_b from nexus.inventory_categories c where c.name = 'Kategori Uji B';
+  if v_cat_b is null then v_cat_b := nexus.inventory_category_add('Kategori Uji B'); end if;
+  select l.id into v_loc_1 from nexus.inventory_locations l where l.name = 'Lokasi Uji 1';
+  if v_loc_1 is null then v_loc_1 := nexus.inventory_location_add('Lokasi Uji 1'); end if;
+  select l.id into v_loc_2 from nexus.inventory_locations l where l.name = 'Lokasi Uji 2';
+  if v_loc_2 is null then v_loc_2 := nexus.inventory_location_add('Lokasi Uji 2'); end if;
+
+  -- Quantity items: one lendable with some in service, one small, one with nothing lendable.
+  if not exists (select 1 from nexus.inventory_items i where i.name = 'Barang Uji 01') then
+    perform nexus.inventory_item_create('quantity', 'Barang Uji 01', 'Data uji lokal, bukan barang PMK.', v_cat_a, v_loc_1,
+                                        '{"good": 5, "needs_service": 1}'::jsonb, null, 'Seed lokal');
+  end if;
+  if not exists (select 1 from nexus.inventory_items i where i.name = 'Barang Uji 02') then
+    perform nexus.inventory_item_create('quantity', 'Barang Uji 02', null, v_cat_b, v_loc_2, '{"good": 2}'::jsonb, null, 'Seed lokal');
+  end if;
+  if not exists (select 1 from nexus.inventory_items i where i.name = 'Barang Uji 03') then
+    perform nexus.inventory_item_create('quantity', 'Barang Uji 03', null, v_cat_b, v_loc_1, '{"damaged": 1}'::jsonb, null, 'Seed lokal');
+  end if;
+  -- Tracked items: units with their own code, condition and location.
+  if not exists (select 1 from nexus.inventory_items i where i.name = 'Barang Uji 04') then
+    perform nexus.inventory_item_create('tracked', 'Barang Uji 04', 'Data uji lokal, dilacak per unit.', v_cat_a, null, null,
+      jsonb_build_array(jsonb_build_object('condition', 'good', 'location_id', v_loc_1),
+                        jsonb_build_object('condition', 'good', 'location_id', v_loc_2),
+                        jsonb_build_object('condition', 'needs_service', 'location_id', v_loc_2)), 'Seed lokal');
+  end if;
+  if not exists (select 1 from nexus.inventory_items i where i.name = 'Barang Uji 05') then
+    perform nexus.inventory_item_create('tracked', 'Barang Uji 05', null, null, null, null,
+      jsonb_build_array(jsonb_build_object('condition', 'good', 'location_id', v_loc_1),
+                        jsonb_build_object('condition', 'good', 'location_id', v_loc_1)), 'Seed lokal');
+  end if;
+
+  perform set_config('request.jwt.claims', '', true);
+  perform set_config('request.jwt.claim.sub', '', true);
+end
+$$;
 
 -- Summary (shown by psql so you see what exists).
 select p.email, p.full_name, coalesce(m.access_level::text, '(no member row)') as access_level,

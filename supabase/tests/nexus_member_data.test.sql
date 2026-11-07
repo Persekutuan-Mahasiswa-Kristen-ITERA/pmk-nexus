@@ -341,8 +341,8 @@ select ok((select r.subject_type = 'role' and r.role_key = 'bph' and r.permissio
 select is((select count(*)::int from nexus.access_rule_log l join nexus.access_rules r on r.id = l.rule_id
            where r.default_code in ('D32', 'D33') and l.action = 'seed' and l.actor_member_id is null and l.is_sensitive), 2,
   'D32/D33 each have one sensitive seed log row without an actor');
-select is((select count(*)::int from nexus.access_rules where default_code is not null), 33,
-  'exactly 33 default rules (no duplicates)');
+select is((select count(*)::int from nexus.access_rules where default_code is not null), 36,
+  'exactly 36 default rules, D01-D36 (no duplicates; D-022 added D34-D36)');
 
 reset role; select nexus_test.login_as(1);
 select is(nexus_test.hint_of($$select nexus.add_access_rule('all_members', 'member_data.view_export_log',
