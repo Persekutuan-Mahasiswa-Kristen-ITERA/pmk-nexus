@@ -70,7 +70,20 @@ describe("AR1 / AUTH-03 / AUTH-25: no sign-up, reset, or password-change routes"
 
   // Allow-list: every new page or route handler is added here on purpose (module specs in docs/modules/).
   it("the only routes are the allow-listed ones (and nothing sign-up-like)", () => {
-    expect(routeDirs.sort()).toEqual(["/", "/api/member-data/export", "/data-anggota", "/login"]);
+    expect(routeDirs.sort()).toEqual([
+      "/",
+      "/api/inventory/borrowing/export",
+      "/api/inventory/evidence",
+      "/api/inventory/export",
+      "/api/member-data/export",
+      "/data-anggota",
+      "/inventaris",
+      "/inventaris/ajukan",
+      "/inventaris/barang/[id]",
+      "/inventaris/pengajuan/[ref]",
+      "/inventaris/saya",
+      "/login",
+    ]);
     for (const r of routeDirs) expect(r).not.toMatch(/sign-?up|register|invite|reset|forgot|password|change|account|admin/i);
   });
 

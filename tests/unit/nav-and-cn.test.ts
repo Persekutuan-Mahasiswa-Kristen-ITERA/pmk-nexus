@@ -40,7 +40,9 @@ describe("buildNavData (D-021): only built modules the person may open", () => {
   it("Dashboard is first and always present; unbuilt modules never appear (no 'Segera hadir' items)", () => {
     const everything = buildNavData(state(["member_data.view", "finance.view", "letters.view", "inventory.view", "minutes.view"].map((k) => grant(k))));
     expect(everything.items[0]).toEqual(DASHBOARD);
-    expect(everything.items.map((i) => i.label)).toEqual(["Dashboard", "Data Anggota"]);
+    expect(everything.items.map((i) => i.label)).toEqual(["Dashboard", "Data Anggota", "Manajemen & Inventaris"]);
+    // Without inventory.view (e.g. an admin rule removed the baseline), the item is absent, not greyed out
+    expect(buildNavData(state([grant("member_data.view")])).items.map((i) => i.label)).toEqual(["Dashboard", "Data Anggota"]);
   });
   it("carries the member name and period label for the drawer footer; no period -> null", () => {
     expect(buildNavData(state([], { name: "Budi", label: "2026/2027" }))).toMatchObject({ memberName: "Budi", periodLabel: "2026/2027" });
