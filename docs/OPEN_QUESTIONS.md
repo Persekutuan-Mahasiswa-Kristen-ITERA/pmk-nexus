@@ -199,4 +199,8 @@ Spec: `docs/modules/inventory-borrowing.md` section 10 (IB1-IB15 are answered, D
 | A-IB47 | Request caps per member: at most 5 open (Diajukan) requests and at most 20 new requests per Jakarta day; an outside-party request counts toward the recorder's caps. | **[ANSWERED]** 2026-11-07: owner (D-022 follow-up) | - |
 | A-IB48 | Date cap: `end_date` is at most `start_date` + 365 days, also for extensions (counted from the original start); a longer loan needs a new request. | **[ANSWERED]** 2026-11-07: owner (D-022 follow-up) | - |
 | A-IB49 | Detail of A-IB47: the cap of 5 counts Diajukan requests only (not Disetujui or Dipinjam); the cap of 20 counts every request created that Jakarta day, even if it is cancelled later. | [ASSUMPTION] | P2 |
+| A-IB50 | Evidence photos are uploaded through a NEXUS server route (not straight from the browser to Storage), so the server can check the real file type before storing it. The browser resizes first, so a file stays under the 1.5 MiB bucket limit and the Vercel request limit. | [ASSUMPTION] tech lead 2026-11-08 | P2 |
+| A-IB51 | Signed links to evidence photos expire after 300 seconds (5 minutes). | [ASSUMPTION] tech lead 2026-11-08 | P2 |
+| A-IB52 | The original photo may be up to 15 MB before the browser resizes it (design proposal P8b). | [ASSUMPTION] tech lead 2026-11-08 | P2 |
+| A-IB53 | When an extension is refused because the item is booked, the server finds the conflicting date with the availability function so the message can say "pada {tanggal}"; if it cannot, the message leaves the date out. | [ASSUMPTION] tech lead 2026-11-08 | P2 |
 
