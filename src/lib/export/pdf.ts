@@ -2,7 +2,7 @@ import "server-only";
 import { readFile } from "node:fs/promises";
 import PDFDocument from "pdfkit";
 
-// PDF table writer (D-020: pdfkit, server side). A4 portrait, simple ruled table, header row repeated
+// PDF table writer (D-020: pdfkit, server side). A4 portrait (or landscape on request), simple ruled table, header row repeated
 // on every page, "Halaman x dari y" footer.
 // Fonts: Plus Jakarta Sans Regular and Bold (SIL OFL 1.1, see fonts/OFL.txt), embedded and subset, so
 // Latin, Latin Extended and Vietnamese names render (checked 2026-11-06). Characters outside the font
@@ -26,6 +26,8 @@ export type PdfTable = {
   pageLabel: (page: number, pageCount: number) => string;
   /** Document properties (shown by PDF readers). */
   info: { title: string; author: string };
+  /** Page orientation; default portrait. Wide tables (many columns) use landscape. */
+  layout?: "portrait" | "landscape";
 };
 
 const FONT_REGULAR = "NexusRegular";
@@ -60,7 +62,7 @@ export async function writePdfTable(table: PdfTable): Promise<Uint8Array> {
   const fonts = await loadFonts();
   const doc = new PDFDocument({
     size: "A4",
-    layout: "portrait",
+    layout: table.layout ?? "portrait",
     margin: PAGE.margin,
     bufferPages: true, // needed to write "Halaman x dari y" once the page count is known
     autoFirstPage: true,

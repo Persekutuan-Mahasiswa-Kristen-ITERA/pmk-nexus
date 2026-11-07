@@ -1317,7 +1317,12 @@ export type InventoryError =
   | { code: "photo_missing"; ref: string | null } // the path was never uploaded
   | { code: "upload_refused" } // Storage policy said no (no right, request not Dipinjam, or 10 unattached)
   | { code: "too_many_open_requests"; limit: number } // R29: 5 Diajukan
-  | { code: "daily_request_limit"; limit: number }; // R29: 20 per Jakarta day
+  | { code: "daily_request_limit"; limit: number } // R29: 20 per Jakarta day
+  // Server only (no database hint). Added 2026-11-08 (tech lead).
+  /** Export answer may have been cut by the API row limit (POSTGREST_MAX_ROWS); interim guard, HTTP 422. */
+  | { code: "export_too_large" }
+  /** Upload above the bucket limit EVIDENCE_MAX_BYTES; maxMb = that limit in MB (1.5). HTTP 413. */
+  | { code: "photo_too_large"; maxMb: number };
 
 export type InventoryErrorCode = InventoryError["code"];
 
@@ -1462,6 +1467,8 @@ export const INVENTORY_ERROR_COPY: Record<InventoryErrorCode, string | null> = {
   too_many_open_requests:
     "Kamu sudah punya 5 pengajuan yang menunggu persetujuan. Tunggu keputusannya atau batalkan salah satu.", // owner
   daily_request_limit: "Kamu sudah membuat 20 pengajuan hari ini. Coba lagi besok.", // owner
+  export_too_large: "Hasil terlalu banyak untuk satu file. Persempit filter, lalu coba lagi.", // tech lead 2026-11-08
+  photo_too_large: "Foto terlalu besar. Pakai foto di bawah {max} MB.", // 13.3 ({max} = error.maxMb)
 };
 
 /** Action variants of the codes whose text depends on what the person was doing. */
@@ -1545,6 +1552,10 @@ export function inventoryErrorMessage(
     case "reserved_stock":
     case "open_requests_exist":
       return formatInventoryCopy(INVENTORY_ERROR_COPY[error.code] ?? "", { n: error.count });
+    case "photo_too_large":
+      return formatInventoryCopy(INVENTORY_ERROR_COPY.photo_too_large ?? "", {
+        max: error.maxMb.toLocaleString("id-ID", { maximumFractionDigits: 1 }),
+      });
     case "too_early":
       return error.startDate === null
         ? COPY_UNAVAILABLE
@@ -1824,7 +1835,8 @@ export function defaultQueueView(capabilities: InventoryCapabilities): QueueView
  *   Same-origin check; checks declared type and size (evidenceFileSchema) AND the file's magic bytes
  *   (JPEG FF D8 FF, PNG 89 50 4E 47, WebP RIFF....WEBP; must match the declared type), then uploads with
  *   the USER's client to EVIDENCE_BUCKET at evidencePhotoPath(...). 200: EvidenceUploadResult.
- *   400 invalid_photo / invalid_input, 401, 403 upload_refused (bucket policy), 503: InventoryErrorBody.
+ *   400 invalid_photo / invalid_input, 413 photo_too_large, 401, 403 upload_refused (bucket policy), 503:
+ *   InventoryErrorBody.
  *
  * POST /api/inventory/export           (form/JSON: CatalogExportInput; canExportInventory)
  *   200: the file, Content-Disposition attachment "inventaris-YYYY-MM-DD.<ext>" (Asia/Jakarta, design 15.2).
@@ -1833,4 +1845,6 @@ export function defaultQueueView(capabilities: InventoryCapabilities): QueueView
  *   The catalog file has ONE status column, inventoryExportStatusLabel(row) (Aktif / Nonaktif / Hilang).
  *   Both: same-origin check, ONE call to inventory_export / borrowing_export (writes the export-log row
  *   in the same transaction; no row, no file), Cache-Control no-store. 401/403/400/503: InventoryErrorBody.
+ *   422 export_too_large: the answer reached the API row limit (POSTGREST_MAX_ROWS = 1000), so it may be
+ *   cut; no file is returned (interim guard until exports are paged or returned as one value).
  */

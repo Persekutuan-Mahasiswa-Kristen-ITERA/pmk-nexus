@@ -4,9 +4,9 @@ Inventory catalog plus borrowing (request, approve, hand over, return), with exp
 Spec: `docs/modules/inventory-borrowing.md`. Design: `docs/design/inventory-borrowing.md`. Decisions: D-020, D-022.
 Database: `supabase/migrations/20261107100000..20261107100200` (public RPCs `nexus.inventory_*`, `nexus.borrowing_*`).
 
-Status (2026-11-08): **contract only** (`types.ts`, round 2: fixes migration `20261108100000`, owner copy, A-IB50..A-IB53). Server code, route handlers and UI are not built.
+Status (2026-11-08): **server built** (contract round 2 plus `export_too_large` and `photo_too_large`; server functions, Server Actions, the three route handlers). **UI part A in progress** (frontend engineer). Not yet tested against a real database (QA).
 
-## Layout (planned)
+## Layout
 
 | Path | Runs on | What |
 |---|---|---|
@@ -16,12 +16,17 @@ Status (2026-11-08): **contract only** (`types.ts`, round 2: fixes migration `20
 | `server/manage-actions.ts` | server | Server Actions for `inventory.manage`: item create/update, units, stock dialogs, write-off, restore, archive, category/location lists |
 | `server/borrowing.ts` | server | Borrowing reads: `listMyRequests`, `listQueue`, `getQueueCounts`, `listOpenLoans`, `listBorrowingPeriods`, `getRequestDetail`, `getRequestDetailByReference`, `listHandoverUnits`, `getEvidencePhotoLinks` |
 | `server/borrowing-actions.ts` | server | Server Actions for the state machine: submit, approve, reject, extend, cancel, hand over, return, correct return |
-| `server/export.ts` | server | Catalog and borrowing exports (same pattern as Data Anggota) |
+| `server/validation.ts` | server | zod failure -> contract error (first issue; `field`, `ref`), start-date check, `safely()` (never throws) |
+| `server/export.ts` | server | Catalog and borrowing export handlers (same pattern as Data Anggota), HTTP status per error. Interim guard: an answer of 1000 rows (PostgREST `max_rows`) is refused with `export_too_large` |
+| `server/export-file.ts` | server | Builds the xlsx / csv / PDF (landscape) files with `src/lib/export/*`; one status column via `inventoryExportStatusLabel()`; dates in WIB |
+| `server/evidence.ts` | server | Evidence upload handler (A-IB50): same-origin, `borrowing.handle`, size (`photo_too_large`), declared type and magic bytes (`invalid_photo`), upload with the user's client, random name, no overwrite |
 | `ui/` | both | Screens and components (frontend engineer) |
 
-The RPC wrappers go in `src/lib/picore/inventory-borrowing.ts`: the functions return PI-CORE names and period labels and check PI-CORE assignments, so they belong to the single PI-CORE access layer (CLAUDE.md 4).
+Shared helpers: `src/lib/http/request.ts` (same-origin check, size-capped body reader, 405), `src/lib/supabase/limits.ts` (`POSTGREST_MAX_ROWS`). Route files: `src/app/api/inventory/export`, `src/app/api/inventory/borrowing/export`, `src/app/api/inventory/evidence` (thin; they call `getAccessState()` and delegate).
 
-## Planned entry points
+The RPC wrappers (and the evidence bucket calls) are in `src/lib/picore/inventory-borrowing.ts`: the functions return PI-CORE names and period labels and check PI-CORE assignments, so they belong to the single PI-CORE access layer (CLAUDE.md 4).
+
+## Entry points
 
 | Entry point | Needs | RPC |
 |---|---|---|

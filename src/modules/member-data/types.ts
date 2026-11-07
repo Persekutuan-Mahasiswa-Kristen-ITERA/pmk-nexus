@@ -195,8 +195,18 @@ export type MemberDataError =
 
 export type MemberDataResult<T> = { ok: true; data: T } | { ok: false; error: MemberDataError };
 
+/**
+ * Errors of POST /api/member-data/export: the general ones plus export_too_large (HTTP 422), added
+ * 2026-11-08: the answer reached the API row limit (1000 rows) and may be cut, so no file is returned.
+ * Interim guard until exports are paged or returned as one value.
+ */
+export type MemberExportError = MemberDataError | { code: "export_too_large" };
+
+/** Text for export_too_large (tech lead wording, 2026-11-08). */
+export const MEMBER_EXPORT_TOO_LARGE_TEXT = "Hasil terlalu banyak untuk satu file. Persempit filter, lalu coba lagi.";
+
 /** JSON body of every non-2xx answer from POST /api/member-data/export. */
-export type MemberExportErrorBody = { error: MemberDataError };
+export type MemberExportErrorBody = { error: MemberExportError };
 
 // ---------------------------------------------------------------------------------------------
 // Pure helpers (shared by the screen and the export so both show the same text)
@@ -251,7 +261,7 @@ export function memberDataCapabilities(state: AccessState): MemberDataCapabiliti
  *
  * POST /api/member-data/export  (form body: q, unit, status, format; same names as the page address)
  *   200: the file, Content-Disposition: attachment; filename="data-anggota-YYYY-MM-DD.<ext>" (Asia/Jakarta).
- *   401/403/400/503: JSON MemberExportErrorBody. Other methods: 405. Cross-site requests: 403.
+ *   401/403/400/503 (and 422 export_too_large): JSON MemberExportErrorBody. Other methods: 405. Cross-site requests: 403.
  *   Send the validated `filters` of the MemberListPage the screen shows (status as active/inactive/all).
  *   Writes one export-log row per successful export (database, same transaction).
  */

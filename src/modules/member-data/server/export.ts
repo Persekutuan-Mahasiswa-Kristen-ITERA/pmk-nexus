@@ -1,5 +1,6 @@
 import "server-only";
 import { attachmentDisposition } from "@/lib/export/datetime";
+import { mayBeTruncated } from "@/lib/supabase/limits";
 import { exportMemberRows } from "@/lib/picore/member-data";
 import type { AccessState } from "@/lib/auth/types";
 import {
@@ -7,6 +8,7 @@ import {
   memberExportFormatSchema,
   memberListFiltersSchema,
   type MemberDataError,
+  type MemberExportError,
   type MemberExportErrorBody,
   type MemberExportFormat,
   type MemberListFilters,
@@ -24,15 +26,16 @@ import { invalidInput } from "./validation";
 /** Form bodies are a handful of short fields; anything larger is not from our form. */
 const MAX_BODY_BYTES = 8 * 1024;
 
-const STATUS_BY_CODE: Record<MemberDataError["code"], number> = {
+const STATUS_BY_CODE: Record<MemberExportError["code"], number> = {
   unauthenticated: 401,
   forbidden: 403,
   invalid_input: 400,
   unavailable: 503,
+  export_too_large: 422,
 };
 
 /** JSON error answer. Codes only: never a stack trace, a database message or row data. */
-export function memberExportError(error: MemberDataError): Response {
+export function memberExportError(error: MemberExportError): Response {
   const body: MemberExportErrorBody = { error };
   return Response.json(body, { status: STATUS_BY_CODE[error.code], headers: { "Cache-Control": "no-store" } });
 }
@@ -172,6 +175,10 @@ export async function handleMemberDataExport(
   const exportedAt = new Date();
   const rows = await exportMemberRows(gate.supabase, body.format, body.filters);
   if (!rows.ok) return memberExportError(rows.error);
+  // INTERIM guard (2026-11-08): PostgREST max_rows silently cuts a `returns table` answer at 1000 rows,
+  // so an answer of that size may be incomplete. Refuse it rather than hand out a partial list. The log
+  // row is already written (same transaction). Replace when the export is paged or returns one value.
+  if (mayBeTruncated(rows.data.length)) return memberExportError({ code: "export_too_large" });
 
   try {
     const file = await buildMemberExportFile(body.format, rows.data, {
