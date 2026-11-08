@@ -1708,3 +1708,10 @@ Asked and answered by the owner:
 Taken as recommended (recorded as assumptions A-IB37..A-IB46 in `docs/OPEN_QUESTIONS.md` section H; the owner can change them):
 - P1 (a) four route-based segments; P3 filter card folded on phones; P4 (a) category and location optional; P5 (a) recording mode never changes; P8 (a) evidence photo uploads when picked, files never attached to a saved return are not evidence and may be cleaned up; P9 Dikembalikan chip green; P10 one resulting condition per damaged line; P11 "Ajukan lagi" prefilled; P12 Antrean count as designed; P14 "Detail Pengajuan"; P15 confirm before saving a return.
 - G1: one location per item (not per stock row). G4: field length limits set by the database engineer and shown as `{max}`. G6: list order A-Z, no reorder screen. G7: a written-off (Hilang) unit can be restored ("Ditemukan kembali") with a reason by an `inventory.manage` holder, item must be active (amended 2026-11-07 after the DB security review, A-IB45). G8: the requester sees the names of the approver and the Ops members who recorded handover and return in the timeline. G12: icons stay Lucide (as built).
+
+## 24. Changes after the build (2026-11-08, owner approved)
+
+- Head's review (11.2): "Setujui" and "Tolak" are placed directly under the "Barang dan ketersediaan" card, before "Riwayat", so the buttons sit next to the approved quantities they use.
+- Stock dialogs (7.6): every dialog needs a reason, including "Tambah jumlah" and a move to a better condition (owner decision P6). Where this document says "boleh kosong" for those dialogs, it no longer applies.
+- Antrean on wide screens (11.1): cards for now; the desktop table comes later (A-IB55).
+- New screen strings of the Operations screens: `src/modules/inventory-borrowing/ui/copy.ts` (D-022, UI part B).

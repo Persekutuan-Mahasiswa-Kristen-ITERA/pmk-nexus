@@ -203,4 +203,6 @@ Spec: `docs/modules/inventory-borrowing.md` section 10 (IB1-IB15 are answered, D
 | A-IB51 | Signed links to evidence photos expire after 300 seconds (5 minutes). | [ASSUMPTION] tech lead 2026-11-08 | P2 |
 | A-IB52 | The original photo may be up to 15 MB before the browser resizes it (design proposal P8b). | [ASSUMPTION] tech lead 2026-11-08 | P2 |
 | A-IB53 | When an extension is refused because the item is booked, the server finds the conflicting date with the availability function so the message can say "pada {tanggal}"; if it cannot, the message leaves the date out. | [ASSUMPTION] tech lead 2026-11-08 | P2 |
+| A-IB54 | On the item edit screen, location changes of several units are saved one by one (one `inventory_unit_update` per unit), not in one transaction. If one fails, the others stay saved; each change has its own history row and the screen reports the failure. | [ASSUMPTION] tech lead 2026-11-08 | P2 |
+| A-IB55 | The Antrean list stays as cards on wide screens (768 px and up); the table layout of design 11.1 for desktop comes later. | [ASSUMPTION] tech lead 2026-11-08 | P2 |
 
