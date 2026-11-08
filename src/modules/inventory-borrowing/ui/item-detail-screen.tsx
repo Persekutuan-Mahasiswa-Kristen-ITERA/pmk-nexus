@@ -34,6 +34,7 @@ export function ItemDetailScreen({
   availability,
   today,
   managerActions = null,
+  notice = null,
 }: {
   item: ItemDetail;
   capabilities: InventoryCapabilities;
@@ -50,6 +51,8 @@ export function ItemDetailScreen({
    * Null until Kelola Barang ships; the page passes nothing for anyone else.
    */
   managerActions?: ReactNode;
+  /** One-time success text after a manager saved (design 7.5), shown under the title. */
+  notice?: string | null;
 }) {
   const canAsk = item.isActive && item.stock.good > 0 && capabilities.canSubmitRequest;
   const activeUnits = item.units.filter((u) => u.status === "active");
@@ -66,6 +69,12 @@ export function ItemDetailScreen({
           </div>
           {subtitle ? <p className="text-body-sm text-ink-meta tabular-nums">{subtitle}</p> : null}
         </div>
+
+        {notice ? (
+          <AlertMessage role="status" tone="success">
+            {notice}
+          </AlertMessage>
+        ) : null}
 
         {capabilities.hasActivePeriod ? null : (
           <AlertMessage role="status" tone="info">

@@ -7,9 +7,10 @@ import { AlertMessage, type AlertIcon } from "@/components/ui/alert-message";
 import { Spinner } from "@/components/ui/nx-button";
 import { cn } from "@/lib/utils";
 import {
+  MEMBER_EXPORT_TOO_LARGE_TEXT,
   MEMBER_LIST_PARAMS,
   memberExportFormatSchema,
-  type MemberDataError,
+  type MemberExportError,
   type MemberExportFormat,
   type MemberListFilters,
 } from "../types";
@@ -206,11 +207,17 @@ function fileNameFrom(response: Response, format: MemberExportFormat): string {
   return match?.[1] ?? `data-anggota.${format}`;
 }
 
-async function errorCode(response: Response): Promise<MemberDataError["code"]> {
+async function errorCode(response: Response): Promise<MemberExportError["code"]> {
   try {
     const body = (await response.json()) as { error?: { code?: unknown } };
     const code = body.error?.code;
-    if (code === "unauthenticated" || code === "forbidden" || code === "invalid_input" || code === "unavailable") {
+    if (
+      code === "unauthenticated" ||
+      code === "forbidden" ||
+      code === "invalid_input" ||
+      code === "unavailable" ||
+      code === "export_too_large"
+    ) {
       return code;
     }
   } catch {
@@ -219,8 +226,11 @@ async function errorCode(response: Response): Promise<MemberDataError["code"]> {
   return response.status === 401 ? "unauthenticated" : response.status === 403 ? "forbidden" : "unavailable";
 }
 
-function errorNotice(code: Exclude<MemberDataError["code"], "unauthenticated">): Notice {
+function errorNotice(code: Exclude<MemberExportError["code"], "unauthenticated">): Notice {
   switch (code) {
+    case "export_too_large":
+      // The answer reached the API row limit, so the file could be cut: narrow the filter (HTTP 422).
+      return { kind: "error", icon: "warning", text: MEMBER_EXPORT_TOO_LARGE_TEXT };
     case "forbidden":
       return { kind: "error", icon: "warning", text: COPY.accessChanged };
     case "invalid_input":

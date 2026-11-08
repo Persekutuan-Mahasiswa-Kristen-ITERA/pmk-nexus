@@ -40,6 +40,9 @@ export function CatalogFilters({
   searchError,
   dateError,
   exportSlot,
+  basePath = INVENTORY_PATH,
+  extra = {},
+  showDates = true,
 }: {
   values: CatalogUrlState;
   categories: ListEntry[];
@@ -51,7 +54,13 @@ export function CatalogFilters({
   dateError: string | null;
   /** "Ekspor" (only with inventory.export), placed on the Filter row. */
   exportSlot?: ReactNode;
+  /** Kelola Barang uses the same filters on its own address, keeping its status filter in `extra`. */
+  basePath?: string;
+  extra?: Record<string, string>;
+  /** "Tersedia pada tanggal" is a member question; the manager list leaves it out. */
+  showDates?: boolean;
 }) {
+  const href = (state: Partial<CatalogUrlState>) => catalogHref(state, basePath, extra);
   const { navigate } = useListNavigation();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -90,7 +99,7 @@ export function CatalogFilters({
     timer.current = null;
     const state = { ...applied, ...next, page: 1 };
     setSentSearch(state.search.trim());
-    navigate(catalogHref(state), { replace });
+    navigate(href(state), { replace });
   }
 
   function onSearchChange(value: string) {
@@ -148,13 +157,13 @@ export function CatalogFilters({
   const categoryName = entryName(categories, values.categoryId);
   const locationName = entryName(locations, values.locationId);
   const tags: { key: string; label: string; href: string }[] = [];
-  if (values.categoryId) tags.push({ key: "c", label: `Kategori: ${categoryName}`, href: catalogHref({ ...applied, categoryId: null }) });
-  if (values.locationId) tags.push({ key: "l", label: `Lokasi: ${locationName}`, href: catalogHref({ ...applied, locationId: null }) });
+  if (values.categoryId) tags.push({ key: "c", label: `Kategori: ${categoryName}`, href: href({ ...applied, categoryId: null }) });
+  if (values.locationId) tags.push({ key: "l", label: `Lokasi: ${locationName}`, href: href({ ...applied, locationId: null }) });
   if (values.condition) {
-    tags.push({ key: "k", label: `Kondisi: ${CONDITION_LABEL[values.condition]}`, href: catalogHref({ ...applied, condition: null }) });
+    tags.push({ key: "k", label: `Kondisi: ${CONDITION_LABEL[values.condition]}`, href: href({ ...applied, condition: null }) });
   }
   if (values.from && values.to) {
-    tags.push({ key: "d", label: formatRangeShort(values.from, values.to, today), href: catalogHref({ ...applied, from: null, to: null }) });
+    tags.push({ key: "d", label: formatRangeShort(values.from, values.to, today), href: href({ ...applied, from: null, to: null }) });
   }
 
   const shownDateError = localDateError ?? (dateError ? { field: "to" as const, text: dateError } : null);
@@ -162,12 +171,15 @@ export function CatalogFilters({
   return (
     <form
       method="get"
-      action={INVENTORY_PATH}
+      action={basePath}
       role="search"
       aria-label="Cari dan saring barang"
       onSubmit={onSubmit}
       className="flex flex-col gap-3"
     >
+      {Object.entries(extra).map(([name, value]) => (
+        <input key={name} type="hidden" name={name} value={value} />
+      ))}
       <div className="relative">
         <label htmlFor="catalog-search" className="sr-only">
           {COPY.catalogSearchLabel}
@@ -239,7 +251,7 @@ export function CatalogFilters({
             Filter Barang
           </h2>
           <a
-            href={INVENTORY_PATH}
+            href={href({})}
             onClick={onReset}
             className="-my-2 -mr-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-2 text-label-lg text-walnut underline underline-offset-2 hover:bg-ivory"
           >
@@ -268,28 +280,34 @@ export function CatalogFilters({
             <option value="">Semua lokasi</option>
             {entryOptions(locations, values.locationId)}
           </SelectField>
-          <DateField
-            id="catalog-from"
-            label="Dari"
-            name={INVENTORY_PARAMS.from}
-            min={today}
-            value={from}
-            onChange={(event) => onDateChange(event.target.value, to)}
-            error={shownDateError?.field === "from" ? shownDateError.text : undefined}
-          />
-          <DateField
-            id="catalog-to"
-            label="Sampai"
-            name={INVENTORY_PARAMS.to}
-            min={from || today}
-            value={to}
-            onChange={(event) => onDateChange(from, event.target.value)}
-            error={shownDateError?.field === "to" ? shownDateError.text : undefined}
-          />
+          {showDates ? (
+            <>
+              <DateField
+                id="catalog-from"
+                label="Dari"
+                name={INVENTORY_PARAMS.from}
+                min={today}
+                value={from}
+                onChange={(event) => onDateChange(event.target.value, to)}
+                error={shownDateError?.field === "from" ? shownDateError.text : undefined}
+              />
+              <DateField
+                id="catalog-to"
+                label="Sampai"
+                name={INVENTORY_PARAMS.to}
+                min={from || today}
+                value={to}
+                onChange={(event) => onDateChange(from, event.target.value)}
+                error={shownDateError?.field === "to" ? shownDateError.text : undefined}
+              />
+            </>
+          ) : null}
         </div>
-        <p className="-mt-2 text-body-sm text-ink-body">
-          Tersedia pada tanggal (boleh kosong). {COPY.inclusiveHint}
-        </p>
+        {showDates ? (
+          <p className="-mt-2 text-body-sm text-ink-body">
+            Tersedia pada tanggal (boleh kosong). {COPY.inclusiveHint}
+          </p>
+        ) : null}
 
         <ChoiceTags
           legend="Kondisi"

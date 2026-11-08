@@ -6,6 +6,7 @@ import { Timeline, type TimelineEntry } from "@/components/ui/timeline";
 import {
   CONDITION_LABEL,
   formatInventoryCopy,
+  INVENTORY_ERROR_COPY,
   rangeDays,
   TIMELINE_EVENT_LABEL,
   type EvidencePhotoLink,
@@ -17,16 +18,20 @@ import {
 } from "../types";
 import { CancelRequest } from "./cancel-request";
 import { RequestChips } from "./chips";
-import { COPY, sentOutsideText } from "./copy";
+import { COPY, pendingOverlapText, returnedPartialText, sentOutsideText, STAFF_COPY } from "./copy";
 import { EvidencePhotos } from "./evidence-photos";
 import { formatCount, formatDate, formatDateTime, formatRange } from "./format";
 import { NarrowPage } from "./inventory-header";
+import { ReviewPanel } from "./review-panel";
 import { requestFormHref, type RequestNotice } from "./routes";
+import { StaffActions } from "./staff-actions";
 import { BackLink, SectionCard } from "./states";
 
 /**
- * Detail Pengajuan (design screen 7, 10.2-10.4; P14), requester view. Status, the head's decision,
- * the timeline, and "Batalkan pengajuan" while the database allows it (actions.canCancel).
+ * Detail Pengajuan (design screens 7 and 8, 10.2-10.4, 11.2-11.4; P14). The requester sees status,
+ * decision, timeline and "Batalkan pengajuan". Heads also get the review panel; Operations the
+ * handover, return and correction buttons. Every button follows the database's `actions` for this
+ * viewer (absent, never greyed); the Server Actions and the database decide again.
  */
 export function RequestDetailScreen({
   detail,
@@ -34,20 +39,21 @@ export function RequestDetailScreen({
   notice,
   back,
   loadPhotos,
-  staffPanel = null,
+  today,
 }: {
   detail: RequestDetail;
   capabilities: InventoryCapabilities;
   notice: RequestNotice | null;
   back: { href: string; label: string };
   loadPhotos: (requestId: string) => Promise<InventoryResult<EvidencePhotoLink[]>>;
-  /**
-   * Part B slot: the head's review panel (approve, reject, extend) and the Operations actions
-   * (hand over, take back, correct). Rendered only by part B, by key and by detail.actions.
-   */
-  staffPanel?: ReactNode;
+  /** Jakarta date, for the "not before the start date" hint of the handover (A-IB8). */
+  today: string;
 }) {
   const statusLine = statusText(detail);
+  const overlap = detail.status === "submitted" ? (detail.pendingOverlapCount ?? 0) : 0;
+  const ownWhileHead = detail.isOwn && capabilities.canApprove && detail.status === "submitted";
+  const tooEarly = capabilities.canHandle && detail.status === "approved" && !detail.actions.canHandOver && detail.startDate > today;
+  const canDecide = detail.status === "submitted" && (detail.actions.canApprove || detail.actions.canReject);
   const canAskAgain =
     detail.isOwn && capabilities.canSubmitRequest && (detail.status === "rejected" || detail.status === "cancelled");
 
@@ -60,6 +66,23 @@ export function RequestDetailScreen({
       </div>
 
       {notice ? <SuccessNotice notice={notice} detail={detail} /> : null}
+
+      {overlap > 0 ? (
+        <AlertMessage role="status" tone="warning">
+          {pendingOverlapText(overlap)}
+        </AlertMessage>
+      ) : null}
+      {ownWhileHead ? (
+        <AlertMessage role="status" tone="info">
+          {INVENTORY_ERROR_COPY.self_approval_blocked}
+          {detail.otherApproverCount === 0 ? ` ${STAFF_COPY.ownRequestOneHead}` : null}
+        </AlertMessage>
+      ) : null}
+      {tooEarly ? (
+        <AlertMessage role="status" tone="info">
+          {formatInventoryCopy(INVENTORY_ERROR_COPY.too_early ?? "", { tanggal: formatDate(detail.startDate) })}
+        </AlertMessage>
+      ) : null}
 
       {detail.isOverdue ? (
         <AlertMessage role="status" tone="warning">
@@ -130,11 +153,13 @@ export function RequestDetailScreen({
         </SectionCard>
       ) : null}
 
-      {staffPanel}
+      {canDecide ? <ReviewPanel detail={detail} /> : null}
 
       <SectionCard title="Riwayat" id="request-timeline">
         <Timeline label={`Riwayat pengajuan ${detail.reference}`} entries={timelineEntries(detail.timeline)} />
       </SectionCard>
+
+      <StaffActions detail={detail} />
 
       {detail.actions.canCancel ? (
         <CancelRequest
@@ -155,17 +180,40 @@ export function RequestDetailScreen({
 }
 
 function SuccessNotice({ notice, detail }: { notice: RequestNotice; detail: RequestDetail }) {
-  const text =
-    notice === "cancelled"
-      ? COPY.cancelled
-      : notice === "sent_outside" && detail.outsideOrgName
-        ? sentOutsideText(detail.outsideOrgName)
-        : COPY.sent;
+  const text = noticeText(notice, detail);
   return (
     <AlertMessage role="status" tone="success">
       {text}
     </AlertMessage>
   );
+}
+
+/** One-time success text after a save (design 9.4, 10.5, 11.5, 12.3, 13.5). */
+function noticeText(notice: RequestNotice, detail: RequestDetail): string {
+  switch (notice) {
+    case "cancelled":
+      return COPY.cancelled;
+    case "sent_outside":
+      return detail.outsideOrgName ? sentOutsideText(detail.outsideOrgName) : COPY.sent;
+    case "sent":
+      return COPY.sent;
+    case "approved":
+      return STAFF_COPY.approved;
+    case "rejected":
+      return STAFF_COPY.rejected;
+    case "extended":
+      return STAFF_COPY.extended;
+    case "handed_over":
+      return STAFF_COPY.handedOver;
+    case "returned_all":
+      return STAFF_COPY.returnedAll;
+    case "returned_partial":
+      return returnedPartialText(detail.qtyOutstanding);
+    case "returned_issue":
+      return STAFF_COPY.returnedIssue;
+    case "corrected":
+      return STAFF_COPY.corrected;
+  }
 }
 
 /** The extra line per status (design 10.3). Derived states have their own alert above. */

@@ -6,6 +6,8 @@ import { INVENTORY_ERROR_COPY, inventoryCapabilities, jakartaToday } from "@/mod
 import { CatalogScreen, type CatalogResult } from "@/modules/inventory-borrowing/ui/catalog-screen";
 import { firstFailure, pageFailure } from "@/modules/inventory-borrowing/ui/page-errors";
 import { catalogHref, readCatalogParams, type SearchParams } from "@/modules/inventory-borrowing/ui/routes";
+import { ManagerEmptyAction } from "@/modules/inventory-borrowing/ui/manage-screen";
+import { queueCountsFor } from "./queue-count";
 import { inventoryPageTitle } from "./titles";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -37,7 +39,7 @@ export default async function KatalogPage({ searchParams }: { searchParams: Prom
     else range = { from: values.from, to: values.to };
   }
 
-  const [list, categories, locations] = await Promise.all([
+  const [list, categories, locations, counts] = await Promise.all([
     listCatalog({
       filters: {
         search: values.search,
@@ -52,6 +54,7 @@ export default async function KatalogPage({ searchParams }: { searchParams: Prom
     }),
     listEntries({ kind: "category" }),
     listEntries({ kind: "location" }),
+    queueCountsFor(capabilities),
   ]);
 
   const next = catalogHref(values);
@@ -85,6 +88,8 @@ export default async function KatalogPage({ searchParams }: { searchParams: Prom
       periodLabel={state.member.activePeriodLabel}
       today={today}
       dateError={dateError}
+      queueActionCount={counts?.actionNeeded ?? null}
+      managerEmptyAction={capabilities.canManageInventory ? <ManagerEmptyAction /> : null}
     />
   );
 }

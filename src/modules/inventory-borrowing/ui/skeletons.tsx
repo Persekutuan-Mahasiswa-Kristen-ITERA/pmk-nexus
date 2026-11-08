@@ -57,11 +57,11 @@ export function CatalogSkeleton() {
   );
 }
 
-export function RequestListSkeleton() {
+export function RequestListSkeleton({ text = "Memuat pengajuan..." }: { text?: string }) {
   return (
     <ListColumn>
       <HeaderBars />
-      <Caption text="Memuat pengajuan..." />
+      <Caption text={text} />
       <div aria-hidden="true" className="flex flex-col gap-3">
         {[0, 1, 2].map((i) => (
           <div key={i} className="flex flex-col gap-2 rounded-xl border border-surface-line bg-surface p-4 shadow-elevation-1">

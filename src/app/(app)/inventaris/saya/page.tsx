@@ -6,6 +6,7 @@ import { inventoryCapabilities } from "@/modules/inventory-borrowing/types";
 import { MyRequestsScreen } from "@/modules/inventory-borrowing/ui/my-requests-screen";
 import { pageFailure } from "@/modules/inventory-borrowing/ui/page-errors";
 import { myRequestsHref, readMyRequestsParams, type SearchParams } from "@/modules/inventory-borrowing/ui/routes";
+import { queueCountsFor } from "../queue-count";
 import { inventoryPageTitle } from "../titles";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -26,7 +27,7 @@ export default async function MyRequestsPage({ searchParams }: { searchParams: P
   if (!capabilities.canViewCatalog || !capabilities.canViewOwnRequests) return <ForbiddenScreen noActivePeriod={noActivePeriod} />;
 
   const { filter, page } = readMyRequestsParams(await searchParams);
-  const list = await listMyRequests({ filter, page });
+  const [list, counts] = await Promise.all([listMyRequests({ filter, page }), queueCountsFor(capabilities)]);
 
   if (!list.ok) {
     const failure = pageFailure(list.error, myRequestsHref(filter, page));
@@ -39,6 +40,7 @@ export default async function MyRequestsPage({ searchParams }: { searchParams: P
       filter={list.ok ? list.data.filter : filter}
       capabilities={capabilities}
       periodLabel={state.member.activePeriodLabel}
+      queueActionCount={counts?.actionNeeded ?? null}
     />
   );
 }

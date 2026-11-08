@@ -16,13 +16,18 @@ import {
   catalogHref,
   catalogParams,
   INVENTORY_PARAMS,
+  itemEditHref,
   itemHref,
   readCatalogParams,
+  readItemNotice,
   readId,
   type SearchParams,
 } from "@/modules/inventory-borrowing/ui/routes";
 import { NotFoundCard, UnavailableNotice } from "@/modules/inventory-borrowing/ui/states";
 import { ListNavigationProvider } from "@/components/list/list-navigation";
+import { buttonClass } from "@/components/ui/nx-button";
+import Link from "next/link";
+import { itemNoticeText } from "@/modules/inventory-borrowing/ui/copy";
 import { inventoryPageTitle } from "../../titles";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -111,6 +116,14 @@ export default async function ItemPage({ params, searchParams }: PageProps) {
       to={to}
       availability={availability}
       today={today}
+      notice={capabilities.canManageInventory ? itemNoticeText(readItemNotice(query)) : null}
+      managerActions={
+        capabilities.canManageInventory ? (
+          <Link href={itemEditHref(itemId)} className={buttonClass("outline")}>
+            Ubah barang
+          </Link>
+        ) : null
+      }
     />
   );
 }

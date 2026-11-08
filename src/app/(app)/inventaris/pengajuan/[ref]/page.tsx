@@ -3,11 +3,18 @@ import { getAccessState } from "@/lib/auth/session";
 import { ForbiddenScreen } from "@/components/access/forbidden-screen";
 import { ListNavigationProvider } from "@/components/list/list-navigation";
 import { getRequestDetailByReference } from "@/modules/inventory-borrowing/server/borrowing";
-import { INVENTORY_ERROR_COPY_VARIANTS, inventoryCapabilities } from "@/modules/inventory-borrowing/types";
+import { INVENTORY_ERROR_COPY_VARIANTS, inventoryCapabilities, jakartaToday } from "@/modules/inventory-borrowing/types";
 import { NarrowPage } from "@/modules/inventory-borrowing/ui/inventory-header";
 import { pageFailure } from "@/modules/inventory-borrowing/ui/page-errors";
 import { RequestDetailScreen } from "@/modules/inventory-borrowing/ui/request-detail-screen";
-import { INVENTORY_PATH, MY_REQUESTS_PATH, readRequestNotice, requestHref, type SearchParams } from "@/modules/inventory-borrowing/ui/routes";
+import {
+  INVENTORY_PATH,
+  MY_REQUESTS_PATH,
+  QUEUE_PATH,
+  readRequestNotice,
+  requestHref,
+  type SearchParams,
+} from "@/modules/inventory-borrowing/ui/routes";
 import { NotFoundCard, UnavailableNotice } from "@/modules/inventory-borrowing/ui/states";
 import { loadEvidencePhotos } from "../../actions";
 import { inventoryPageTitle } from "../../titles";
@@ -57,11 +64,13 @@ export default async function RequestDetailPage({ params, searchParams }: PagePr
     );
   }
 
-  // Own requests go back to Peminjaman Saya. Others' requests are reachable only with view_all, whose
-  // list (Antrean) is part B; until then they return to the catalog.
+  // Own requests go back to Peminjaman Saya; others' requests are reachable only with view_all, from
+  // Antrean. (The catalog is a last resort, should a key change between the two reads.)
   const back = detail.data.isOwn
     ? { href: MY_REQUESTS_PATH, label: "Peminjaman Saya" }
-    : { href: INVENTORY_PATH, label: "Katalog" };
+    : capabilities.canViewAllRequests
+      ? { href: QUEUE_PATH, label: "Antrean" }
+      : { href: INVENTORY_PATH, label: "Katalog" };
 
   return (
     <RequestDetailScreen
@@ -70,6 +79,7 @@ export default async function RequestDetailPage({ params, searchParams }: PagePr
       notice={readRequestNotice(query)}
       back={back}
       loadPhotos={loadEvidencePhotos}
+      today={jakartaToday()}
     />
   );
 }

@@ -31,11 +31,13 @@ export function MyRequestsScreen({
   filter,
   capabilities,
   periodLabel,
+  queueActionCount = null,
 }: {
   result: { kind: "ok"; page: MyRequestsPage } | { kind: "unavailable" };
   filter: MyRequestsFilter;
   capabilities: InventoryCapabilities;
   periodLabel: string | null;
+  queueActionCount?: number | null;
 }) {
   const total = result.kind === "ok" ? result.page.total : null;
   const countBox =
@@ -48,7 +50,7 @@ export function MyRequestsScreen({
   return (
     <ListNavigationProvider>
       <ListColumn>
-        <InventoryHeader capabilities={capabilities} periodLabel={periodLabel} current="mine" countBox={countBox} />
+        <InventoryHeader capabilities={capabilities} periodLabel={periodLabel} current="mine" countBox={countBox} queueActionCount={queueActionCount} />
 
         {capabilities.canSubmitRequest ? (
           <Link href={requestFormHref()} className={buttonClass("primary")}>

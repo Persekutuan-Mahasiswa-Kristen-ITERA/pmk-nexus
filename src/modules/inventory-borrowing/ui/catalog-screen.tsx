@@ -42,6 +42,7 @@ export function CatalogScreen({
   today,
   dateError,
   managerEmptyAction = null,
+  queueActionCount = null,
 }: {
   result: CatalogResult;
   values: CatalogUrlState;
@@ -54,6 +55,8 @@ export function CatalogScreen({
    * Until Kelola Barang ships it stays null and everyone reads the member line.
    */
   managerEmptyAction?: ReactNode;
+  /** "Antrean (n)" in the module control; null when unknown or not shown. */
+  queueActionCount?: number | null;
 }) {
   const total = result.kind === "ok" ? result.list.total : null;
 
@@ -64,6 +67,7 @@ export function CatalogScreen({
           capabilities={capabilities}
           periodLabel={periodLabel}
           current="catalog"
+          queueActionCount={queueActionCount}
           countBox={total !== null ? { label: "Hasil", value: formatCount(total), unit: "barang" } : null}
         />
 

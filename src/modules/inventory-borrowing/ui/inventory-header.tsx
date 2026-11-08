@@ -3,20 +3,19 @@ import { AlertMessage } from "@/components/ui/alert-message";
 import { ModuleNav, type ModuleNavItem } from "@/components/ui/module-nav";
 import type { InventoryCapabilities } from "../types";
 import { COPY } from "./copy";
-import { INVENTORY_PATH, MY_REQUESTS_PATH } from "./routes";
+import { INVENTORY_PATH, MANAGE_PATH, MY_REQUESTS_PATH, QUEUE_PATH } from "./routes";
 
 export type InventorySection = "catalog" | "mine" | "queue" | "manage";
 
 /**
- * Sections that exist as pages. Antrean and Kelola Barang are part B: until their pages ship they stay
- * out of the control even for people who hold the key (R-24: no link to a page that does not exist).
- * Part B flips these to true.
+ * Sections that exist as pages (R-24: no link to a page that does not exist). All four are built;
+ * the switch stays so a section can be taken out again without touching the control.
  */
 const SECTION_BUILT: Record<InventorySection, boolean> = {
   catalog: true,
   mine: true,
-  queue: false,
-  manage: false,
+  queue: true,
+  manage: true,
 };
 
 /**
@@ -33,14 +32,14 @@ export function inventorySections(capabilities: InventoryCapabilities, queueActi
     const count = queueActionCount && queueActionCount > 0 ? queueActionCount : null;
     items.push({
       key: "queue",
-      href: `${INVENTORY_PATH}/antrean`,
+      href: QUEUE_PATH,
       label: "Antrean",
       count,
       accessibleLabel: count ? `Antrean, ${count} perlu tindakan` : undefined,
     });
   }
   if (SECTION_BUILT.manage && capabilities.canManageInventory) {
-    items.push({ key: "manage", href: `${INVENTORY_PATH}/kelola`, label: "Kelola Barang" });
+    items.push({ key: "manage", href: MANAGE_PATH, label: "Kelola Barang" });
   }
   return items;
 }

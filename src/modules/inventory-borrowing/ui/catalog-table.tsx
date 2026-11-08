@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { StatusChip } from "@/components/ui/status-chip";
 import { cn } from "@/lib/utils";
-import type { CatalogRow } from "../types";
+import { UNIT_STATUS_LABEL, type CatalogRow } from "../types";
 import { UnitChip } from "./chips";
 import { COPY } from "./copy";
 import { formatCount } from "./format";
@@ -127,6 +127,12 @@ function CatalogTableRow({
         >
           {row.name}
         </Link>
+        {row.isActive ? null : (
+          // Only managers ever get archived rows (Kelola Barang, filter Nonaktif or Semua).
+          <span className="mb-1 inline-flex">
+            <StatusChip tone="ivory">{UNIT_STATUS_LABEL.archived}</StatusChip>
+          </span>
+        )}
         <p className="text-body-sm break-words text-ink-meta md:hidden">{[lead, category, location].filter(Boolean).join(" · ")}</p>
         <OtherConditions row={row} className="mt-1.5 md:hidden" />
         {row.mode === "tracked" && unitCount > 0 ? (

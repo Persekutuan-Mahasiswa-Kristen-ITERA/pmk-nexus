@@ -21,11 +21,14 @@ export function CancelRequest({
   reference,
   version,
   reasonRequired,
+  variant = "outline",
 }: {
   requestId: string;
   reference: string;
   version: number;
   reasonRequired: boolean;
+  /** The handover screen offers it as a text button under its message (design 12.3). */
+  variant?: "outline" | "text";
 }) {
   const router = useRouter();
   const reasonRef = useRef<HTMLTextAreaElement>(null);
@@ -79,7 +82,11 @@ export function CancelRequest({
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={buttonClass("outline")}>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={variant === "text" ? buttonClass("text", "-ml-2 self-start") : buttonClass("outline")}
+      >
         Batalkan pengajuan
       </button>
       <Sheet
