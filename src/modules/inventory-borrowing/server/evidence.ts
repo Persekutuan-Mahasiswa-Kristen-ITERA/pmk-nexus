@@ -52,7 +52,9 @@ export async function handleEvidenceUpload(request: Request, readAccessState: ()
   const gate = await requireInventory("canHandle", state);
   if (!gate.ok) return inventoryErrorResponse(gate.error);
 
-  const type = (request.headers.get("content-type") ?? "").toLowerCase();
+  // Keep the raw header for parsing: the multipart boundary is case-sensitive (WebKit sends mixed case).
+  const rawType = request.headers.get("content-type") ?? "";
+  const type = rawType.toLowerCase();
   if (!type.startsWith("multipart/form-data")) return inventoryErrorResponse({ code: "invalid_input", field: "request" });
 
   // Over the cap = a file above the bucket limit (the browser resizes first): photo_too_large.
@@ -61,7 +63,7 @@ export async function handleEvidenceUpload(request: Request, readAccessState: ()
 
   let form: FormData;
   try {
-    form = await new Response(body, { headers: { "content-type": type } }).formData();
+    form = await new Response(body, { headers: { "content-type": rawType } }).formData();
   } catch {
     return inventoryErrorResponse({ code: "invalid_input", field: "request" });
   }

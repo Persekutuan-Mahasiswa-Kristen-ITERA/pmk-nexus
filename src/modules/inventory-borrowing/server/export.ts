@@ -92,7 +92,9 @@ const REQUEST_ERROR = { ok: false as const, error: { code: "invalid_input" as co
  * Strict on purpose: an export must match the screen, so a bad value is refused, never replaced.
  */
 async function readExportBody(request: Request, filterFields: readonly string[]): Promise<{ ok: true; body: unknown } | typeof REQUEST_ERROR> {
-  const type = (request.headers.get("content-type") ?? "").toLowerCase();
+  // Keep the raw header for parsing: the multipart boundary is case-sensitive (WebKit sends mixed case).
+  const rawType = request.headers.get("content-type") ?? "";
+  const type = rawType.toLowerCase();
   const isJson = type.startsWith("application/json");
   const isForm = type.startsWith("application/x-www-form-urlencoded") || type.startsWith("multipart/form-data");
   if (!isJson && !isForm) return REQUEST_ERROR;
@@ -110,7 +112,7 @@ async function readExportBody(request: Request, filterFields: readonly string[])
 
   let form: FormData;
   try {
-    form = await new Response(bytes, { headers: { "content-type": type } }).formData();
+    form = await new Response(bytes, { headers: { "content-type": rawType } }).formData();
   } catch {
     return REQUEST_ERROR;
   }

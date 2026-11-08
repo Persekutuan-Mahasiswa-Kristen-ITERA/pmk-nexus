@@ -104,7 +104,9 @@ async function readCappedBody(request: Request, max: number): Promise<Uint8Array
 
 export async function parseMemberExportBody(request: Request): Promise<ParsedBody> {
   const requestError = { ok: false as const, error: { code: "invalid_input" as const, field: "request" as const } };
-  const type = (request.headers.get("content-type") ?? "").toLowerCase();
+  // Keep the raw header for parsing: the multipart boundary is case-sensitive (WebKit sends mixed case).
+  const rawType = request.headers.get("content-type") ?? "";
+  const type = rawType.toLowerCase();
   if (!type.startsWith("application/x-www-form-urlencoded") && !type.startsWith("multipart/form-data")) {
     return requestError;
   }
@@ -117,7 +119,7 @@ export async function parseMemberExportBody(request: Request): Promise<ParsedBod
 
   let form: FormData;
   try {
-    form = await new Response(bytes, { headers: { "content-type": type } }).formData();
+    form = await new Response(bytes, { headers: { "content-type": rawType } }).formData();
   } catch {
     return requestError;
   }
