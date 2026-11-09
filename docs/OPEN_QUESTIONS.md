@@ -1,6 +1,6 @@
 # PMK-NEXUS Open Questions and Active Assumptions
 
-Last updated: 2026-11-09 (Letters amendment "Ambil nomor" and design approval, D-025: A6 answered, A-LT5 superseded, A-LT20 amended, A-LT23 and A-LT24 added). Earlier: 2026-11-09 (Letters answers L1-L11, D-025: A4, B23, C10 answered, L7 note on A2/C6, section I statuses updated). Earlier: 2026-11-09 (A2/C6 provisional, D-024; C14-C15 added; section F-bis added: Inventory and Borrowing application-layer security review; A-IB43 upload cap narrowed to 24 hours). Earlier: 2026-11-07 (Inventory and Borrowing answers IB1-IB15, D-022; A7, B4, C7 answered; section H added). Earlier: 2026-11-06 (Member Data answers, D-019; section G added).
+Last updated: 2026-11-09 (sections J Meeting Minutes and K Finance added: draft specs, owner questions N1-N7 and K1-K6, assumptions A-MN1-A-MN18 and A-FN1-A-FN21). Earlier: 2026-11-09 (Letters amendment "Ambil nomor" and design approval, D-025: A6 answered, A-LT5 superseded, A-LT20 amended, A-LT23 and A-LT24 added). Earlier: 2026-11-09 (Letters answers L1-L11, D-025: A4, B23, C10 answered, L7 note on A2/C6, section I statuses updated). Earlier: 2026-11-09 (A2/C6 provisional, D-024; C14-C15 added; section F-bis added: Inventory and Borrowing application-layer security review; A-IB43 upload cap narrowed to 24 hours). Earlier: 2026-11-07 (Inventory and Borrowing answers IB1-IB15, D-022; A7, B4, C7 answered; section H added). Earlier: 2026-11-06 (Member Data answers, D-019; section G added).
 Tags: **[UNKNOWN]** no answer yet, **[ASSUMPTION]** working guess that needs confirmation, **[ANSWERED]** resolved (move the decision to `DECISIONS.md`).
 Priority: **P0** blocks the next step, **P1** blocks a specific module, **P2** can wait.
 
@@ -249,4 +249,76 @@ Spec: `docs/modules/letters.md` (approved 2026-11-09, D-025). The owner accepted
 | A-LT22 | Progja can later link to a letter by id without a rewrite (letters carry `period_id`). | [ASSUMPTION] | P2 |
 | A-LT23 | New 2026-11-09 (G1): Terbitkan needs a taken number (no issue without "Ambil nomor"), so Proses is no longer optional. | [ASSUMPTION] | P1 |
 | A-LT24 | New 2026-11-09 (G1): while the linked request is Diproses, the register letter cannot be voided or get files through the register; the processor uses Terbitkan or rejects the request (which voids the row with the rejection note). | [ASSUMPTION] | P1 |
+
+## J. Meeting Minutes questions and assumptions (2026-11-09)
+
+Spec: `docs/modules/meeting-minutes.md` (DRAFT for the owner's approval package, D-026). N1-N7 are owner questions with a recommendation in the spec, section 10; they stay [UNKNOWN] until answered. Related older items: B17, B19, B22 (reading rights), C8 (meeting status), C9 (attachments). Those rows are not edited here; N1, N4 and N6 would answer them.
+
+| # | Question | Status | Priority | Recommendation |
+|---|---|---|---|---|
+| N1 | Who may read minutes? (a) BPH all + department/bureau secretary own unit; (b) (a) + Kepala Departemen/Biro own unit (new default rule D37); (c) (a) + every member of the unit | [UNKNOWN] | P1 | (b). Extends B17 and B19 |
+| N2 | Which units may a minute belong to? (a) BPH, departments, bureau; (b) any unit incl. divisions; (c) (a) + root "Seluruh organisasi" | [UNKNOWN] | P1 | (c) |
+| N3 | Correction and draft: (a) no draft, edit in the active period with history, void with reason; (b) draft then locked "Terbitkan"; (c) no edits | [UNKNOWN] | P1 | (a) |
+| N4 | Meeting schedule or status needed? (a) no; (b) planned meetings that become minutes | [UNKNOWN] | P2 | (a). Answers C8 |
+| N5 | Dashboard "Recent Meetings" card: (a) counts + latest date, no titles; (b) latest 3 titles; (c) no card | [UNKNOWN] | P2 | (a) |
+| N6 | Attachments: (a) PDF/JPG/PNG 5 MB, up to 3 (as Letters); (b) PDF/DOCX 10 MB (Stitch); (c) none | [UNKNOWN] | P1 | (a). Answers C9 |
+| N7 | Storage plan for the shared 1 GB (about 560 MB a year across letters, minutes, finance proofs, borrowing evidence; all guesses): (a) keep limits, resize, check at each handover, warn at 70%; (b) tighter limits; (c) paid plan now | [UNKNOWN] | P1 | (a) |
+
+| # | Assumption | Status | Priority |
+|---|---|---|---|
+| A-MN1 | No attendee list, meeting time, place or action tracking in Phase 1. | [ASSUMPTION] | P2 |
+| A-MN2 | "Keputusan & Tindak Lanjut" is optional (Stitch marks it required); the other text fields and the unit are required. | [ASSUMPTION] | P2 |
+| A-MN3 | Limits: title 150, topic 200, content 20000, decision 5000, reasons 500 characters; plain text only. | [ASSUMPTION] | P2 |
+| A-MN4 | The unit is fixed after saving, one unit per minute; a wrong unit is fixed by void and re-record. | [ASSUMPTION] | P1 |
+| A-MN5 | Meeting date not in the future, any past date; the period is the active period at saving. | [ASSUMPTION] | P2 |
+| A-MN6 | Search on title, topic, content; page size 20; newest meeting date first; filters Unit, Periode, Status (default Aktif). | [ASSUMPTION] | P2 |
+| A-MN7 | Every reader sees the edit history with before and after; withdrawn files only to managers. | [ASSUMPTION] | P2 |
+| A-MN8 | List export = all rows matching filters and scope; a single-minute export from the detail uses the same endpoint. | [ASSUMPTION] | P2 |
+| A-MN9 | File handling reuses Letters: signed links 300 s, 10 unattached uploads per member per 24 h, withdrawn files not counted toward 3, magic-byte check, browser resize to about 2000 px. | [ASSUMPTION] | P2 |
+| A-MN10 | A minute has no number or reference code. | [ASSUMPTION] | P2 |
+| A-MN11 | Leaving the form with unsaved typing asks first; no draft stored in the browser. | [ASSUMPTION] | P2 |
+| A-MN12 | The unit name is read live from PI-CORE, inactive units included. | [ASSUMPTION] | P2 |
+| A-MN13 | Header tiles and the Dashboard card count Aktif minutes of the active period inside the user's scope. | [ASSUMPTION] | P2 |
+| A-MN14 | Drawer label and H1 "Notulensi Rapat". | [ASSUMPTION] | P2 |
+| A-MN15 | Void cannot be restored; there is no separate "archive" action (the key text word means void). | [ASSUMPTION] | P1 |
+| A-MN16 | Export header shows period filter and export date in WIB; no file links in exports. | [ASSUMPTION] | P2 |
+| A-MN17 | A minute of a deactivated unit stays readable by scope. | [ASSUMPTION] | P2 |
+| A-MN18 | Divisions are not offered as owning unit; their meetings are recorded under the department (follows N2 (a) or (c)). | [ASSUMPTION] | P1 |
+
+## K. Finance questions and assumptions (2026-11-09)
+
+Spec: `docs/modules/finance.md` (DRAFT for the owner's approval package, D-026). K1-K6 are owner questions with a recommendation in the spec, section 10; they stay [UNKNOWN] until answered. Related older items: B3 (Treasurer), B6 (BPH views Finance), B18 (admin sees no Finance), B37 (position-derived admins can self-assign as Treasurer). Those rows are not edited here; K1 would answer B6. Finance needs the strictest security review and the owner's approval before anything touches the hosted project.
+
+| # | Question | Status | Priority | Recommendation |
+|---|---|---|---|---|
+| K1 | Who may see and export Finance? (a) all six BPH read and export, the two Treasurers also record and void; (b) only Ketua Umum, Sekretaris Jenderal and the Treasurers; (c) BPH see totals only (needs a new key) | [UNKNOWN] | P1 | (a). Answers B6 |
+| K2 | Corrections: (a) never edit; void in the active period and re-record, old-period errors by a new linked entry; (b) (a) + edit Keterangan/Catatan with history; (c) edit in the active period with history | [UNKNOWN] | P1 | (a). Needs the key text of `finance.manage` and AC-14, AC-15, AC-58 reworded |
+| K3 | Carry-over: (a) a "Saldo awal" entry per period typed after counting, previous closing shown as a hint; (b) automatic; (c) none, each period starts at Rp 0 | [UNKNOWN] | P1 | (a) |
+| K4 | One cash pool or several accounts? (a) one pool; (b) an account field with a balance per account | [UNKNOWN] | P1 | (a) |
+| K5 | Is proof required? (a) optional with a visible "Tanpa bukti" mark and filter; (b) required for every Pengeluaran; (c) required above an amount the owner names | [UNKNOWN] | P1 | (a) |
+| K6 | Second-person check? (a) none, history shows who; (b) the other Treasurer marks "Terverifikasi" | [UNKNOWN] | P2 | (a) |
+
+| # | Assumption | Status | Priority |
+|---|---|---|---|
+| A-FN1 | Amounts: whole rupiah, integer, always positive, 1 to 9.999.999.999; type gives the sign; no decimals, zero or negative input. | [ASSUMPTION] | P1 |
+| A-FN2 | Entry number `KAS-0001`: one sequence, assigned by the database, never reused. | [ASSUMPTION] | P2 |
+| A-FN3 | Totals exclude voided and opening entries; Total Saldo = Saldo awal + Pemasukan - Pengeluaran per period, computed by the database; tiles show the whole period, not the filter. | [ASSUMPTION] | P1 |
+| A-FN4 | Date not in the future, any past date; period = active period at saving; a date outside the period's dates gives a soft warning only. | [ASSUMPTION] | P2 |
+| A-FN5 | Limits: Keterangan 200, Catatan 500, reasons 500 characters; plain text. | [ASSUMPTION] | P2 |
+| A-FN6 | Proof: PDF/JPG/PNG, 5 MB, up to 3, magic-byte check, browser resize to about 2000 px, signed links 300 s, 10 unattached uploads per member per 24 h, withdrawn files kept; proof can be added only while the entry is Aktif and in the active period. | [ASSUMPTION] | P1 |
+| A-FN7 | Void: any `finance.manage` holder, Aktif entries of the active period, reason required, not restorable; "Catat ulang" copies a voided entry into the form. | [ASSUMPTION] | P1 |
+| A-FN8 | An old-period entry is corrected by a new entry in the active period with an optional link "Koreksi atas {nomor}"; old totals are not restated. | [ASSUMPTION] | P1 |
+| A-FN9 | A negative Total Saldo is allowed and shown with a hint. | [ASSUMPTION] | P2 |
+| A-FN10 | Each form submit carries an idempotency token; a double tap or retry saves one entry. | [ASSUMPTION] | P1 |
+| A-FN11 | No categories and no per-row sub-line in Phase 1. | [ASSUMPTION] | P2 |
+| A-FN12 | Drawer label and H1 stay "Finance" (context section 6, Stitch); "Keuangan" is the alternative. | [ASSUMPTION] | P2 |
+| A-FN13 | Search on Keterangan, Catatan, number; page size 20; newest date first; filters Jenis, date range, show Dibatalkan (off), "Tanpa bukti". | [ASSUMPTION] | P2 |
+| A-FN14 | Export header summarises the whole period; text cells starting with `=`, `+`, `-`, `@` are neutralised; no links; row cap 1000 with `total_count` (D-022). | [ASSUMPTION] | P1 |
+| A-FN15 | No key and no screen to read the Finance export log yet; database only until the log screen exists (A-MD14). | [ASSUMPTION] | P1 |
+| A-FN16 | Viewing Finance is not logged; exports are. | [ASSUMPTION] | P2 |
+| A-FN17 | Both Treasurers have equal rights; either may void the other's entry; no approval, so access control L6 is not involved. | [ASSUMPTION] | P2 |
+| A-FN18 | History before go-live stays outside NEXUS; at go-live the Treasurer records Saldo awal and may add real-dated entries of the active period. | [ASSUMPTION] | P1 |
+| A-FN19 | The System Admin without a Finance rule sees nothing (B18); a self-benefit rule is logged (D-012). | [ASSUMPTION] | P2 |
+| A-FN20 | Dashboard card: Saldo, Pemasukan, Pengeluaran of the active period for `finance.view` holders; no percentages. | [ASSUMPTION] | P2 |
+| A-FN21 | At most one Aktif Saldo awal per period; a wrong one is voided and re-recorded. | [ASSUMPTION] | P1 |
 
