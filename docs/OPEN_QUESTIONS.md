@@ -1,6 +1,6 @@
 # PMK-NEXUS Open Questions and Active Assumptions
 
-Last updated: 2026-11-07 (Inventory and Borrowing answers IB1-IB15, D-022; A7, B4, C7 answered; section H added). Earlier: 2026-11-06 (Member Data answers, D-019; section G added).
+Last updated: 2026-11-09 (section F-bis added: Inventory and Borrowing application-layer security review; A-IB43 upload cap narrowed to 24 hours). Earlier: 2026-11-07 (Inventory and Borrowing answers IB1-IB15, D-022; A7, B4, C7 answered; section H added). Earlier: 2026-11-06 (Member Data answers, D-019; section G added).
 Tags: **[UNKNOWN]** no answer yet, **[ASSUMPTION]** working guess that needs confirmation, **[ANSWERED]** resolved (move the decision to `DECISIONS.md`).
 Priority: **P0** blocks the next step, **P1** blocks a specific module, **P2** can wait.
 
@@ -126,6 +126,17 @@ No CRITICAL or HIGH findings. M1 (data-based guard on the local seed and pgTAP f
 | F6 | The export route's same-origin check trusts `x-forwarded-host` first. Safe on Vercel (the platform overwrites it); a self-hosted proxy that appends the header would make the first value client-controlled. | [ASSUMPTION] Vercel hosting | P2 | Re-check if NEXUS ever leaves Vercel. App-layer review LOW 4, 2026-11-07. |
 | F7 | Local e2e tests briefly change the LOCAL stack (switch period, temporary members, revoke/grant on Member Data functions, a temporary CHECK on the log table) and revert it in global setup/teardown. The local export log keeps growing (append-only). | [ASSUMPTION] accepted for local only | P2 | e2e refuses to run unless the API is the local NEXUS stack. Never point tests at hosted. |
 
+## F-bis. Security follow-ups from the Inventory and Borrowing application review (2026-11-08)
+
+No CRITICAL finding. The HIGH (multipart boundary) and both MEDIUMs (export cut detection, upload cap) are fixed; see `DECISIONS.md` D-022 "Security review of the application layer". Open items:
+
+| # | Item | Status | Priority | Notes |
+|---|---|---|---|---|
+| F8 | Review LOW 4: the photo check reads only the first bytes (magic bytes), so a file that starts like a JPEG but also holds other content passes. EXIF data (including GPS position) is removed only by the browser resize, not on the server. | [ASSUMPTION] accepted for Phase 1 | P2 | Photos sit in a private bucket and are shown only as `<img>` through short signed links, never served from the app's own address. Fix if needed: re-encode the image on the server. |
+| F9 | Review LOW 5: every catalog or borrowing export writes a log row, also one refused as too large, and there is no per-member limit. | [ASSUMPTION] accepted for Phase 1, same as F5 | P2 | Only export-right holders can do it and every row names them. Planned fix if needed: a per-member limit inside the export functions. |
+| F10 | Review LOW 6: a refused extension makes up to 12 extra availability calls to find the conflicting date (A-IB53). | [ASSUMPTION] accepted | P2 | Bounded, and only heads (`borrowing.approve`) can extend. |
+| F11 | Unused evidence uploads (picked, then the return was never saved) are never deleted. Since migration 20261109100000 they no longer block a request after 24 hours, but they stay in Storage. | [PLANNED] before go-live | P2 | Each at most 1.5 MiB; free tier has 1 GB. Options: a monthly cleanup query in the ops guide, or a scheduled job. Must never touch files attached to a return (those are evidence, L5). |
+
 ## G. Member Data assumptions (2026-11-06)
 
 Spec: `docs/modules/member-data.md` section 8 (M1-M8 are answered, D-019). These are the details the owner did not decide; they stay [ASSUMPTION] until confirmed.
@@ -192,7 +203,7 @@ Spec: `docs/modules/inventory-borrowing.md` section 10 (IB1-IB15 are answered, D
 | A-IB40 | Chip colours: Dikembalikan green (same tone as Disetujui); grey chip from Stitch 04 added to the theme (design P9). | [ASSUMPTION] | P2 |
 | A-IB41 | A damaged return line records ONE resulting condition (Perlu servis or Rusak); split the line if pieces differ (design P10, G11). | [ASSUMPTION] | P2 |
 | A-IB42 | Rejected or cancelled requests offer a prefilled "Ajukan lagi"; detail screen titled "Detail Pengajuan"; a confirm step before saving a return (design P11, P14, P15). | [ASSUMPTION] | P2 |
-| A-IB43 | Field length limits and maximum stock numbers. Limits: item name 120 characters, description 1000, purpose and notes 500, category 60, location 80, outside-party names 120; stock 0-9999 per condition; at most 50 lines per request, 200 units per line; 1-3 photos per damaged or lost outcome, 1.5 MiB each (JPG, PNG, WebP); at most 10 unattached uploads per request folder. Copy may use these numbers instead of {max} (G4). | **[DECIDED]** 2026-11-07: owner (D-022 follow-up) | - |
+| A-IB43 | Field length limits and maximum stock numbers. Limits: item name 120 characters, description 1000, purpose and notes 500, category 60, location 80, outside-party names 120; stock 0-9999 per condition; at most 50 lines per request, 200 units per line; 1-3 photos per damaged or lost outcome, 1.5 MiB each (JPG, PNG, WebP); at most 10 unattached uploads per request folder **created in the last 24 hours** (narrowed 2026-11-09, migration 20261109100000, so abandoned uploads stop blocking a request; see F11). Copy may use these numbers instead of {max} (G4). | **[DECIDED]** 2026-11-07: owner (D-022 follow-up); 24-hour window approved 2026-11-08 | - |
 | A-IB44 | Category and location lists sort A-Z; no reorder screen (G6). | [ASSUMPTION] | P2 |
 | A-IB45 | A written-off (Hilang) unit can be restored ("Ditemukan kembali") through a reasoned correction (G7). **Amended 2026-11-07:** by a holder of `inventory.manage`, and only when the item is active (was: `borrowing.handle`). | **[AMENDED]** 2026-11-07: tech lead decision after the security review (listed in the D-022 follow-up) | - |
 | A-IB46 | The requester's timeline shows the names of the approver and the Ops members who recorded handover and return (G8). | [ASSUMPTION] | P2 |

@@ -13,20 +13,21 @@ How NEXUS relates to PI-CORE:
 
 Project language: code, database names, and documentation are in English. The app screens are in Indonesian.
 
-## 1. Status (2026-11-07)
+## 1. Status (2026-11-09)
 
 Built:
 
 - Login with the PI-CORE account, session handling, and the screens for "no access", "change your password in PI-CORE first", and errors.
-- The access engine in the database: permission catalog (21 keys), 33 default access rules, change log, and functions that answer "may this person do X". Spec: `docs/modules/access-control.md`.
+- The access engine in the database: permission catalog (22 keys), 35 active default access rules (plus 1 retired), change log, and functions that answer "may this person do X". Spec: `docs/modules/access-control.md`.
 - **Member Data (Data Anggota)**, on the local stack: a read-only member directory taken live from PI-CORE (search by name, filters for unit and status, pagination), export to Excel, CSV and PDF for BPH only, and an append-only export log. Page `/data-anggota`. Spec: `docs/modules/member-data.md`; test plan: `docs/qa/member-data.md`.
+- **Inventory and Borrowing (Inventaris & Peminjaman)**, on the local stack: one catalog of everything PMK owns (tracked per unit or counted), borrowing requests with approval by the Operations heads, handover and return by Operations, evidence photos for damaged or lost items in a private bucket, export to Excel, CSV and PDF with an export log. Pages under `/inventaris`. Spec: `docs/modules/inventory-borrowing.md`; test record: `docs/qa/inventory-borrowing.md`.
 - The side drawer navigation. It lists only modules that are built and that the person may open (D-021).
 - Automated tests: unit, end-to-end, and database tests (see section 5).
 - A local development stack with fake test accounts.
 
-Not built yet (Phase 1 modules): Dashboard (only a placeholder page exists; the "Members" card waits for it), Inventory and Borrowing, Letters, Meeting Minutes, Finance, the access-rules settings screen, and a screen to read the Member Data export log (for now it is read through the SQL editor). Program-of-work (progja) is planned for after Phase 1.
+Not built yet (Phase 1 modules): Dashboard (only a placeholder page exists; the "Members" and "Inventaris Status" cards wait for it), Letters, Meeting Minutes, Finance, the access-rules settings screen, and a screen to read the export logs of Member Data and Inventory (for now they are read through the SQL editor). Program-of-work (progja) is planned for after Phase 1.
 
-Not deployed: there is no Vercel project yet (section 6). Member Data has been built and tested locally only; its migration is not applied to the hosted project yet.
+Not deployed: there is no Vercel project yet (section 6). Member Data and Inventory and Borrowing have been built and tested locally only; their migrations are not applied to the hosted project yet.
 
 ## 2. Tech stack
 
@@ -54,7 +55,8 @@ Dependencies are kept few on purpose, so the next officers can maintain the proj
 | `src/lib/export/` | File writers for CSV, Excel and PDF, plus the PDF fonts (`fonts/`, OFL licence). Shared by all future modules. |
 | `src/modules/` | One folder per module, each self-contained. See `src/modules/README.md`. |
 | `src/modules/member-data/` | Member Data: contract (`types.ts`), server logic (`server/`), screens (`ui/`). See its `README.md`. |
-| `supabase/migrations/` | SQL for schema `nexus` (4 files). |
+| `src/modules/inventory-borrowing/` | Inventory and Borrowing: same layout as Member Data. See its `README.md`. |
+| `supabase/migrations/` | SQL for schema `nexus` (9 files). |
 | `supabase/local/` | Fake test accounts, local stack only. |
 | `supabase/tests/` | Database tests (pgTAP). |
 | `scripts/dev-db.sh` | Starts and manages the local database stack. |
@@ -116,8 +118,9 @@ Open go-live items (details in `docs/OPEN_QUESTIONS.md`):
 | F2 | Every protected page and Server Action must check access itself; add a test that fails when one does not. A static test exists for the current files; keep it green as modules are added. | `OPEN_QUESTIONS.md` F2 |
 | B37 | Known risk: PI-CORE position holders who are PI-CORE admins can create assignments for themselves in PI-CORE, and NEXUS then grants the matching access. Not fixable inside NEXUS. The PI-CORE maintainer should be told. | `OPEN_QUESTIONS.md` B37 |
 | B39 | "Automatically expose new tables" is on in the hosted project. Decide with the PI-CORE maintainer whether to turn it off. | `OPEN_QUESTIONS.md` B39 |
-| Manual checks | Real-phone, password-manager, screen-reader, and PI-CORE round-trip checks on a hosted preview. Not done. Member Data adds real-phone download checks and a screen-reader pass. | `docs/qa/auth-login.md` section 6, `docs/qa/member-data.md` section 6 |
-| F5 | The Member Data export has no rate limit. Accepted by the owner for Phase 1; revisit before go-live. | `OPEN_QUESTIONS.md` F5 |
+| Manual checks | Real-phone, password-manager, screen-reader, and PI-CORE round-trip checks on a hosted preview. Not done. Member Data adds real-phone download checks and a screen-reader pass; Inventory adds camera-photo uploads on real phones and large-list exports. | `docs/qa/auth-login.md` section 6, `docs/qa/member-data.md` section 6, `docs/qa/inventory-borrowing.md` section 8 |
+| F5 / F9 | The Member Data and Inventory exports have no rate limit. Accepted for Phase 1; revisit before go-live. | `OPEN_QUESTIONS.md` F5, F9 |
+| F11 | Unused evidence photo uploads are never deleted. Write a cleanup step (it must never touch photos attached to a return). | `OPEN_QUESTIONS.md` F11 |
 | Logo | The real PMK logo file is still missing. | `OPEN_QUESTIONS.md` C12 |
 
 Backup and restore: the only documented step is the `pg_dump` command in `supabase/README.md` (section 2 step 2, and section 6 for the access-rule audit copy). A full backup and restore guide, including Storage files, is to be written. Backups contain PI-CORE personal data (names, emails, phone numbers). Store them encrypted, outside the repo and outside shared folders.
@@ -158,12 +161,12 @@ Guides still to be written: "how to start a new period" for NEXUS, Vercel deploy
 | Goals, access rules, features, UI summary | `docs/PMK-NEXUS-context.md` |
 | Decisions (what, why, when) | `docs/DECISIONS.md` |
 | Unanswered questions and active assumptions | `docs/OPEN_QUESTIONS.md` |
-| Module specs | `docs/modules/` (`access-control.md`, `auth-login.md`, `member-data.md`) |
+| Module specs | `docs/modules/` (`access-control.md`, `auth-login.md`, `member-data.md`, `inventory-borrowing.md`) |
 | PI-CORE tables as they really are | `docs/picore/schema-report.md` |
 | Design (Stitch snapshot, login design) | `docs/design/` |
 | Local setup | `docs/ops/local-setup.md` |
 | Database, migrations, hosted apply procedure | `supabase/README.md`, `supabase/tests/README.md` |
-| Test plan and results | `docs/qa/auth-login.md`, `docs/qa/member-data.md` |
+| Test plan and results | `docs/qa/auth-login.md`, `docs/qa/member-data.md`, `docs/qa/inventory-borrowing.md` |
 | Agent working rules | `CLAUDE.md` |
 
 Rule of thumb: if a decision changes, update `docs/DECISIONS.md` first, then the document that describes it.

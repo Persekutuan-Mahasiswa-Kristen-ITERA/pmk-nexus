@@ -2,7 +2,7 @@
 
 > Reference document for the PMK-NEXUS project. Written in English for the AI assistant. The project owner communicates in Indonesian.
 > Status legend: **[DECIDED]** = final decision, **[ASSUMPTION]** = needs confirmation, **[PLANNED]** = future work, **[UNKNOWN]** = information still missing.
-> Last updated: 2026-11-07 (Inventory and Borrowing decided, D-022: sections 4, 5.1, 5.6, 6, 8 updated). Earlier: 2026-11-07 (section 5.2 marked implemented on the local stack). Earlier: 2026-11-06 (sections 2, 4, 5.1, 5.2 and 8 updated for Member Data, D-019; section 6 replaced by the Stitch design, D-014; section 8 item 12 answered). Earlier: 2026-11-05 (sections 2, 3, 4, 7, 8, verified PI-CORE schema).
+> Last updated: 2026-11-09 (section 5.6 marked implemented on the local stack). Earlier: 2026-11-07 (Inventory and Borrowing decided, D-022: sections 4, 5.1, 5.6, 6, 8 updated). Earlier: 2026-11-07 (section 5.2 marked implemented on the local stack). Earlier: 2026-11-06 (sections 2, 4, 5.1, 5.2 and 8 updated for Member Data, D-019; section 6 replaced by the Stitch design, D-014; section 8 item 12 answered). Earlier: 2026-11-05 (sections 2, 3, 4, 7, 8, verified PI-CORE schema).
 
 ---
 
@@ -181,8 +181,8 @@ Form fields: Date, Meeting Title, Topic, Minutes Content, Decision, and "Upload 
 - **Gap:** the letter request flow is not in the Stitch or Figma design. Propose a screen if needed.
 - **[ASSUMPTION]** Numbering format: `PMK/NEX/<type>/<year>/<sequence>`. `SM` appears to mean Surat Masuk. Confirm the code for outgoing letters (e.g. `SK`) and the exact rules.
 
-### 5.6 Inventory and Item Management (Manajemen & Inventaris Barang) [DECIDED 2026-11-07, D-022]
-Full spec: `docs/modules/inventory-borrowing.md` (status: ready for owner approval; nothing built yet). The sample values in the old Figma/Stitch design (Drum, "OK 1", H-3, "Koordinator Logistik") are filler.
+### 5.6 Inventory and Item Management (Manajemen & Inventaris Barang) [DECIDED 2026-11-07, D-022] [IMPLEMENTED 2026-11-08, local stack only]
+Full spec: `docs/modules/inventory-borrowing.md`; test record: `docs/qa/inventory-borrowing.md`. Built, tested and security-reviewed locally (pages under `/inventaris`); the five inventory migrations are not yet applied to the hosted project. Not built: the Dashboard "Inventaris Status" card (Dashboard module), a screen to read the export log, and a cleanup of unused evidence uploads (`OPEN_QUESTIONS.md` F11). The sample values in the old Figma/Stitch design (Drum, "OK 1", H-3, "Koordinator Logistik") are filler.
 - **Catalog (Inventaris Barang):** one catalog for everything PMK owns, managed by Operations. Each item is either individually tracked (one row per unit with its own code and condition) or quantity-based (a count per condition); chosen when the item is created. Every unit (or counted item) gets an automatic code `INV-0001`. Categories and locations are lists Ops maintains. Conditions are fixed: Baik, Perlu servis, Rusak; only Baik is lendable. No catalog photos. Archive instead of delete. Every member can read the catalog and check availability by date.
 - **Borrowing (Peminjaman):** any active member requests (items, quantities, date range, purpose). Status path: Diajukan, Disetujui or Ditolak, Dipinjam, Dikembalikan (also Dibatalkan). Only the Operations heads approve, reject and extend (not their own, L6). Any Operations member records handover and return and may record a request for an outside party (organisation and contact person name only). Stock is held from approval. No lead time, no maximum duration. The requester may cancel until pick-up (reason after approval). A damaged or lost return needs a note and a photo (private storage, resized, never purged). "Terlambat" (overdue) is shown, not notified. In-app status only: no email or push.
 - Export (Excel, CSV, PDF) of the catalog and of borrowing; every export is logged.
