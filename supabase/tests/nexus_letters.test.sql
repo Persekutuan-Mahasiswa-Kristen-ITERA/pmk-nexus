@@ -153,6 +153,10 @@ create function nexus_test.ls(p_name text) returns text language sql stable secu
 as $$ select l.status from nexus.letters l where l.id = nexus_test.id(p_name) $$;
 create function nexus_test.num(p_name text) returns text language sql stable security definer set search_path = ''
 as $$ select l.number_text from nexus.letters l where l.id = nexus_test.id(p_name) $$;
+-- Version of the register letter linked to a request (0 when no number was taken yet).
+create function nexus_test.rlv(p_name text) returns int language sql stable security definer set search_path = ''
+as $$ select coalesce((select l.version from nexus.letters l join nexus.letter_requests r on r.letter_id = l.id
+                       where r.id = nexus_test.id(p_name)), 0) $$;
 create function nexus_test.req_letter(p_name text) returns uuid language sql stable security definer set search_path = ''
 as $$ select r.letter_id from nexus.letter_requests r where r.id = nexus_test.id(p_name) $$;
 create function nexus_test.counter(p_type text) returns int language sql stable security definer set search_path = ''
@@ -350,8 +354,17 @@ select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.
              and has_function_privilege('authenticated', p.oid, 'execute')), 0,
   'internal nexus._* helpers (incl. _lt_*) are not executable by clients');
 select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-           where n.nspname = 'nexus' and p.proname like 'letter\_%'), 26,
-  'module API has 26 letter_* functions');
+           where n.nspname = 'nexus' and p.proname like 'letter\_%'), 27,
+  'module API has 27 letter_* functions (26 + letter_my_request_caps, 2026-11-10)');
+select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = 'nexus' and p.proname in ('letter_request_issue', 'letter_request_queue')), 2,
+  'one version each of letter_request_issue and letter_request_queue (old shapes dropped)');
+select is(nexus_test.out_cols('nexus.letter_my_request_caps()'),
+          array['open_count', 'open_limit', 'today_count', 'daily_limit', 'has_active_period', 'can_submit'],
+  'design 3.4: the caps pre-check returns counts and limits only');
+select ok((select 'p_letter_version' = any (p.proargnames) from pg_proc p
+           where p.oid = 'nexus.letter_request_issue(uuid,integer,integer,text,text,date,jsonb,text)'::regprocedure),
+  'Terbitkan takes the register letter''s version (no silent overwrite of a register edit)');
 select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
            where n.nspname = 'nexus' and p.proname like 'letter\_%'
              and (not has_function_privilege('authenticated', p.oid, 'execute')
@@ -944,8 +957,8 @@ select ok((select processed_by_name = 'Test Persona 4' and note = 'Sedang disiap
            from nexus.letter_my_requests() where request_id = nexus_test.id('r1')),
   'G11: the requester sees who prepares it and the processor note');
 reset role; select nexus_test.login_as(4);
-select is(nexus_test.hint_of(format('select * from nexus.letter_request_issue(%L, %s, %L, %L, nexus_test.d(0), %L)',
-                                    nexus_test.id('r1'), nexus_test.rv('r1'), 'P', 'T', nexus_test.files(4, 1))),
+select is(nexus_test.hint_of(format('select * from nexus.letter_request_issue(%L, %s, %s, %L, %L, nexus_test.d(0), %L)',
+                                    nexus_test.id('r1'), nexus_test.rv('r1'), nexus_test.rlv('r1'), 'P', 'T', nexus_test.files(4, 1))),
   'number_not_taken', 'LT-13/A-LT23: Terbitkan without a taken number is refused (direct call)');
 select is((select count(*)::int from nexus.letter_request_queue('processing') where request_id = nexus_test.id('r1')), 1,
   'design 11.1: the request is in "Sedang diproses" (no number yet)');
@@ -1000,15 +1013,15 @@ select is((select count(*)::int from nexus.letters) + (select count(*)::int from
 
 -- Terbitkan (LT-13): files required, may correct Perihal / addressee / date, never the number.
 reset role; select nexus_test.login_as(4);
-select is(nexus_test.hint_of(format('select * from nexus.letter_request_issue(%L, %s, %L, %L, nexus_test.d(0), %L)', nexus_test.id('r1'), nexus_test.rv('r1'), 'P', 'T', '[]')),
+select is(nexus_test.hint_of(format('select * from nexus.letter_request_issue(%L, %s, %s, %L, %L, nexus_test.d(0), %L)', nexus_test.id('r1'), nexus_test.rv('r1'), nexus_test.rlv('r1'), 'P', 'T', '[]')),
   'file_required', 'LT-13: Terbitkan needs at least one final file');
-select is(nexus_test.hint_of(format('select * from nexus.letter_request_issue(%L, %s, %L, %L, nexus_test.d(0), %L)', nexus_test.id('r1'), nexus_test.rv('r1'), 'P', 'T', nexus_test.files(4, 4))),
+select is(nexus_test.hint_of(format('select * from nexus.letter_request_issue(%L, %s, %s, %L, %L, nexus_test.d(0), %L)', nexus_test.id('r1'), nexus_test.rv('r1'), nexus_test.rlv('r1'), 'P', 'T', nexus_test.files(4, 4))),
   'file_count', 'LT-13: ... at most 3');
-select is(nexus_test.hint_of(format('select * from nexus.letter_request_issue(%L, %s, %L, %L, nexus_test.d(1), %L)', nexus_test.id('r1'), nexus_test.rv('r1'), 'P', 'T', nexus_test.files(4, 1))),
+select is(nexus_test.hint_of(format('select * from nexus.letter_request_issue(%L, %s, %s, %L, %L, nexus_test.d(1), %L)', nexus_test.id('r1'), nexus_test.rv('r1'), nexus_test.rlv('r1'), 'P', 'T', nexus_test.files(4, 1))),
   'date_in_future', 'LT-21: the letter date cannot be in the future');
 select is(nexus_test.rs('r1') || ':' || nexus_test.counter('outgoing'), 'processing:4',
   'LT-13: a failed Terbitkan leaves the request Diproses with its number and uses no further number');
-select is((select status from nexus.letter_request_issue(nexus_test.id('r1'), nexus_test.rv('r1'), 'Surat rekomendasi lomba debat',
+select is((select status from nexus.letter_request_issue(nexus_test.id('r1'), nexus_test.rv('r1'), nexus_test.rlv('r1'), 'Surat rekomendasi lomba debat',
                                                           'Kemahasiswaan Uji', nexus_test.d(0), nexus_test.files(4, 1), 'Silakan diunduh')), 'issued',
   'LT-13: Terbitkan with the signed file sets Diterbitkan');
 select ok((select l.subject = 'Surat rekomendasi lomba debat' and l.number_text = 'PMK/NEX/SK/' || nexus_test.y() || '/004' and l.status = 'active'
@@ -1021,7 +1034,7 @@ select ok((select before_data = '{"subject": "Surat rekomendasi lomba"}'::jsonb 
 select ok((select decided_by = nexus_test.mid(4) and decided_at is not null from nexus.letter_requests where id = nexus_test.id('r1')),
   'who issued is recorded');
 select is(nexus_test.counter('outgoing'), 4, 'Terbitkan used no new number');
-select is(nexus_test.hint_of(format('select * from nexus.letter_request_issue(%L, %s, %L, %L, nexus_test.d(0), %L)', nexus_test.id('r1'), nexus_test.rv('r1'), 'P', 'T', nexus_test.files(4, 1))),
+select is(nexus_test.hint_of(format('select * from nexus.letter_request_issue(%L, %s, %s, %L, %L, nexus_test.d(0), %L)', nexus_test.id('r1'), nexus_test.rv('r1'), nexus_test.rlv('r1'), 'P', 'T', nexus_test.files(4, 1))),
   'state_changed', 'LT-15: a second Terbitkan is refused');
 select is((select count(*)::int from nexus.letter_request_queue('closed') where request_id = nexus_test.id('r1')), 1, 'the request is in "Selesai"');
 
@@ -1077,10 +1090,10 @@ select is((select status from nexus.letter_request_process(nexus_test.id('r2'), 
 select is((select number_text from nexus.letter_request_take_number(nexus_test.id('r2'), nexus_test.rv('r2'))), 'PMK/NEX/SK/' || nexus_test.y() || '/005',
   'LT-11: ... takes the number');
 reset role; select nexus_test.login_as(4);
-select is(nexus_test.hint_of(format('select * from nexus.letter_request_issue(%L, %s, %L, %L, nexus_test.d(0), %L)', nexus_test.id('r2'), nexus_test.rv('r2'), 'P', 'T', nexus_test.files(4, 1))),
+select is(nexus_test.hint_of(format('select * from nexus.letter_request_issue(%L, %s, %s, %L, %L, nexus_test.d(0), %L)', nexus_test.id('r2'), nexus_test.rv('r2'), nexus_test.rlv('r2'), 'P', 'T', nexus_test.files(4, 1))),
   'self_processing_blocked', 'LT-11: the requester cannot issue their own request either');
 reset role; select nexus_test.login_as(19);
-select is((select status from nexus.letter_request_issue(nexus_test.id('r2'), nexus_test.rv('r2'), 'Surat tugas sekjen', 'Rektorat Uji', nexus_test.d(0), nexus_test.files(19, 1))),
+select is((select status from nexus.letter_request_issue(nexus_test.id('r2'), nexus_test.rv('r2'), nexus_test.rlv('r2'), 'Surat tugas sekjen', 'Rektorat Uji', nexus_test.d(0), nexus_test.files(19, 1))),
   'issued', 'LT-11: ... and issues it');
 select nexus_test.put('r2_letter', nexus_test.req_letter('r2'));
 select (select id from nexus.letter_files where letter_id = nexus_test.id('r2_letter'))::text as f_r2 \gset
@@ -1142,6 +1155,9 @@ select is(nexus_test.create_n('cap', 5), 5, 'LT-45: a member can have 5 open req
 select is(nexus_test.hint_of($$select * from nexus.letter_request_create('Perihal', 'Tujuan', 'Keperluan')$$), 'too_many_open_requests',
   'LT-45/L10: the 6th open request is refused');
 select is((select count(*)::int from nexus.letter_my_requests('open')), 5, 'the refusal created nothing');
+select is((select array[open_count, open_limit, today_count, daily_limit] from nexus.letter_my_request_caps()), array[5, 5, 5, 10],
+  'design 3.4: the form''s pre-check shows 5 of 5 open and 5 of 10 today');
+select ok((select has_active_period and not can_submit from nexus.letter_my_request_caps()), '... and that submitting is not possible now');
 reset role; select nexus_test.login_as(4);
 select is((select status from nexus.letter_request_process(nexus_test.id('cap1'), nexus_test.rv('cap1'))), 'processing', 'cap1 processed');
 reset role; select nexus_test.login_as(16);
@@ -1153,12 +1169,15 @@ select is(nexus_test.hint_of($$select * from nexus.letter_request_create('Periha
 select is(nexus_test.create_cancel(10 - 5), 5, 'create (and cancel) up to 10 requests today');
 select is(nexus_test.hint_of($$select * from nexus.letter_request_create('Perihal', 'Tujuan', 'Keperluan')$$), 'daily_request_limit',
   'LT-45/L10: the 11th request of the Jakarta day is refused');
+select ok((select today_count = 10 and open_count = 4 and not can_submit from nexus.letter_my_request_caps()),
+  'design 3.4: the pre-check shows the daily cap reached (10 of 10) with 4 open');
 reset role; select nexus_test.logout();
 select is((select count(*)::int from nexus.letter_requests where requester_member_id = nexus_test.mid(16)
            and nexus._jakarta_date(created_at) = nexus._lt_today()), 10, 'exactly 10 requests exist for that member today');
 select nexus_test.login_as(11);
 select is(nexus_test.hint_of($$select * from nexus.letter_request_create('Perihal', 'Tujuan', 'Keperluan')$$), 'no_error',
   'the caps are per member: another member is not affected');
+select ok((select can_submit and open_limit = 5 and daily_limit = 10 from nexus.letter_my_request_caps()), '... and their pre-check allows submitting');
 
 -- =============================================================================================
 -- 14. Dashboard counts, queue views and counts (L11, LT-16, LT-40, LT-49, LT-52, design 11, G9, P15)
@@ -1219,6 +1238,13 @@ select is((select count(*)::int from nexus.letter_request_queue('closed', p_sear
 select is((select count(*)::int from nexus.letter_request_queue('all', p_from => nexus_test.d(0), p_to => nexus_test.d(0))),
           (select count(*)::int from nexus.letter_request_queue('all', p_page_size => 50)) - 1,
   'design 11.1: the date range filters by the Jakarta submit date (the late request is older)');
+select ok((select number_voided and letter_status = 'voided' and number_text = 'PMK/NEX/SK/' || nexus_test.y() || '/004'
+           from nexus.letter_request_queue('closed') where request_id = nexus_test.id('r1')),
+  'queue: an issued request whose letter was voided shows "Nomor dibatalkan" (letter status and number)');
+select ok((select not number_voided and letter_status = 'voided' from nexus.letter_request_queue('closed') where request_id = nexus_test.id('r3')),
+  'queue: a rejected request is not "Nomor dibatalkan" (its void is the rejection)');
+select ok((select bool_and(letter_status is null or letter_status = 'active') from nexus.letter_request_queue('open_all_periods', p_page_size => 50)),
+  'queue: an open request''s letter is always Aktif (no void while Diproses)');
 select is(nexus_test.hint_of($$select * from nexus.letter_request_queue('everything')$$), 'invalid_view', 'unknown views are refused');
 select is(nexus_test.hint_of($$select * from nexus.letter_request_queue('all', p_from => nexus_test.d(0))$$), 'invalid_dates', 'both dates or none');
 select is(nexus_test.hint_of(format('select * from nexus.letter_request_queue(p_search => %L)', repeat('x', 121))), 'search_too_long', 'search max 120');
@@ -1568,7 +1594,7 @@ select is((select number_text from nexus.letter_request_take_number(nexus_test.i
 select ok((select l.period_id = nexus_test.period(3) and r.period_id = nexus_test.period(2)
            from nexus.letter_requests r join nexus.letters l on l.id = r.letter_id where r.id = nexus_test.id('rp_a')),
   'A-LT20: a number taken after the switch creates its letter in the ACTIVE period, linked to the old request');
-select is((select status from nexus.letter_request_issue(nexus_test.id('rp_b'), nexus_test.rv('rp_b'), 'Surat periode lama B', 'Rektorat Uji',
+select is((select status from nexus.letter_request_issue(nexus_test.id('rp_b'), nexus_test.rv('rp_b'), nexus_test.rlv('rp_b'), 'Surat periode lama B', 'Rektorat Uji',
                                                           nexus_test.d(0), nexus_test.files(6, 1))), 'issued',
   'LT-30/A-LT20: a letter whose number was taken before the switch still receives its final file at Terbitkan');
 select ok((select period_id = nexus_test.period(2) and (select count(*) from nexus.letter_files f where f.letter_id = l.id) = 1
@@ -1592,6 +1618,12 @@ select ok((select count(*) > 1 from nexus.letter_list('outgoing', p_period => 'a
 select ok((select period_label = '2091/2092' and row_no = 1 from nexus.letter_request_queue('open_all_periods') where request_id = (
              select r.id from nexus.letter_requests r where r.status in ('submitted', 'processing') order by r.created_at limit 1)),
   'A-LT21: the handover list shows open requests of every period, oldest period first');
+select ok((select count(*) = 1 and bool_and(q.period_total_count > 1 and q.period_total_count =
+                    (select count(*) from nexus.letter_requests r where r.period_id = q.period_id and r.status in ('submitted', 'processing')))
+           from nexus.letter_request_queue('open_all_periods', p_page_size => 1) q),
+  'design 11.3: the period group count covers the whole result, not only the page');
+select ok((select bool_and(q.total_count = q.period_total_count) from nexus.letter_request_queue('closed', p_search => 'izin kegiatan') q),
+  '... and follows the filters (one period, one row)');
 select is((select count(*)::int from nexus.letter_request_queue('all')), 0, 'design 11.1: "Semua" = the active period only (nothing yet)');
 select ok((select outgoing_count = 1 and period_label = '2092/2093' from nexus.letter_dashboard_counts()), 'L11: the card counts the new period');
 reset role; select nexus_test.login_as(11);
@@ -1613,6 +1645,7 @@ select is(nexus_test.hint_of(format('select * from nexus.letter_request_cancel(%
   'no transition without an active period');
 select ok((select count(*) > 0 from nexus.letter_my_requests()), 'LT-31/L9: own requests stay readable');
 select ok(not nexus.letter_file_can_upload(nexus_test.mid(11)::text || '/' || gen_random_uuid()::text || '.pdf'), 'no upload without an active period');
+select ok((select not has_active_period and not can_submit from nexus.letter_my_request_caps()), 'design 3.4: the pre-check says no active period');
 reset role; select nexus_test.login_as(6);
 select is(nexus_test.hint_of(format('select * from nexus.letter_request_process(%L, %s)', nexus_test.id('rp_new'), nexus_test.rv('rp_new'))), 'permission_required',
   'R7/E4: officers'' rights match nothing without an active period');
@@ -1632,6 +1665,7 @@ update public.members set is_active = false where id = nexus_test.mid(20);
 select nexus_test.login_as(20);
 select is(nexus_test.hint_of('select * from nexus.letter_my_requests()'), 'not_active_member', 'LT-32/L1: a deactivated member gets nothing');
 select is(nexus_test.hint_of(format('select nexus.letter_request_detail(%L)', nexus_test.id('rp_c'))), 'not_active_member', '... not even their own detail');
+select is(nexus_test.hint_of('select * from nexus.letter_my_request_caps()'), 'not_active_member', '... nor the caps pre-check');
 reset role; select nexus_test.login_as(6);
 select ok((select requester_name = 'Test Persona 20' and not requester_is_active from nexus.letter_request_queue('processing') where request_id = nexus_test.id('rp_c')),
   'LT-32/G12: the request keeps the requester''s name; the secretary sees "no longer active"');
@@ -1640,6 +1674,44 @@ select is((select status from nexus.letter_request_reject(nexus_test.id('rp_c'),
 select ok((select status = 'issued' from nexus.letter_requests where id = nexus_test.id('r1')), 'LT-32: issued requests stay as they are');
 reset role; select nexus_test.logout();
 update public.members set is_active = true where id = nexus_test.mid(20);
+
+-- =============================================================================================
+-- 20. Terbitkan never silently overwrites a register edit made while the request is Diproses (D4)
+--     (period 3 is active; P-SEKDEP (6) is the Sekretaris Jenderal there)
+-- =============================================================================================
+select nexus_test.login_as(11);
+select nexus_test.req('r6', 'Surat uji versi');
+reset role; select nexus_test.login_as(6);
+select is((select status from nexus.letter_request_process(nexus_test.id('r6'), nexus_test.rv('r6'))), 'processing', 'r6 processed');
+select ok((select number_text is not null from nexus.letter_request_take_number(nexus_test.id('r6'), nexus_test.rv('r6'))), 'r6 number taken');
+select nexus_test.put('r6_letter', nexus_test.req_letter('r6'));
+select ok((select (d -> 'letter' ->> 'subject') = 'Surat uji versi' and (d -> 'letter' ->> 'counterpart') = 'Rektorat Uji'
+                  and (d -> 'letter' ->> 'status') = 'active' and (d -> 'letter' ->> 'file_count')::int = 0
+                  and (d -> 'letter' ->> 'letter_date')::date = nexus_test.d(0)
+                  and (d -> 'letter' ->> 'version')::int = nexus_test.lv('r6_letter')
+                  and (d -> 'letter' ->> 'number_text') = nexus_test.num('r6_letter')
+           from nexus.letter_request_detail(nexus_test.id('r6')) d),
+  'the request detail returns the register row''s CURRENT values and version (Terbitkan prefills from them)');
+select nexus_test.rlv('r6') as r6_lv \gset
+select ok((select changed from nexus.letter_update(nexus_test.id('r6_letter'), nexus_test.lv('r6_letter'), 'Surat uji versi (diperbaiki)',
+                                                   'Rektorat Uji', nexus_test.d(0))),
+  'D4: the letter is corrected through the register while the request is Diproses');
+select is((nexus.letter_request_detail(nexus_test.id('r6')) -> 'letter' ->> 'subject'), 'Surat uji versi (diperbaiki)', '... and the detail shows the correction');
+select is(nexus_test.hint_of(format('select * from nexus.letter_request_issue(%L, %s, %s, %L, %L, nexus_test.d(0), %L)',
+                                    nexus_test.id('r6'), nexus_test.rv('r6'), :r6_lv, 'Surat uji versi', 'Rektorat Uji', nexus_test.files(6, 1))),
+  'state_changed', 'Terbitkan with the version loaded before the register edit is refused (no silent overwrite)');
+select is(nexus_test.detail_of(format('select * from nexus.letter_request_issue(%L, %s, %s, %L, %L, nexus_test.d(0), %L)',
+                                      nexus_test.id('r6'), nexus_test.rv('r6'), :r6_lv, 'Surat uji versi', 'Rektorat Uji', nexus_test.files(6, 1))),
+  'letter', '... (detail = letter, so the screen can say the register row changed)');
+select is(nexus_test.rs('r6') || ':' || nexus_test.ls('r6_letter'), 'processing:active', '... and nothing changed');
+select is((select status from nexus.letter_request_issue(nexus_test.id('r6'), nexus_test.rv('r6'), nexus_test.rlv('r6'),
+                                                          nexus.letter_request_detail(nexus_test.id('r6')) -> 'letter' ->> 'subject', 'Rektorat Uji',
+                                                          nexus_test.d(0), nexus_test.files(6, 1))), 'issued',
+  'Terbitkan with the current version (prefilled from the register row) succeeds');
+select is((select subject from nexus.letters where id = nexus_test.id('r6_letter')), 'Surat uji versi (diperbaiki)', '... and the register edit is kept');
+reset role; select nexus_test.login_as(11);
+select ok((select (d -> 'letter') = 'null'::jsonb and (d ->> 'number_text') is not null from nexus.letter_request_detail(nexus_test.id('r6')) d),
+  'the requester gets the number but not the register row''s internal values');
 
 select * from finish();
 rollback;

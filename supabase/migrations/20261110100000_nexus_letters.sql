@@ -1232,6 +1232,22 @@ begin
 end
 $$;
 
+-- Request caps (L10 b): ONE definition for the create function and the form's pre-check read, so they
+-- can never disagree.
+create or replace function nexus._lt_caps(out o_open_limit integer, out o_daily_limit integer)
+language sql immutable set search_path = ''
+as $$ select 5, 10 $$;
+
+-- The member's open (Diajukan or Diproses) requests and requests created on the current Jakarta day.
+create or replace function nexus._lt_request_counts(p_member uuid, out o_open integer, out o_today integer)
+language sql stable set search_path = ''
+as $$
+  select (count(*) filter (where r.status in ('submitted', 'processing')))::int,
+         (count(*) filter (where nexus._jakarta_date(r.created_at) = nexus._lt_today()))::int
+  from nexus.letter_requests r
+  where r.requester_member_id = p_member
+$$;
+
 -- =============================================================================================
 -- 6. Register reads (letters.view: BPH D06, included in letters.manage)
 -- =============================================================================================
@@ -1735,9 +1751,41 @@ begin
 end
 $$;
 
+-- 8.1b Caps pre-check for the request form (design 3.4: the cap alert above the form). Every active
+-- member, about themselves only. can_submit = an active period exists and both counts are under their
+-- limit; letter_request_create re-checks everything under its lock anyway.
+create or replace function nexus.letter_my_request_caps()
+returns table (
+  open_count integer, open_limit integer, today_count integer, daily_limit integer,
+  has_active_period boolean, can_submit boolean
+)
+language plpgsql stable security definer set search_path = ''
+as $$
+#variable_conflict use_column
+declare
+  v_me     uuid := nexus._lt_require_member();
+  v_caps   record;
+  v_counts record;
+  v_period boolean := nexus.active_period_id() is not null;
+begin
+  select * into v_caps from nexus._lt_caps();
+  select * into v_counts from nexus._lt_request_counts(v_me);
+  return query
+  select v_counts.o_open, v_caps.o_open_limit, v_counts.o_today, v_caps.o_daily_limit, v_period,
+         v_period and v_counts.o_open < v_caps.o_open_limit and v_counts.o_today < v_caps.o_daily_limit;
+end
+$$;
+
 -- 8.2 Queue (F6, design screen 8). letter_requests.view_all (BPH D08, included in process). Views: see
 -- _lt_queue_rows (default submitted = "Menunggu"). is_own marks the caller's own ("Pengajuanmu"); the
 -- buttons for them are absent (L6). requester_is_active feeds the G12 marker.
+-- period_total_count = rows of the WHOLE filtered result in that row's period (the handover group
+-- headers, design 11.3), not only the page. letter_status / number_voided: the linked register row
+-- (an OPEN request's letter is always Aktif: the register refuses a void while Diproses and Tolak closes
+-- the request in the same transaction, so "Nomor dibatalkan" can only show in "Selesai").
+-- The result columns changed after the first local apply (2026-11-10): drop the old shape so a re-run
+-- can recreate it (create or replace cannot change result columns). Nothing depends on it.
+drop function if exists nexus.letter_request_queue(text, text, date, date, integer, integer);
 create or replace function nexus.letter_request_queue(
   p_view      text    default 'submitted',
   p_search    text    default null,
@@ -1751,8 +1799,9 @@ returns table (
   requester_member_id uuid, requester_name text, requester_is_active boolean, is_own boolean,
   subject text, addressee text, on_behalf_of text, needed_by date, is_past_due boolean, days_past_due integer,
   attachment_count integer, number_text text, number_taken_at timestamptz, number_taken_by_name text,
+  letter_status text, number_voided boolean,
   processed_by_name text, created_at timestamptz, updated_at timestamptz,
-  total_count bigint, page integer, page_size integer
+  period_total_count bigint, total_count bigint, page integer, page_size integer
 )
 language plpgsql stable security definer set search_path = ''
 as $$
@@ -1765,14 +1814,16 @@ begin
   perform nexus._lt_check_page(p_page, p_page_size);
   return query
   with
-  q as (select * from nexus._lt_queue_rows(p_view, p_search, p_from, p_to)),
+  q as (select x.*, count(*) over (partition by x.period_id) as per_period
+        from nexus._lt_queue_rows(p_view, p_search, p_from, p_to) x),
   t as (select count(*) as n from q),
   pg as (select least(p_page, greatest(1, ceil(t.n::numeric / p_page_size)::integer)) as pno from t)
   select q.ordinal, q.request_id, q.status, q.version, q.period_id, q.period_label,
          q.requester_member_id, q.requester_name, q.requester_is_active, q.requester_member_id = v_me,
          q.subject, q.addressee, q.on_behalf_of, q.needed_by, q.is_past_due, q.days_past_due,
          q.attachment_count, q.number_text, q.number_taken_at, q.number_taken_by_name,
-         q.processed_by_name, q.created_at, q.updated_at, t.n, pg.pno, p_page_size
+         q.letter_status, q.status = 'issued' and q.letter_status = 'voided',
+         q.processed_by_name, q.created_at, q.updated_at, q.per_period, t.n, pg.pno, p_page_size
   from q cross join t cross join pg
   where q.ordinal > (pg.pno - 1)::bigint * p_page_size and q.ordinal <= pg.pno::bigint * p_page_size
   order by q.ordinal;
@@ -1878,6 +1929,14 @@ begin
     'note', v_row.note, 'note_by_name', v_row.note_by_name, 'note_at', v_row.note_at,
     'attachments', nexus._lt_files_json(null, v_req.id),
     'letter_files', case when v_req.letter_id is not null then nexus._lt_files_json(v_req.letter_id, null) else '[]'::jsonb end,
+    -- The register row's CURRENT values (it may have been edited through the register while Diproses,
+    -- D4): the Terbitkan form prefills from here and sends letter.version back as p_letter_version.
+    'letter', case when v_view_all and v_req.letter_id is not null then (
+                select jsonb_build_object(
+                         'letter_id', l.id, 'number_text', l.number_text, 'status', l.status, 'subject', l.subject,
+                         'counterpart', l.counterpart, 'letter_date', l.letter_date,
+                         'file_count', nexus._lt_visible_file_count(l.id), 'version', l.version, 'period_id', l.period_id)
+                from nexus.letters l where l.id = v_req.letter_id) end,
     'timeline', v_timeline,
     'other_processor_count', v_processors,
     'actions', jsonb_build_object(
@@ -1920,6 +1979,8 @@ declare
   v_behalf  text;
   v_files   jsonb;
   v_id      uuid;
+  v_caps    record;
+  v_counts  record;
 begin
   v_period := nexus._lt_require_active_period();
   v_subject := nexus._lt_required_text(p_subject, 200, 'subject', 'text_required');
@@ -1937,14 +1998,15 @@ begin
   v_files := nexus._lt_check_files(p_files, v_me, 0, 3);
 
   perform pg_advisory_xact_lock(hashtextextended('nexus.letter_request_create:' || v_me::text, 0));
-  if (select count(*) from nexus.letter_requests r
-      where r.requester_member_id = v_me and r.status in ('submitted', 'processing')) >= 5 then
-    raise exception 'You already have 5 letter requests in progress' using errcode = 'P0001',
-      hint = 'too_many_open_requests', detail = '5';
+  select * into v_caps from nexus._lt_caps();
+  select * into v_counts from nexus._lt_request_counts(v_me);
+  if v_counts.o_open >= v_caps.o_open_limit then
+    raise exception 'You already have % letter requests in progress', v_caps.o_open_limit using errcode = 'P0001',
+      hint = 'too_many_open_requests', detail = v_caps.o_open_limit::text;
   end if;
-  if (select count(*) from nexus.letter_requests r
-      where r.requester_member_id = v_me and nexus._jakarta_date(r.created_at) = nexus._lt_today()) >= 10 then
-    raise exception 'At most 10 letter requests per day' using errcode = 'P0001', hint = 'daily_request_limit', detail = '10';
+  if v_counts.o_today >= v_caps.o_daily_limit then
+    raise exception 'At most % letter requests per day', v_caps.o_daily_limit using errcode = 'P0001',
+      hint = 'daily_request_limit', detail = v_caps.o_daily_limit::text;
   end if;
 
   insert into nexus.letter_requests (requester_member_id, subject, addressee, purpose, on_behalf_of, needed_by, period_id)
@@ -2055,10 +2117,19 @@ $$;
 -- (history row with before/after), never the number. Also for a letter of an old period whose number
 -- was taken before a period switch (open item, A-LT20). Any failure leaves everything as it was: the
 -- request stays Diproses with its number.
+-- p_letter_version (required) = letter.version from letter_request_detail: if the register row was
+-- edited (D4) or got files since the page loaded, Terbitkan is refused with state_changed instead of
+-- silently overwriting that edit with older values. (Chosen over "change only fields that differ from
+-- the request": that would still overwrite a register edit whenever the processor also edits the same
+-- field, and it cannot tell an intended reset from a stale form.)
+-- The arguments changed after the first local apply (2026-11-10): drop the old signature so no
+-- ambiguous overload remains. Nothing depends on it.
+drop function if exists nexus.letter_request_issue(uuid, integer, text, text, date, jsonb, text);
 create or replace function nexus.letter_request_issue(
-  p_request_id  uuid,
-  p_version     integer,
-  p_subject     text,
+  p_request_id     uuid,
+  p_version        integer,
+  p_letter_version integer,
+  p_subject        text,
   p_addressee   text,
   p_letter_date date,
   p_files       jsonb,
@@ -2097,6 +2168,10 @@ begin
   select l.* into v_l from nexus.letters l where l.id = v_req.letter_id for update;
   if v_l.status <> 'active' then
     raise exception 'The letter of this request is no longer active; reload' using errcode = 'P0001', hint = 'state_changed';
+  end if;
+  if p_letter_version is null or p_letter_version <> v_l.version then
+    raise exception 'The register letter changed in the meantime; reload' using errcode = 'P0001',
+      hint = 'state_changed', detail = 'letter';
   end if;
   v_files := nexus._lt_check_files(p_files, v_me, 1, 3 - nexus._lt_visible_file_count(v_l.id));
 
@@ -2556,7 +2631,7 @@ declare
   v_api text[] := array[
     'letter_list', 'letter_year_list', 'letter_detail', 'letter_dashboard_counts', 'letter_export',
     'letter_register', 'letter_update', 'letter_add_files', 'letter_withdraw_file', 'letter_void',
-    'letter_my_requests', 'letter_request_queue', 'letter_request_queue_counts', 'letter_request_detail',
+    'letter_my_requests', 'letter_my_request_caps', 'letter_request_queue', 'letter_request_queue_counts', 'letter_request_detail',
     'letter_request_create', 'letter_request_cancel', 'letter_request_process', 'letter_request_take_number',
     'letter_request_issue', 'letter_request_reject',
     'letter_numbering_settings', 'letter_numbering_history', 'letter_numbering_update_format', 'letter_numbering_set_next',
