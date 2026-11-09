@@ -1,6 +1,6 @@
 # Letters ("Surat Menyurat"): screen design
 
-> Status: **PROPOSED, waiting for owner approval.** Nothing is built. Words and ASCII only, no code.
+> Status: **Approved 2026-11-09 (owner), G1 resolved by "Ambil nomor".** All proposals P1-P15 and gap recommendations G2-G17 are accepted. G1 is resolved differently from the first proposal: an explicit "Ambil nomor" step replaces the "Nomor berikutnya" preview (sections 12, 10, 11 and 16 were updated). Nothing is built. Words and ASCII only, no code.
 > Scope: every screen of `docs/modules/letters.md` section 7 (spec APPROVED 2026-11-09, L1-L11 accepted as recommended): 13 screens, numbered 1 to 13 below.
 > Sources: `CLAUDE.md` section 8; `docs/DECISIONS.md` D-014, D-017, D-021, D-022, D-023, D-024; `docs/design/stitch/design-system.md`, `screens.md` (10, 11, Dashboard card); the approved pattern `docs/design/inventory-borrowing.md` (read whole); what is built (`src/components/ui/*`: `PageHeaderCard`, `HeaderStat`, `ModuleNav`, `StatusChip`, `Timeline`, `Sheet`, `DashboardCard`; `src/modules/inventory-borrowing/ui/inventory-header.tsx`; theme variables in `src/app/globals.css`).
 > All people, counterparts, subjects and dates in the wireframes are **placeholders** in [brackets]. Letter numbers and counts are **format examples**, not data. The number format `PMK/NEX/SM/2026/001` is the provisional D-024 format and stays a setting. Stitch filler (Direktorat Jenderal Pajak, Rektorat, "Dokumen Disposisi", Verifikasi / Disetujui / Menunggu, an SM number under Surat Keluar, "+ Buat Surat Baru", "Halaman 1 dari 4") is not used.
@@ -20,7 +20,7 @@ Skills read and applied: `antislop`, `antislop-ui`, `antislop-human`, `antislop-
 | K2 | The register is a **card list on phones** (table from 1024 px). | A letter has a long number, a counterpart, a long Perihal, a date, a file mark and sometimes a chip. Six table columns at 390 px would cut every one of them. Inventory made the same choice for requests (X8). |
 | K3 | The list **row leads with the letter number**, bold, in tabular figures, allowed to break after a slash. | Secretaries look for a letter by number first. A 19-character number must never push the card wider than the screen, also at 200% zoom. |
 | K4 | The **number plate**: on the detail, the number is set on its own gold-tint card in Plus Jakarta Sans bold (not Playfair), with "Salin nomor". | Playfair Display draws old-style figures by default (digits of uneven height). An official number must read evenly. The secretary also needs to paste the number into the Word file of the letter, so copying is a real job, not decoration. |
-| K5 | **Register first, then write the letter.** On the outgoing form the number comes at save and files are optional; the file is added later with "Tambah berkas". | Spec F3 and F4. A letter must carry its number before it is signed, so the number has to exist before the file does. The form says so in one sentence (screen 4). The request flow has the opposite order (file and number at the same time); that conflict is **G1**, the most important question in this document. |
+| K5 | **Register first, then write the letter.** On the outgoing form the number comes at save and files are optional; the file is added later with "Tambah berkas". | Spec F3 and F4. A letter must carry its number before it is signed, so the number has to exist before the file does. The form says so in one sentence (screen 4). The request flow follows the same order through an explicit **"Ambil nomor"** step (G1, resolved by the owner): the processor takes the number first, writes and signs the letter outside NEXUS, and uploads the final file later. |
 | K6 | The request is **three required fields and a few optional ones** (Perihal, Ditujukan kepada, Keperluan; Atas nama, Dibutuhkan paling lambat, up to 3 attachments). Hints under each field say what the secretary needs. | L3 (b). A member asks for a letter rarely and does not know the secretary's needs, so each hint is a plain sentence, not a label. |
 | K7 | A secretary acts on a request on **the same page the requester reads**, with an extra panel of buttons. "Terbitkan Surat" is a page of its own, not a dialog. | Same pattern as the head's review in Inventory (11.2). Issuing needs a file picker, three fields and a confirmation. A bottom sheet with an upload list on a phone keyboard is a trap. |
 | K8 | Buttons that start a save are never greyed. A refusal is a message next to the problem. Actions a person may not do are absent. | Same rules as Inventory K8 and K9, and as login. |
@@ -45,7 +45,8 @@ Nothing here is applied silently. **[needs OK]** marks a change to something the
 | X6 | Register rows show a chip only for Dibatalkan and "Nomor lama". Spec F1 says a chip "Aktif" or "Dibatalkan" on every row. | See K9. | **[needs OK]** P3 |
 | X7 | From 1024 px the register becomes a table in a **wider column (max 1024 px)** than the 768 px column of Inventory. | A letter table needs room for number, counterpart, Perihal, date, files, status. At 768 px the Perihal would be cut to one short line. | **[needs OK]** P4, small |
 | X8 | The success tone of `AlertMessage` and the grey chip tone are used as added in Inventory (X9, X10 there). | Already approved there; reused unchanged. | Already approved |
-| X9 | A "Salin nomor" button, a "Catat surat lain" link after saving and a "preview of the next number" on the Terbitkan page are added. None is in the spec. | Each is a real job the secretaries do (paste the number into the Word file; register several letters in a row; know which number the file must carry). They are small and removable. | **[needs OK]** P5, P6 |
+| X9 | A "Salin nomor" button and a "Catat surat lain" link after saving are added. Neither is in the spec. | Each is a real job the secretaries do (paste the number into the Word file; register several letters in a row). They are small and removable. | Approved (P5) |
+| X13 | The request flow gets a step **"Ambil nomor"** between Proses and Terbitkan, and a chip "Menunggu file". The old one-step issue, the direct issue from Diajukan (A-LT5) and the "Nomor berikutnya" preview (old P6) are gone. This changes spec F6.4, section 4.2 and LT-13. | Owner decision on G1 (2026-11-09): the number must exist before the signed file does. | Approved by owner, spec to be updated |
 | X10 | The numbering settings screen has its own layout (format card, next-number card, change history) in the NEXUS settings area, which has no design yet. | Spec section 7 item 9 asks for it; the settings shell belongs to the access-control design (gap G10). | **[needs OK]** P11 |
 | X11 | No destructive (red) button. "Batalkan nomor", "Tolak permohonan", "Tarik berkas" use the normal walnut buttons; the consequence is written above the button. | Stitch has no red button (Inventory X12). | Within Stitch |
 | X12 | Field borders `#81756A` and 16 px field text on all forms. | Already approved (D-017 Q2). | Approved |
@@ -121,6 +122,9 @@ The Inventory `PhotoPicker` adapted to letters (PDF, JPG, PNG; 5 MB; at most 3).
 | Own request on the review page | "Tidak bisa memproses permohonanmu sendiri. Sekretaris lain yang memutuskan." plus, for `letters.manage` holders: "Kamu bisa mencatat suratmu langsung di Surat Keluar." | Spec F6.2, A-n9. |
 | Lone processor | "Hanya kamu yang bisa memproses saat ini. Permohonanmu sendiri menunggu sekretaris lain." | Info card on the queue, only when the viewer holds `process`, is the only holder, and has an open request of their own. |
 | Request caps | Open: "Kamu sudah punya 5 permohonan yang berjalan. Tunggu salah satunya selesai atau batalkan dulu." Daily: "Batas permohonan hari ini sudah tercapai (10). Coba lagi besok." | Numbers come from the setting (spec L10 (b)). Shown in an alert above the form, and again as the refusal on submit. |
+| Number taken (processor) | "Nomor diambil: PMK/NEX/SK/2026/012. Pakai nomor ini di suratnya, lalu terbitkan dengan berkas finalnya." (`role=status`, number in bold) | Success message on the review page after "Ambil nomor". |
+| Number taken, waiting for the file (processor) | "Nomor sudah diambil, menunggu file final. Tulis suratnya dengan nomor ini, minta tanda tangan, lalu unggah berkasnya lewat Terbitkan surat." | Info card on the review page while the state lasts. |
+| Number taken, waiting for the file (requester) | "Nomor suratmu sudah diambil, menunggu file final. Berkas suratnya menyusul setelah suratnya ditandatangani. Permohonan ini sudah tidak bisa dibatalkan." | State line on the request detail. |
 | Number copied | "Nomor disalin." (`role=status`). Failure: "Nomor tidak bisa disalin. Pilih nomornya lalu salin sendiri." | |
 | File link failed | "Berkas tidak bisa dibuka. Coba lagi." | |
 | Conflict | "Data sudah berubah. Muat ulang." with "Muat ulang". | Spec states table. |
@@ -311,7 +315,7 @@ Filter card open (below the Filter button, pushes the list down; same card as In
 | Tanpa berkas | Checkbox row. Matches letters with no visible file. | Spec F1. It is also the secretary's to-do list (letters registered first, file later, K5). |
 | Card | Whole card is one link to screen 3. Focus ring around the card. Line 1 number (bold). Line 2 counterpart. Line 3 Perihal (2 lines). Line 4 date and file mark. | K2, K3. |
 | Date line | Surat Masuk: "Diterima {tanggal}". Surat Keluar: "Tanggal surat {tanggal}". | The date a secretary looks for differs by type. |
-| File mark | Paperclip icon and "2 berkas", or the text "Belum ada berkas" (plain meta text, no colour). Withdrawn files are not counted for non-managers. | A missing file is information, not an error. |
+| File mark | Paperclip icon and "2 berkas", or the text "Belum ada berkas" (plain meta text, no colour). For a letter whose request is still Diproses (number taken, file not uploaded) the text is "Menunggu file final". Withdrawn files are not counted for non-managers. | A missing file is information, not an error. |
 | Chips | Only "Dibatalkan" (grey) and "Nomor lama" (ivory). See K9. | P3 |
 | Order | Newest registered first (G8). | A late-registered letter would otherwise hide in the middle. |
 | "Ekspor" | Screen 11. | |
@@ -410,7 +414,9 @@ Surat Masuk differs in the Rincian rows: "Diterima {tanggal}", "Tanggal surat" (
 |---|---|
 | Letter is Dibatalkan | "Nomor ini dibatalkan pada 20 Okt 2026 oleh [Nama]. Alasan: [teks]. Nomor tidak dipakai lagi dan suratnya tidak bisa dipulihkan." All buttons of the manager are absent. A chip "Dibatalkan" (grey) sits next to "Aktif" being absent. |
 | Letter of a non-active period (Aktif) | "Surat dari periode 2025/2026. Hanya bisa dibaca." |
-| Letter without any visible file, Aktif, in the active period (managers only) | "Belum ada berkas. Tambahkan berkas setelah suratnya selesai." with the "Tambah berkas" button in the Berkas card. |
+| Letter taken for a request that is still Diproses (Aktif, no file; managers and `view_all` holders) | "Nomor ini diambil untuk permohonan [Perihal permohonan]. Berkas finalnya diunggah lewat Terbitkan surat." While the request is open, "Tambah berkas" and "Batalkan nomor" are **absent** on this letter, because a file added here would leave the request stuck and a void here would orphan it. The way out is "Tolak permohonan" on the request. |
+| Letter voided because its request was rejected | The grey Dibatalkan banner of the first row, with "Alasan:" showing the rejection reason and the extra sentence "Nomor diambil untuk permohonan [Perihal permohonan], yang ditolak." |
+| Letter without any visible file, Aktif, in the active period (managers only, not tied to an open request) | "Belum ada berkas. Tambahkan berkas setelah suratnya selesai." with the "Tambah berkas" button in the Berkas card. |
 
 Chips next to the title: "Aktif" (success) or "Dibatalkan" (grey), and "Nomor lama" (ivory) when the number was typed from an old letter.
 
@@ -761,6 +767,14 @@ Never a requester field: the saved requester is the signed-in member and the per
 |  | Sedang disiapkan oleh [Nama].          |  |  text
 |  +----------------------------------------+  |
 |  +----------------------------------------+  |
+|  | [Perihal permohonan]                   |  |  number taken, file not yet
+|  | Kepada [Penerima]                      |  |
+|  | Diajukan 5 Des 2026      (Diproses)    |  |
+|  | (Menunggu file)                        |  |  second chip, own line when tight
+|  | Nomor PMK/NEX/SK/2026/012              |  |  bold, tabular
+|  | Berkas menyusul.                       |  |
+|  +----------------------------------------+  |
+|  +----------------------------------------+  |
 |  | [Perihal permohonan]                   |  |
 |  | Kepada [Penerima]                      |  |
 |  | Diajukan 2 Des 2026     (Diterbitkan)  |  |
@@ -782,7 +796,8 @@ Each card is one link (visible focus ring around the card). Order: open requests
 | Status | Card line under the date |
 |---|---|
 | Diajukan | "Menunggu sekretaris." |
-| Diproses | "Sedang disiapkan oleh [Nama]." |
+| Diproses, number not taken | "Sedang disiapkan oleh [Nama]." |
+| Diproses, number taken | Chip "Menunggu file" next to "Diproses". Lines: "Nomor [nomor]" and "Berkas menyusul." |
 | Diterbitkan | "Nomor [nomor]" and "Berkas siap diunduh." If the number was voided: chip "Nomor dibatalkan" (grey) and the line "Nomor ini dibatalkan. Ajukan lagi kalau suratnya masih perlu." |
 | Ditolak | "Catatan dari [Nama]: [first 2 lines]" |
 | Dibatalkan | "Kamu membatalkan permohonan ini." |
@@ -795,8 +810,8 @@ Each card is one link (visible focus ring around the card). Order: open requests
 |  [Perihal permohonan]                        |  Playfair 24, wraps
 |  (Diterbitkan)                               |  chip
 |                                              |
-|  +----------------------------------------+  |  NUMBER PLATE, only when Diterbitkan
-|  | Nomor surat                            |  |
+|  +----------------------------------------+  |  NUMBER PLATE, from "Ambil nomor" on
+|  | Nomor surat                            |  |  (number visible before the file)
 |  | PMK/NEX/SK/2026/012                    |  |
 |  | [ Salin nomor ]                        |  |
 |  +----------------------------------------+  |
@@ -833,6 +848,10 @@ Each card is one link (visible focus ring around the card). Order: open requests
 |  | Riwayat                                |  |  Timeline, newest first
 |  |  (o) Diterbitkan, dicatat [Nama]       |  |
 |  |  |   10 Des 2026, 14.05 WIB            |  |
+|  |  |   Berkas dipasang pada nomor surat. |  |
+|  |  (o) Nomor diambil oleh [Nama]         |  |
+|  |  |   9 Des 2026, 16.40 WIB             |  |
+|  |  |   Nomor PMK/NEX/SK/2026/012         |  |
 |  |  (o) Diproses oleh [Nama]              |  |
 |  |  |   9 Des 2026, 15.20 WIB             |  |
 |  |  (o) Diajukan                          |  |
@@ -843,17 +862,18 @@ Each card is one link (visible focus ring around the card). Order: open requests
 +----------------------------------------------+
 ```
 
-The "Catatan dari sekretaris" card shows on Ditolak always (the note is required), and on Diproses or Diterbitkan when the secretary wrote one.
+The "Catatan dari sekretaris" card shows on Ditolak always (the note is required), and on Diproses or Diterbitkan when the secretary wrote one. The number plate shows **from "Ambil nomor" on** (state Diproses with a number, then Diterbitkan), so the requester can already quote the number to other people while the signed file is on its way; it never shows for Diajukan, Diproses without a number, Ditolak or Dibatalkan.
 
 ### 10.3 Status text and what each says to the requester
 
 | Status | Chip (screen 13) | State line on the detail |
 |---|---|---|
 | Diajukan | Diajukan (ivory) | "Menunggu sekretaris. Kamu masih bisa membatalkannya sampai sekretaris mulai memprosesnya." |
-| Diproses | Diproses (warning) | "Sekretaris sedang menyiapkan suratmu. Permohonan ini sudah tidak bisa dibatalkan. Kalau ada yang perlu diubah, hubungi sekretaris di luar aplikasi." |
+| Diproses, number not taken | Diproses (warning) | "Sekretaris sedang menyiapkan suratmu. Permohonan ini sudah tidak bisa dibatalkan. Kalau ada yang perlu diubah, hubungi sekretaris di luar aplikasi." |
+| Diproses, number taken | Diproses (warning) and Menunggu file (ivory) | "Nomor suratmu sudah diambil, menunggu file final. Berkas suratnya menyusul setelah suratnya ditandatangani. Permohonan ini sudah tidak bisa dibatalkan." The number plate is shown above (number visible before the file); the "Berkas surat" card is not shown yet and "Salin nomor" works. |
 | Diterbitkan | Diterbitkan (success) | "Suratmu sudah terbit. Unduh berkasnya di bawah." |
 | Diterbitkan, number voided | Diterbitkan (success) and Nomor dibatalkan (grey) | Warning alert: "Nomor surat ini sudah dibatalkan oleh pengelola surat, jadi berkasnya tidak tersedia lagi. Ajukan permohonan baru kalau kamu masih membutuhkan surat." The file card is not shown (G5). |
-| Ditolak | Ditolak (destructive) | "Permohonan ditolak. Baca catatan sekretaris di bawah." The button "Ajukan lagi" appears. |
+| Ditolak | Ditolak (destructive) | "Permohonan ditolak. Baca catatan sekretaris di bawah." The button "Ajukan lagi" appears. If a number had been taken, the number plate disappears (the number is void) and the timeline keeps the entry "Nomor diambil oleh [Nama]"; the rejection note is the only reason the requester sees (G5). |
 | Dibatalkan | Dibatalkan (grey) | "Permohonan dibatalkan." With who cancelled and the reason in the timeline. The button "Ajukan lagi" appears. |
 
 ### 10.4 Actions
@@ -926,6 +946,13 @@ The "Catatan dari sekretaris" card shows on Ditolak always (the note is required
 |  | ...                                    |  |
 |  | Dibutuhkan paling lambat 8 Des 2026    |  |
 |  +----------------------------------------+  |
+|  +----------------------------------------+  |  number taken, waiting for the file
+|  | [Nama pemohon]  (Diproses)             |  |
+|  | (Menunggu file)                        |  |
+|  | [Perihal permohonan]                   |  |
+|  | Nomor PMK/NEX/SK/2026/012              |  |  bold, tabular
+|  | Diambil 9 Des 2026 oleh [Nama]         |  |
+|  +----------------------------------------+  |
 |     [< Prev]  [1] [2]  [Next >]              |
 |     Menampilkan 1-3 dari 3 permohonan        |
 ```
@@ -935,10 +962,13 @@ The "Catatan dari sekretaris" card shows on Ditolak always (the note is required
 | Option | Contains | Default for |
 |---|---|---|
 | Menunggu | Diajukan, oldest first | `process` holders |
-| Sedang diproses | Diproses, oldest first | |
+| Sedang diproses | Diproses where the number is **not** taken yet, oldest first | |
+| Menunggu file final | Diproses where the number is **taken** and the signed file is not uploaded, oldest taken first. This is the secretary's to-do list of numbers that still need a file (new, owner decision on G1) | |
 | Selesai | Diterbitkan, Ditolak, Dibatalkan, newest first | |
 | Semua | All of the active period | BPH without `process` |
-| Belum selesai, semua periode | Diajukan and Diproses of every period (handover, 11.3) | |
+| Belum selesai, semua periode | Diajukan and Diproses (both kinds) of every period (handover, 11.3) | |
+
+The new option exists because a taken number that waits for its file is the one state that can be forgotten: the requester has the number but nothing to download, and the register already holds a row without a file. "Menunggu file final" puts exactly those requests in one list, so a secretary can chase them or reject the abandoned ones. The "Antrean (n)" count stays "Diajukan, not your own"; taken numbers are not added to it, because they are already in someone's hands.
 
 Filters: status (the select), a date range ("Filter tanggal" card with Dari and Sampai, requests submitted in that range), requester name (the search, which also matches Perihal). Same filter-card style as screen 2.
 
@@ -976,7 +1006,8 @@ Card contents: requester name (PI-CORE name), the plain text marker "Pengajuanmu
 |  | belum selesai, termasuk dari periode   |  |
 |  | sebelumnya.                            |  |
 |  +----------------------------------------+  |
-|  5 belum selesai: 3 menunggu, 2 diproses.    |  body-md, real counts
+|  6 belum selesai: 3 menunggu, 2 diproses,    |  body-md, real counts
+|  1 menunggu file final.                      |
 |                                              |
 |  Periode 2025/2026 (2)                       |  h2, Playfair headline-lg
 |  [ cards as above ]                          |
@@ -996,11 +1027,23 @@ Group heading per period, oldest period first, then oldest request first inside 
 
 ## 12. Screen 9: Request review, Proses, Tolak and Terbitkan
 
-**Goal.** Let a secretary act on a request with all facts in front of her, and issue a letter in one safe step that gives the requester a number and a file.
+**Goal.** Let a secretary act on a request with all facts in front of her, in the order a real letter is made: take it, take its number, write and sign the letter outside NEXUS, then upload the final file and issue it (owner decision on G1, 2026-11-09).
 
 **Who sees it.** `letter_requests.view_all` sees the page. The action buttons need `letter_requests.process` and are **absent on the viewer's own request** (access control L6). A BPH member without `process` sees the page with no buttons.
 
-**Path.** Antrean -> opens a request -> reads the fields and attachments -> "Proses permohonan" or "Terbitkan surat" or "Tolak permohonan".
+**Path.** Antrean -> opens a request -> reads the fields and attachments -> "Proses permohonan" -> "Ambil nomor" (the number exists now, the requester sees it) -> writes and signs the letter outside NEXUS -> "Terbitkan surat" with the final file. Or "Tolak permohonan" at any point before it is issued.
+
+**The three steps, in one table (this replaces the old one-step issue and the "next number" preview).**
+
+| Request state | Number | Register row | Buttons (processor) | What the requester sees |
+|---|---|---|---|---|
+| Diajukan | none | none | "Proses permohonan" (primary), "Tolak permohonan" | "Menunggu sekretaris." |
+| Diproses, number not taken | none | none | "Ambil nomor" (primary), "Tolak permohonan" | "Sedang disiapkan oleh [Nama]." |
+| Diproses, **number taken** ("Nomor sudah diambil, menunggu file final") | taken, final, never reused | Surat Keluar, Aktif, no file, linked to the request | "Terbitkan surat" (primary), "Tolak permohonan" | The number on the number plate, "Berkas surat menyusul." |
+| Diterbitkan | same | same, file attached | none | Number and file to download |
+| Ditolak after a number was taken | stays used | row becomes Dibatalkan, reason = the rejection reason | none | The note only |
+
+"Terbitkan surat" is offered only after the number is taken, because it is the step that attaches the signed file to that number. A direct issue from Diajukan (old A-LT5) no longer exists; the secretary presses "Proses permohonan" and "Ambil nomor" first, two quick taps.
 
 ### 12.1 Wireframe: review (same page as screen 7, extra panel; 390 px)
 
@@ -1018,6 +1061,17 @@ Group heading per period, oldest period first, then oldest request first inside 
 |  | (i) Pemohon sudah tidak aktif.         |  |
 |  | Permohonan tetap bisa diproses.        |  |
 |  +----------------------------------------+  |
+|  +----------------------------------------+  |  NUMBER PLATE, only after "Ambil nomor"
+|  | Nomor surat                            |  |
+|  | PMK/NEX/SK/2026/012                    |  |
+|  | [ Salin nomor ]                        |  |
+|  +----------------------------------------+  |
+|  +----------------------------------------+  |  only while the number is taken, no file yet
+|  | (i) Nomor sudah diambil, menunggu file |  |
+|  | final. Tulis suratnya dengan nomor ini,|  |
+|  | minta tanda tangan, lalu unggah        |  |
+|  | berkasnya lewat Terbitkan surat.       |  |
+|  +----------------------------------------+  |
 |  +----------------------------------------+  |
 |  | Permohonan                             |  |
 |  | Pemohon        [Nama]                  |  |
@@ -1031,9 +1085,8 @@ Group heading per period, oldest period first, then oldest request first inside 
 |  +----------------------------------------+  |
 |  [ Lampiran card, with "Lihat" per file ]    |
 |  +----------------------------------------+  |
-|  | Tindakan                               |  |
-|  | [        Proses permohonan           ] |  |  primary (while Diajukan)
-|  | [        Terbitkan surat             ] |  |  outline
+|  | Tindakan                               |  |  buttons by state, see the table above
+|  | [        Ambil nomor                 ] |  |  example: Diproses, number not taken
 |  | [        Tolak permohonan            ] |  |  outline
 |  +----------------------------------------+  |
 |  [ Riwayat card ]                            |
@@ -1051,7 +1104,12 @@ Own request, no buttons:
 ```
 With only one `process` holder a second line: "Saat ini hanya ada satu sekretaris yang bisa memproses, jadi permohonan ini menunggu sekretaris lain." (A-n9.)
 
-**Order of the buttons (P8).** While Diajukan: primary "Proses permohonan", then "Terbitkan surat", then "Tolak permohonan". While Diproses: primary "Terbitkan surat", then "Tolak permohonan". The panel sits **directly under the Lampiran card** and before Riwayat, as Inventory 24 moved its buttons next to the facts they use. Reason: the primary button is the most likely next step. "Terbitkan surat" straight from Diajukan stays available (A-LT5) as an outline button, for a small task that needs no waiting.
+**Order of the buttons (P8, updated for G1).** Always one primary button, the next step, then "Tolak permohonan" as outline:
+- Diajukan: primary **"Proses permohonan"**.
+- Diproses, number not taken: primary **"Ambil nomor"**.
+- Diproses, number taken: primary **"Terbitkan surat"** (a link to the Terbitkan page, 12.3).
+
+The panel sits **directly under the Lampiran card** and before Riwayat, as Inventory 24 moved its buttons next to the facts they use. Reason: the primary button is always the most likely next step, so a secretary never has to read the panel to know what to press. After "Ambil nomor" the number plate appears at the top of the page, above the facts, because the number is now the most important thing the page holds (the same motif as screen 3).
 
 ### 12.2 Dialogs (bottom sheets, Inventory 3.3)
 
@@ -1061,10 +1119,22 @@ With only one `process` holder a second line: "Saat ini hanya ada satu sekretari
 - Field "Catatan untuk pemohon (boleh kosong)".
 - Buttons "Proses permohonan" and "Batal". Success "Permohonan diproses."
 
+**"Ambil nomor" (new, owner decision on G1).**
+- Title "Ambil nomor surat?"
+- Text: "Sistem membuat nomor surat sekarang, dan nomor itu langsung final. Nomor tidak bisa diubah dan tidak akan dipakai lagi, juga kalau permohonan ini nanti ditolak. Pemohon bisa melihat nomornya. Berkas suratnya menyusul setelah suratnya ditandatangani."
+- No field. The number is not shown here because it does not exist until the button is pressed (no preview, so nothing can be out of date).
+- Buttons "Ambil nomor" (primary) and "Batal". First focus on the title (a confirmation).
+- Busy: "Mengambil nomor..." with spinner; a second press is ignored (one press, one number).
+- Success: the review page with the success message "Nomor diambil: PMK/NEX/SK/2026/012. Pakai nomor ini di suratnya, lalu terbitkan dengan berkas finalnya." (number in bold). The register now holds a Surat Keluar row for it (Aktif, no file).
+- Failure: nothing is saved and no number is used: "Nomor belum diambil. Tidak ada nomor yang terpakai. Coba lagi."
+- Why a dialog and not a one-tap button: a taken number is final and can never be reissued (spec R2), so one calm sentence before the press is cheap insurance, the same idea as the check sheets of Inventory.
+
 **"Tolak permohonan".**
 - Title "Tolak permohonan?"
+- Extra paragraph, only when a number was already taken: "Nomor [nomor] sudah diambil. Nomornya tetap terpakai, dan suratnya di register menjadi Dibatalkan dengan alasan di bawah."
 - Field "Alasan penolakan (wajib)", hint "Pemohon akan membaca alasan ini." Error "Tulis alasan penolakan, supaya pemohon tahu."
-- Buttons "Tolak permohonan" and "Batal". Success "Permohonan ditolak."
+- Buttons "Tolak permohonan" and "Batal". Success "Permohonan ditolak." When a number was taken: "Permohonan ditolak. Nomor [nomor] dibatalkan di register."
+- The reason is stored once and used twice: as the rejection note the requester reads, and as the void reason of the register row. Rejecting is therefore the only way to abandon a taken number (spec history rows: "Permohonan ditolak" and "Nomor dibatalkan").
 
 Conflict on any of them: "Data sudah berubah. Muat ulang." with "Muat ulang".
 
@@ -1076,15 +1146,15 @@ Conflict on any of them: "Data sudah berubah. Muat ulang." with "Muat ulang".
 |  Terbitkan surat                             |  Playfair 24
 |                                              |
 |  +----------------------------------------+  |
-|  | [Nama pemohon]            (Diproses)   |  |  summary card
+|  | [Nama pemohon]  (Diproses)(Menunggu file)|  |  summary card
 |  | [Perihal permohonan]                   |  |
 |  +----------------------------------------+  |
-|  +----------------------------------------+  |  info card, the number question (G1)
+|  +----------------------------------------+  |  NUMBER PLATE, read-only (taken earlier)
 |  | Nomor surat                            |  |
-|  | Nomor berikutnya: PMK/NEX/SK/2026/012  |  |  bold, "belum dipesan"
-|  | Nomor ini belum dipesan. Dibuat saat   |  |
-|  | kamu menekan Terbitkan Surat. Pastikan |  |
-|  | berkasnya memakai nomor yang sama.     |  |
+|  | PMK/NEX/SK/2026/012                    |  |  bold, tabular
+|  | Nomor ini sudah diambil dan tidak bisa |  |
+|  | diubah. Pastikan berkas finalnya       |  |
+|  | memakai nomor ini.                     |  |
 |  +----------------------------------------+  |
 |  +----------------------------------------+  |
 |  | Isi surat                              |  |
@@ -1106,15 +1176,21 @@ Conflict on any of them: "Data sudah berubah. Muat ulang." with "Muat ulang".
 +----------------------------------------------+
 ```
 
-Old-period request: an info alert at the top: "Permohonan ini dari periode 2025/2026. Suratnya dicatat di periode aktif 2026/2027."
+Old-period request: an info alert at the top: "Permohonan ini dari periode 2025/2026. Suratnya dicatat di periode aktif 2026/2027." (The number taken in "Ambil nomor" already belongs to the active period.)
+
+The page opens only when a number is taken. Without one the address answers with an info card: "Ambil nomor dulu sebelum menerbitkan surat." and a text button "Kembali ke permohonan". The fields edit the register row that already exists (Perihal, Ditujukan kepada, Tanggal surat), with the usual history row.
 
 ### 12.4 Check sheet before issuing
 
-Pressing "Terbitkan Surat" with valid input opens a check sheet: title "Terbitkan surat ini?", text "Nomor surat dibuat sekarang dan tidak bisa diubah. Pemohon bisa mengunduh berkasnya begitu suratnya terbit.", buttons "Terbitkan surat" and "Periksa lagi". **[PROPOSAL P7]** Reason: a number is consumed and never reused (spec R2). One calm check is cheap insurance, and it is the same idea as "Simpan pengembalian?" in Inventory.
+Pressing "Terbitkan Surat" with valid input opens a check sheet: title "Terbitkan surat ini?", text "Berkas final dipasang pada nomor [nomor]. Pemohon bisa mengunduhnya begitu suratnya terbit.", buttons "Terbitkan surat" and "Periksa lagi". **[PROPOSAL P7]** Reason: issuing makes the file visible to the requester, and a wrong file can only be withdrawn, not replaced silently. One calm check is cheap insurance, and it is the same idea as "Simpan pengembalian?" in Inventory. The number is no longer part of this sheet, because it was already fixed in "Ambil nomor".
 
-### 12.5 Number mismatch (G1 option c)
+### 12.5 "Ambil nomor" replaces the number preview (G1, resolved)
 
-The page sends the number it showed. If another letter took it in the meantime, the server saves nothing and the sheet shows a warning alert: "Nomor berikutnya sudah berubah menjadi PMK/NEX/SK/2026/013. Berkas yang kamu unggah mungkin memakai nomor lama." with buttons "Terbitkan dengan nomor baru" and "Periksa lagi". No number is used until the person chooses. **[PROPOSAL P6, depends on the owner's answer to G1]**
+The owner chose an explicit step instead of the "Nomor berikutnya" preview with a mismatch warning (old P6). Consequences for the design:
+- There is **no number on the Terbitkan page that can go out of date**. The number is read-only text on the plate, taken earlier.
+- There is **no mismatch sheet**; "Terbitkan" cannot disagree with a number the page did not guess.
+- The risk moves to **abandoned numbers**: a secretary takes a number and the letter never gets finished. The only exit is "Tolak permohonan" with a reason (12.2): the register row becomes Dibatalkan with that reason, the number stays used, and the gap is explained in the register and the export.
+- Two secretaries on one request: the second "Ambil nomor" or "Terbitkan" fails with "Data sudah berubah. Muat ulang." because the state no longer matches, and exactly one number is used.
 
 ### 12.6 Fields
 
@@ -1130,8 +1206,8 @@ The page sends the number it showed. If another letter took it in the meantime, 
 
 | Action | Result |
 |---|---|
-| "Terbitkan Surat" (after the check) | One transaction: next SK number, linked outgoing register row, file(s) attached, request set to Diterbitkan. Goes to the review page with "Surat terbit. Nomornya PMK/NEX/SK/2026/012." and, for `letters.view` holders, a text link "Lihat di register". |
-| Failure of any step | Nothing is saved and no number is used: "Surat belum terbit. Tidak ada nomor yang terpakai. Coba lagi." |
+| "Terbitkan Surat" (after the check) | One transaction: the file(s) are attached to the register row of the taken number and the request is set to Diterbitkan. Goes to the review page with "Surat terbit. Berkas dipasang pada nomor PMK/NEX/SK/2026/012." and, for `letters.view` holders, a text link "Lihat di register". |
+| Failure of any step | Nothing is saved and the request stays "Nomor sudah diambil, menunggu file final". The number stays with this request: "Surat belum terbit. Berkas belum tersimpan, nomor tetap milik permohonan ini. Coba lagi." |
 | "Batal" | Back, with "Buang perubahan?" if anything changed. |
 
 ### 12.8 States
@@ -1140,7 +1216,9 @@ The page sends the number it showed. If another letter took it in the meantime, 
 |---|---|
 | Loading | Skeleton of the summary and the cards, caption "Memuat form...". |
 | Request already decided (second secretary, other device) | "Data sudah berubah. Muat ulang." |
-| Own request | The page shows only the info alert of 12.1, no form. |
+| Number not taken yet | Info card "Ambil nomor dulu sebelum menerbitkan surat." (12.3). |
+| Taking a number | "Mengambil nomor..." (12.2). |
+| Own request | The page shows only the info alert of 12.1, no form and no buttons. |
 | Upload failed | "Berkas gagal diunggah. Coba lagi." Nothing saved. |
 | No active period | "Belum ada periode aktif. Surat belum bisa dicatat." |
 | Saving | "Menerbitkan..." with spinner; fields read-only. |
@@ -1151,7 +1229,7 @@ The page sends the number it showed. If another letter took it in the meantime, 
 ### 12.9 Accessibility and touch
 
 - Review page buttons 48, stacked, 8 px gaps; dialog and sheet buttons 48; Escape closes, focus returns to the button that opened the dialog.
-- The number card is plain text with `role=status` when the mismatch message replaces it.
+- The number plate is plain text with `aria-label="Nomor surat {nomor}"`; after "Ambil nomor" the success message is `role=status` and focus moves to the plate so the number is read first.
 - Fields 48 px, 16 px text; the keyboard never covers the focused field (`scroll-mb-24`).
 - Wider screens: Terbitkan stays one column (max 448 px); on 1024 px the review page puts Riwayat in a right column.
 
@@ -1378,6 +1456,7 @@ Definitions (G9, to confirm): "surat masuk" and "surat keluar" count Aktif lette
 |---|---|---|---|
 | Diajukan | Ivory | Waiting for a secretary | Request lists and detail, queue |
 | Diproses | Warning | A secretary took it; the requester can no longer cancel | same |
+| Menunggu file | Ivory | The number is taken ("Nomor sudah diambil, menunggu file final"); the signed file is not uploaded yet. Always next to Diproses | Request lists (requester and queue), detail, review page |
 | Diterbitkan | Success | Letter issued, number and file exist | same |
 | Ditolak | Destructive | Rejected, note given | same |
 | Dibatalkan (request) | Grey | Cancelled by the requester | same |
@@ -1429,7 +1508,7 @@ Pairs already computed in `inventory-borrowing.md` section 18 are reused unchang
 
 ## 19. Proposals needing the owner (P1 onward)
 
-Same convention as the inventory design: **P1 to P3, P6, P9, P11** are the ones I would like an answer to; the rest I will assume unless you object.
+**All proposals below were approved by the owner on 2026-11-09, except P6, which the owner replaced with the "Ambil nomor" flow** (see P6 and G1). P8 and P7 were adjusted to fit it.
 
 | # | Question | Options | Recommendation |
 |---|---|---|---|
@@ -1438,9 +1517,9 @@ Same convention as the inventory design: **P1 to P3, P6, P9, P11** are the ones 
 | P3 | Chip on register rows | (a) only Dibatalkan and "Nomor lama" show a chip; Aktif is the quiet default; (b) every row has "Aktif" or "Dibatalkan" as spec F1 says | (a) |
 | P4 | Wide register | (a) cards on phones and tablet, a table from 1024 px in a column up to 1024 px; (b) keep the 768 px column and cards everywhere | (a) |
 | P5 | Small helpers outside the spec: "Salin nomor" and "Catat surat lain" | (a) keep both; (b) drop them | (a): both save real taps |
-| P6 | The number on the final file (also G1) | (a) as spec: number assigned when the file is issued, no preview (secretary cannot know the number to print); (b) show "Nomor berikutnya" on Terbitkan with a mismatch warning (this design); (c) a step "Ambil nomor" that reserves a number at Diproses | (b) |
-| P7 | Check sheet before issuing a letter | (a) "Terbitkan surat ini?" sheet; (b) no check | (a) |
-| P8 | Button order on the review page | (a) Diajukan: "Proses permohonan" primary, "Terbitkan surat" outline; Diproses: "Terbitkan surat" primary; (b) always "Terbitkan surat" primary | (a) |
+| P6 | The number on the final file (also G1) | **Decided by the owner: an explicit "Ambil nomor" step.** While Diproses, the processor presses "Ambil nomor" and confirms; the system assigns the next SK number at once (final, never reused) and creates the Surat Keluar row (Aktif, no file). The requester sees the number. Later "Terbitkan surat" with the signed file makes it Diterbitkan. Abandoned: "Tolak permohonan" with a reason makes the row Dibatalkan; the number stays used. (The earlier "Nomor berikutnya" preview with a mismatch warning is dropped.) | Owner's choice |
+| P7 | Check sheet before issuing a letter | (a) "Terbitkan surat ini?" sheet (now about attaching the file to the taken number); (b) no check | (a) |
+| P8 | Button order on the review page | One primary button, the next step: Diajukan "Proses permohonan"; Diproses without a number "Ambil nomor"; Diproses with a number "Terbitkan surat". "Tolak permohonan" is always outline. (Direct issue from Diajukan no longer exists.) | as shown |
 | P9 | "Nomor lama" mode | (a) checkbox card "Surat lama" with a check sheet showing the typed number before saving; (b) a separate form for old letters | (a) |
 | P10 | First-use hint when no numbering start was set | (a) info alert on the register form for managers; (b) none | (a) |
 | P11 | Numbering settings | (a) two cards (next number, format) plus a change history; the next number can only go up, with a reason; (b) free editing of the counter | (a) |
@@ -1457,7 +1536,7 @@ Small items I will assume unless you object: the h1 of a letter detail is "Detai
 
 | # | Gap | What I did / recommendation |
 |---|---|---|
-| **G1** | **The number must be printed on the letter before it is signed, but a request issues the number and the file in one step** (spec F6.4, LT-13). With the spec as approved, the file a secretary uploads cannot contain the number NEXUS assigns, unless she guesses it. Direct registration (F3) does not have this problem because files are optional, so she registers, gets the number, writes the letter, and adds the file later. | Screen 9 shows "Nomor berikutnya" (not reserved) and warns on mismatch (P6 (b)). It needs no spec change except one backend rule: the issue call carries the number shown and refuses if it changed. Alternatives: (c) reserve the number at Diproses (a voided number if abandoned), or relax LT-13 so a request can be issued first and the file added after. **Please decide**; this is the biggest question in this document. |
+| **G1** | **RESOLVED 2026-11-09 (owner): explicit "Ambil nomor" step.** The problem was that the number must be printed on the letter before it is signed, but a request issued the number and the file in one step (spec F6.4, LT-13). Direct registration (F3) never had it, because files are optional there. | While a request is Diproses, the processor presses "Ambil nomor" (confirm dialog, 12.2): the next SK number is assigned at once, final and never reused, and a Surat Keluar row is created (Aktif, no file). The requester sees the number (10.2, 10.3). Later "Terbitkan surat" (12.3) uploads the final file and sets Diterbitkan (file required). Abandoned after taking a number: "Tolak permohonan" with a reason; the row becomes Dibatalkan with that reason, the number stays used. Direct registration is unchanged. The queue gets a "Menunggu file final" view (11.1). Spec F6.4, section 4.2 (state machine), A-LT5 and LT-13 need updating. |
 | G2 | Requests have no reference code like `PJM-0001`. | No reference. The detail title is the Perihal, and the date identifies it. If you want one, copy the Inventory pattern (one sequence, never reused, assigned by the database). |
 | G3 | Spec F4 lists the editable fields but not the received date. | Designed as editable (typing mistakes are common), with history. |
 | G4 | Do withdrawn files count toward the limit of 3? And can the file the requester downloads be withdrawn? | Withdrawn files do not count. The last visible file of a letter that came from a request cannot be withdrawn until a replacement is added (dialog 8.2). Needs the analyst's OK. |
@@ -1474,6 +1553,7 @@ Small items I will assume unless you object: the h1 of a letter detail is "Detai
 | G15 | Are attachments copied when "Ajukan lagi" is used? | Not copied; the person adds them again. |
 | G16 | The request form's "Dibutuhkan paling lambat" semantics: only a hint for the secretary, no promise. | Hint text says so ("Sekretaris melihat tanggal ini di antrean."). No automatic reminder (no notifications in Phase 1). |
 | G17 | Icon set. `login.md` names Material Symbols, the app is built with Lucide (Inventory G12). | Left as built; icons are named by meaning. |
+| G18 | (New, from the "Ambil nomor" decision.) A register row that exists for a request still Diproses: may a manager add a file or void it from the register? Can the requester be rejected after a number was taken, and what do they see? | While the request is open, the letter detail hides "Tambah berkas" and "Batalkan nomor" and points to the request (6.2); the only exit is "Tolak permohonan", which voids the row with the rejection reason. The requester then sees the rejection note only, not the void reason of the register (G5). Needs the analyst's OK. |
 
 ---
 
