@@ -219,3 +219,32 @@ Spec: `docs/modules/inventory-borrowing.md` section 10 (IB1-IB15 are answered, D
 | A-IB54 | On the item edit screen, location changes of several units are saved one by one (one `inventory_unit_update` per unit), not in one transaction. If one fails, the others stay saved; each change has its own history row and the screen reports the failure. | [ASSUMPTION] tech lead 2026-11-08 | P2 |
 | A-IB55 | The Antrean list stays as cards on wide screens (768 px and up); the table layout of design 11.1 for desktop comes later. | [ASSUMPTION] tech lead 2026-11-08 | P2 |
 
+## I. Letters assumptions (2026-11-09)
+
+Spec: `docs/modules/letters.md` (draft for owner approval). Its section 10 holds the owner questions L1-L11 (document generation, request status path, request fields, direct outgoing letters, register status, corrections, go-live numbering, file types and size, requester download (B23), request caps, Dashboard card (C10)). The details below are what the spec assumes without asking; they stay [ASSUMPTION] until confirmed. Related open items: A2 and C6 (numbering, provisional, D-024), A4 (sample formats, needed only if L1 chooses document generation), A6 (request flow design), B17, B23, C10.
+
+| # | Assumption | Status | Priority |
+|---|---|---|---|
+| A-LT1 | Numbering year = Jakarta calendar year at the moment the number is assigned (not the letter date, not the period); one sequence per type; never reused. Inherited from the D-024 working assumptions. | [ASSUMPTION] | P1 |
+| A-LT2 | A request has an optional free-text "Atas nama" (unit or committee) instead of a unit list, because committees are not PI-CORE entities (B7). | [ASSUMPTION] | P2 |
+| A-LT3 | The register is the archive; no separate "archive" action or screen (the word in the `letters.manage` key text means files are kept). | [ASSUMPTION] | P2 |
+| A-LT4 | Issuing from a request needs only `letter_requests.process`; the issue function creates the register row. Direct registration needs `letters.manage`. | [ASSUMPTION] | P1 |
+| A-LT5 | A secretary may issue directly from Diajukan (the Diproses step is optional). | [ASSUMPTION] | P2 |
+| A-LT6 | "Processed" in access control L9 means "leaves Diajukan": the requester cancels only while Diajukan. | [ASSUMPTION] | P1 |
+| A-LT7 | A request needs an active period; lecturers may request (B15 stays open). | [ASSUMPTION] | P2 |
+| A-LT8 | A voided letter cannot be restored; the correction is a new letter with a new number. | [ASSUMPTION] | P1 |
+| A-LT9 | A wrong file is withdrawn (kept, visible only to managers), never deleted. | [ASSUMPTION] | P2 |
+| A-LT10 | A submitted request cannot be edited; cancel and resubmit. | [ASSUMPTION] | P2 |
+| A-LT11 | Voiding the letter behind an issued request leaves the request Diterbitkan with a visible "Nomor dibatalkan" flag. | [ASSUMPTION] | P2 |
+| A-LT12 | The numbering settings are edited by the System Admin (logged) and readable by the BPH secretaries; no new permission key. | [ASSUMPTION] | P1 |
+| A-LT13 | Signed file links last 300 seconds; at most 10 unattached uploads per member per 24 hours; at most 3 files per letter or request. Storage estimate (about 150 letters a year, about 200 MB a year) is a guess; verify against the 1 GB free tier (C9, F11). | [ASSUMPTION] | P1 |
+| A-LT14 | Department and bureau secretaries cannot read the register (B17 default); no confidential flag in Phase 1. | [ASSUMPTION] | P1 |
+| A-LT15 | Page size 20; search on number, counterpart and Perihal; the period filter defaults to the active period. | [ASSUMPTION] | P2 |
+| A-LT16 | Export header shows the period filter and the export date in WIB, like Member Data. | [ASSUMPTION] | P2 |
+| A-LT17 | Members cannot export their own requests; the request list itself is not exportable in Phase 1. | [ASSUMPTION] | P2 |
+| A-LT18 | Field limits: Perihal 200 characters, counterpart 150, purpose text 1000, notes and processor notes 500, on-behalf-of 120, counterpart's own letter number 60. | [ASSUMPTION] | P2 |
+| A-LT19 | A received date and a letter date cannot be in the future. | [ASSUMPTION] | P2 |
+| A-LT20 | A request issued after a period change creates its letter in the ACTIVE period, linked to the old request. | [ASSUMPTION] | P2 |
+| A-LT21 | The queue has a filter "Belum selesai (semua periode)" for the period handover. | [ASSUMPTION] | P2 |
+| A-LT22 | Progja can later link to a letter by id without a rewrite (letters carry `period_id`). | [ASSUMPTION] | P2 |
+
