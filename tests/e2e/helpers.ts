@@ -96,9 +96,15 @@ export async function loginViaUi(page: Page, persona: PersonaKey, next?: string)
   await fillAndSubmit(page, PERSONAS[persona].email, PASSWORD);
 }
 
+/** The Dashboard h1 is the greeting "Shalom, {first name}!" (D-023); the tab title stays "Dashboard". */
+export function dashboardHeading(page: Page) {
+  return page.getByRole("heading", { level: 1, name: /^Shalom, .+!$/ });
+}
+
 export async function expectOnDashboard(page: Page) {
   await expect(page).toHaveURL(/^http:\/\/localhost:3100\/(\?.*)?$/);
-  await expect(page.getByRole("heading", { level: 1, name: "Dashboard" })).toBeVisible();
+  await expect(dashboardHeading(page)).toBeVisible();
+  await expect(page).toHaveTitle(/Dashboard/);
 }
 
 export async function expectNoAccessScreen(page: Page) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Dialog } from "radix-ui";
@@ -50,12 +51,12 @@ export function NavDrawer({ nav }: { nav: NavData }) {
             "pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] focus:outline-none",
             "data-[state=open]:animate-in data-[state=open]:slide-in-from-left data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left",
             // The state variants are more specific than plain motion-reduce:animate-none (BUG-MD-02).
-            "duration-200 motion-reduce:data-[state=open]:animate-none motion-reduce:data-[state=closed]:animate-none",
+            "duration-250 ease-(--nx-ease-out) motion-reduce:data-[state=open]:animate-none motion-reduce:data-[state=closed]:animate-none",
           )}
         >
           <div className="flex items-center gap-3 border-b border-surface-line px-4 py-4">
-            {/* Crest slot: empty until the owner supplies the logo file (C12). Decorative. */}
-            <span aria-hidden="true" className="size-9 shrink-0 rounded-full border border-gold bg-surface-line" />
+            {/* PMK ITERA seal (D-023); the title next to it names the app, so alt is empty. */}
+            <Image src="/brand/pmk-logo-192.png" alt="" width={44} height={44} className="size-11 shrink-0" />
             <div className="min-w-0 flex-1">
               <Dialog.Title className="font-heading text-headline-lg font-bold text-title">PMK-NEXUS</Dialog.Title>
               <p className="text-body-sm text-ink-body">Institut Teknologi Sumatera</p>
@@ -69,7 +70,8 @@ export function NavDrawer({ nav }: { nav: NavData }) {
           </div>
 
           <nav aria-label="Menu utama" className="flex-1 overflow-y-auto px-3 py-3">
-            <ul className="flex flex-col gap-1">
+            {/* Items follow the panel in by 30 ms steps (nx-rise-list); off with reduced motion. */}
+            <ul className="nx-rise-list flex flex-col gap-1">
               {nav.items.map((item) => {
                 const Icon = ICONS[item.icon];
                 const active = isActiveHref(pathname, item.href);
@@ -82,7 +84,7 @@ export function NavDrawer({ nav }: { nav: NavData }) {
                       onClick={() => setOpen(false)}
                       // Type size outside cn(): see buttonClass in components/ui/nx-button.tsx.
                       className={`text-label-lg ${cn(
-                        "flex min-h-11 items-center gap-3 rounded-lg px-4 transition-colors duration-150 motion-reduce:transition-none",
+                        "flex min-h-11 items-center gap-3 rounded-lg px-4 transition-[color,background-color,transform] duration-150 active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100",
                         active
                           ? "bg-title font-bold text-primary-foreground focus-visible:outline-title"
                           : "text-ink-body hover:bg-ivory hover:text-ink",

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { NavData } from "./nav";
 import { NavDrawer } from "./nav-drawer";
 
@@ -14,11 +15,8 @@ export function AppBar({ nav }: { nav?: NavData }) {
     <header className={barClass}>
       <div className="flex justify-start">{nav ? <NavDrawer nav={nav} /> : null}</div>
       <div className="flex items-center justify-center gap-2">
-        {/* Crest slot: empty until the owner supplies the logo file (C12). Decorative. */}
-        <span
-          aria-hidden="true"
-          className="size-7 shrink-0 rounded-full border border-gold-ring bg-surface-line"
-        />
+        {/* PMK ITERA seal (D-023, [ASSUMPTION] official file, C12). The name next to it says the same, so alt is empty. */}
+        <Image src="/brand/pmk-logo-192.png" alt="" width={36} height={36} priority className="size-9 shrink-0" />
         <span className="font-heading text-headline-lg text-primary-foreground">PMK ITERA</span>
       </div>
       {/* Keeps the brand centred; the bell would sit here. */}

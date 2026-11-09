@@ -64,8 +64,10 @@ Details in `docs/design/stitch/comparison.md`.
 | C9 | Minutes attachments: PDF/DOCX, max 10 MB? | [ASSUMPTION] yes | P2 | Watch Supabase free-tier storage (1 GB). |
 | C10 | Dashboard "Surat Menyurat" card (not in context doc): keep? | [UNKNOWN] | P2 | |
 | C11 | Export: Stitch shows mostly PDF; context requires Excel, CSV, PDF. Keep all three? | **[ANSWERED]** 2026-11-06: all three (D-019 M5, D-020) | - | |
-| C12 | Real PMK logo file (SVG/PNG) for the header | [UNKNOWN] | P1 (UI) | Stitch uses placeholders. |
+| C12 | Real PMK logo file (SVG/PNG) for the header | [ASSUMPTION] 2026-11-09: use PI-CORE's `public/brand/pmk-logo.png` (round PMK ITERA emblem), copied to NEXUS `public/brand/` (D-023) | P1 (UI) | Owner to confirm it is the official logo. Only PNG; an SVG would be sharper. |
 | C13 | Login screen: reuse PI-CORE's "Masuk PMK ITERA" design? | **[ANSWERED]** 2026-11-06: reuse structure and wording, Stitch look (D-017) | - | One account for all apps. |
+| C14 | Visual polish (D-023): the pilot (Dashboard, catalog) is better but the owner rates it below PI-CORE. When to do the next polish pass and the rollout to the other built screens? | [UNKNOWN] | P1 (UI) | Owner moved on to Letters first (2026-11-09). Reference: `../pi-core-v2/.taste-skill/stitch/final/`. |
+| C15 | New copy from the pilot: "Shalom, {nama depan}!", "Kamu masuk sebagai {nama}.", "Ringkasan ini hanya memuat modul yang bisa kamu buka.", catalog "Daftar barang", tiles "Barang", "Unit baik", "{n} dipinjam", "Perlu servis", Data Anggota card texts. | [ASSUMPTION] accepted while in use | P2 | Listed in D-023. |
 
 ## B-bis. Effect of D-011 (configurable access)
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getAccessState } from "@/lib/auth/session";
 import { ForbiddenScreen } from "@/components/access/forbidden-screen";
-import { listCatalog, listEntries } from "@/modules/inventory-borrowing/server/catalog";
+import { getInventoryStatusCounts, listCatalog, listEntries } from "@/modules/inventory-borrowing/server/catalog";
 import { INVENTORY_ERROR_COPY, inventoryCapabilities, jakartaToday } from "@/modules/inventory-borrowing/types";
 import { CatalogScreen, type CatalogResult } from "@/modules/inventory-borrowing/ui/catalog-screen";
 import { firstFailure, pageFailure } from "@/modules/inventory-borrowing/ui/page-errors";
@@ -39,7 +39,7 @@ export default async function KatalogPage({ searchParams }: { searchParams: Prom
     else range = { from: values.from, to: values.to };
   }
 
-  const [list, categories, locations, counts] = await Promise.all([
+  const [list, categories, locations, counts, status] = await Promise.all([
     listCatalog({
       filters: {
         search: values.search,
@@ -55,6 +55,8 @@ export default async function KatalogPage({ searchParams }: { searchParams: Prom
     listEntries({ kind: "category" }),
     listEntries({ kind: "location" }),
     queueCountsFor(capabilities),
+    // Header tiles (D-023): the same inventory.view read as the Dashboard card; a failure only hides them.
+    getInventoryStatusCounts(),
   ]);
 
   const next = catalogHref(values);
@@ -89,6 +91,7 @@ export default async function KatalogPage({ searchParams }: { searchParams: Prom
       today={today}
       dateError={dateError}
       queueActionCount={counts?.actionNeeded ?? null}
+      statusCounts={status.ok ? status.data : null}
       managerEmptyAction={capabilities.canManageInventory ? <ManagerEmptyAction /> : null}
     />
   );

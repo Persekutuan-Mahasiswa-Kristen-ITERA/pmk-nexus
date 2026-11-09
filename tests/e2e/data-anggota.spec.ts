@@ -5,7 +5,7 @@
 // This file only READS data. Specs that change data: data-anggota-period.spec.ts. Exports: data-anggota-export.spec.ts.
 import { expect, test, type Page } from "@playwright/test";
 import { sql } from "../support/local-stack";
-import { PERSONAS, signedInContext, type PersonaKey } from "./helpers";
+import { dashboardHeading, PERSONAS, signedInContext, type PersonaKey } from "./helpers";
 import {
   LIST_PATH,
   counterLabel,
@@ -106,7 +106,7 @@ test.describe("MD-03, MD-05: personas without Member Data view: no drawer item, 
         await expect(searchBox(page)).toHaveCount(0);
         await expect(page).toHaveTitle(/Tidak punya akses/);
         await page.getByRole("link", { name: "Kembali ke Dashboard" }).click();
-        await expect(page.getByRole("heading", { level: 1, name: "Dashboard" })).toBeVisible();
+        await expect(dashboardHeading(page)).toBeVisible();
 
         // The raw HTML (including the streamed RSC payload) holds no other member's name, no marker, no number
         const html = await (await context.request.get(LIST_PATH)).text();

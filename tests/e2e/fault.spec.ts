@@ -4,7 +4,7 @@
 import { execFileSync } from "node:child_process";
 import { expect, test } from "@playwright/test";
 import { API_URL, PUBLISHABLE_KEY } from "../support/local-stack";
-import { expectOnDashboard, signedInContext } from "./helpers";
+import { dashboardHeading, expectOnDashboard, signedInContext } from "./helpers";
 
 const REST = "supabase_rest_pmk-nexus";
 const docker = (...args: string[]) => execFileSync("docker", args, { encoding: "utf8" });
@@ -39,7 +39,7 @@ test("REST down: error screen, session kept, no 'no access' wording; 'Coba lagi'
     await expect
       .poll(
         async () => {
-          if (await page.getByRole("heading", { level: 1, name: "Dashboard" }).isVisible()) return "ok";
+          if (await dashboardHeading(page).isVisible()) return "ok";
           await page.getByRole("button", { name: "Coba lagi" }).click({ timeout: 2_000 }).catch(() => {});
           await page.waitForTimeout(1_500);
           return "waiting";

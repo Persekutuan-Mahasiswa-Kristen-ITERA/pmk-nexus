@@ -35,6 +35,18 @@
   --nx-ivory: #F0E9DC;           /* info tone, ghost hover, skeleton bars */
   --nx-ivory-line: #DECDB5;      /* info tone border */
   --nx-drawer: #FFF1E8;          /* side drawer (Stitch surface-container-low) */
+  /* Warm header card (D-023): Stitch gold #C59A27 mixed into white. Fill 12 %, border 30 %.
+     Text on the fill: title 11.44:1, ink-body 8.43:1, walnut 8.09:1, ink-meta 4.92:1. */
+  --nx-gold-tint: #F8F3E5;
+  --nx-gold-tint-line: #EEE1BE;
+  /* Header card gradient stops (round 2): gold 4 % over white at the top, the tint at the bottom, and a
+     soft gold glow (gold at 20 %) in the top-right corner. Darkest point about #F2E8CD: title 10.2:1,
+     ink-body 7.5:1, walnut 7.2:1. Never put ink-meta text straight on this card (4.4:1 there). */
+  --nx-gold-tint-top: #FDFBF6;
+  --nx-gold-glow: rgb(197 154 39 / 0.2);
+  --nx-header-fill:
+    radial-gradient(120% 110% at 100% 0%, var(--nx-gold-glow), transparent 55%),
+    linear-gradient(180deg, var(--nx-gold-tint-top), var(--nx-gold-tint));
 
   /* Fields (D-017: border is Stitch outline, 4.33:1; Stitch #D8CCBA failed 3:1) */
   --nx-field: #FCFBF8;
@@ -54,6 +66,11 @@
   --nx-grey: #4A463D;
   --nx-grey-soft: #E9E2D5;
   --nx-grey-line: #D3C4B7;
+
+  /* Motion (round 2, D-023). Stitch animated screens use fadeInUp with this ease-out curve. One entrance
+     is at most 280 ms plus a 120 ms stagger, so a screen is settled within 400 ms. */
+  --nx-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --nx-rise-duration: 280ms;
 
   /* Elevation (Stitch levels 1 and 2) */
   --nx-elevation-1: 0 1px 3px rgba(98, 67, 31, 0.05), 0 4px 12px rgba(98, 67, 31, 0.03);
@@ -121,6 +138,8 @@
   --color-ivory: var(--nx-ivory);
   --color-ivory-line: var(--nx-ivory-line);
   --color-drawer: var(--nx-drawer);
+  --color-gold-tint: var(--nx-gold-tint);
+  --color-gold-tint-line: var(--nx-gold-tint-line);
   --color-field: var(--nx-field);
   --color-field-line: var(--nx-field-line);
   --color-focus-halo: var(--nx-focus-halo);
@@ -261,5 +280,129 @@
   }
   input {
     caret-color: var(--nx-walnut);
+  }
+}
+
+/*
+ * Large figures (D-023 round 2). Plain classes, not --text-* tokens, so cn() needs no new entries.
+ * Plus Jakarta Sans bold, tabular figures, tight tracking like the PI-CORE stat numbers.
+ */
+@layer components {
+  .nx-figure-lg {
+    font-size: 2.5rem;
+    line-height: 2.75rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+  }
+  .nx-figure-md {
+    font-size: 2rem;
+    line-height: 2.25rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+  }
+  .nx-header-card {
+    background: var(--nx-header-fill);
+  }
+}
+
+/*
+ * Motion (D-023 round 2, owner request). Every rule below has one job:
+ * - nx-rise: content arrives with a short fade and an 8 px rise, so the eye reads top to bottom.
+ *   Stagger with nx-delay-1..3 (40 ms steps). Ends within 400 ms; never blocks clicks.
+ * - nx-shimmer: a loading bar shows it is still working. Runs only while a skeleton is on screen.
+ * - nx-lift: a card that leads somewhere rises 2 px on hover (pointer devices only).
+ * - nx-press: a tap scales a control to 98 %, so a touch feels answered.
+ * With prefers-reduced-motion: reduce, all of it is off and content shows in its final state.
+ */
+@keyframes nx-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes nx-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+@layer utilities {
+  .nx-rise {
+    animation: nx-rise var(--nx-rise-duration) var(--nx-ease-out) backwards;
+  }
+  .nx-delay-1 {
+    animation-delay: 40ms;
+  }
+  .nx-delay-2 {
+    animation-delay: 80ms;
+  }
+  .nx-delay-3 {
+    animation-delay: 120ms;
+  }
+  /* Lists: the first rows arrive one after another, the rest together (stagger capped at 120 ms). */
+  .nx-rise-list > * {
+    animation: nx-rise var(--nx-rise-duration) var(--nx-ease-out) backwards;
+  }
+  .nx-rise-list > :nth-child(2) {
+    animation-delay: 30ms;
+  }
+  .nx-rise-list > :nth-child(3) {
+    animation-delay: 60ms;
+  }
+  .nx-rise-list > :nth-child(4) {
+    animation-delay: 90ms;
+  }
+  .nx-rise-list > :nth-child(n + 5) {
+    animation-delay: 120ms;
+  }
+  .nx-shimmer {
+    /* Ivory bar with a lighter band (zebra) sweeping across: Stitch colours only. */
+    background-image: linear-gradient(90deg, var(--nx-ivory) 0%, var(--nx-zebra) 50%, var(--nx-ivory) 100%);
+    background-size: 200% 100%;
+    animation: nx-shimmer 1.4s linear infinite;
+  }
+  .nx-press {
+    transition: transform 150ms var(--nx-ease-out);
+  }
+  .nx-press:active {
+    transform: scale(0.98);
+  }
+  .nx-lift {
+    transition:
+      transform 200ms var(--nx-ease-out),
+      box-shadow 200ms var(--nx-ease-out),
+      border-color 200ms var(--nx-ease-out);
+  }
+  @media (hover: hover) {
+    .nx-lift:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--nx-elevation-2);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nx-rise,
+  .nx-rise-list > *,
+  .nx-shimmer {
+    animation: none;
+  }
+  .nx-press,
+  .nx-lift {
+    transition: none;
+  }
+  .nx-press:active,
+  .nx-lift:hover {
+    transform: none;
   }
 }

@@ -7,6 +7,7 @@ import { API_URL, PICORE_URL, PUBLISHABLE_KEY } from "../support/local-stack";
 import {
   PASSWORD,
   PERSONAS,
+  dashboardHeading,
   expectNoAccessScreen,
   expectOnDashboard,
   fillAndSubmit,
@@ -335,6 +336,7 @@ test.describe("logout (AUTH-27)", () => {
     await page.goBack().catch(() => {});
     await expect(page.getByText("Masuk sebagai")).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Dashboard" })).toHaveCount(0);
+    await expect(dashboardHeading(page)).toHaveCount(0);
     await context.close();
   });
 

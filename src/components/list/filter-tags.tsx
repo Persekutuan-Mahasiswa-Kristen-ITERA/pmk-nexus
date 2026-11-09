@@ -7,7 +7,7 @@ import { ListLink } from "./list-navigation";
 // Filter tags are one of the two places pills are allowed (D-014). The visible pill is 36 px; an
 // invisible extension makes the tap area 44 px (R-03) without making the row look heavy.
 const tagBase =
-  "relative inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 whitespace-nowrap transition-colors duration-150 motion-reduce:transition-none after:absolute after:-inset-y-1 after:inset-x-0 after:content-['']";
+  "relative inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 whitespace-nowrap transition-[color,background-color,border-color,transform] duration-150 active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100 after:absolute after:-inset-y-1 after:inset-x-0 after:content-['']";
 const tagIdle = "border-field-line bg-surface text-ink-body hover:border-walnut hover:text-walnut";
 const tagActive = "border-walnut bg-walnut font-bold text-primary-foreground";
 

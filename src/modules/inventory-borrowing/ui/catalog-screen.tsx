@@ -5,7 +5,7 @@ import { ListLink, ListNavigationProvider, PendingRegion } from "@/components/li
 import { Pagination } from "@/components/list/pagination";
 import { AlertMessage } from "@/components/ui/alert-message";
 import { buttonClass } from "@/components/ui/nx-button";
-import type { CatalogPage, InventoryCapabilities, ListEntry } from "../types";
+import type { CatalogPage, InventoryCapabilities, InventoryStatusCounts, ListEntry } from "../types";
 import { CatalogFilters } from "./catalog-filters";
 import { CatalogTable } from "./catalog-table";
 import { COPY, rangeText } from "./copy";
@@ -43,6 +43,7 @@ export function CatalogScreen({
   dateError,
   managerEmptyAction = null,
   queueActionCount = null,
+  statusCounts = null,
 }: {
   result: CatalogResult;
   values: CatalogUrlState;
@@ -57,8 +58,9 @@ export function CatalogScreen({
   managerEmptyAction?: ReactNode;
   /** "Antrean (n)" in the module control; null when unknown or not shown. */
   queueActionCount?: number | null;
+  /** Inventory-wide figures for the header tiles; null hides them. */
+  statusCounts?: InventoryStatusCounts | null;
 }) {
-  const total = result.kind === "ok" ? result.list.total : null;
 
   return (
     <ListNavigationProvider>
@@ -68,12 +70,12 @@ export function CatalogScreen({
           periodLabel={periodLabel}
           current="catalog"
           queueActionCount={queueActionCount}
-          countBox={total !== null ? { label: "Hasil", value: formatCount(total), unit: "barang" } : null}
+          stats={statusCounts}
         />
 
         {capabilities.canSubmitRequest ? (
           // The one focal point of the screen (design 5.2). Absent without an active period.
-          <Link href={requestFormHref()} className={buttonClass("primary")}>
+          <Link href={requestFormHref()} className={buttonClass("primary", "nx-rise nx-delay-1")}>
             <Plus aria-hidden="true" className="size-5" strokeWidth={2} />
             Ajukan Peminjaman
           </Link>
@@ -83,19 +85,21 @@ export function CatalogScreen({
           <UnavailableNotice />
         ) : (
           <>
-            <CatalogFilters
-              values={values}
-              categories={result.categories}
-              locations={result.locations}
-              today={today}
-              searchError={result.kind === "search_too_long" ? COPY.searchTooLong : null}
-              dateError={dateError}
-              exportSlot={
-                result.kind === "ok" && capabilities.canExportInventory && result.list.total > 0 ? (
-                  <CatalogExport filters={result.list.filters} />
-                ) : null
-              }
-            />
+            <div className="nx-rise nx-delay-2">
+              <CatalogFilters
+                values={values}
+                categories={result.categories}
+                locations={result.locations}
+                today={today}
+                searchError={result.kind === "search_too_long" ? COPY.searchTooLong : null}
+                dateError={dateError}
+                exportSlot={
+                  result.kind === "ok" && capabilities.canExportInventory && result.list.total > 0 ? (
+                    <CatalogExport filters={result.list.filters} />
+                  ) : null
+                }
+              />
+            </div>
             {result.kind === "search_too_long" ? (
               <SearchTooLong values={values} />
             ) : (
@@ -138,7 +142,14 @@ function CatalogBody({
   const to = list.rows[list.rows.length - 1].rowNo;
 
   return (
-    <PendingRegion className="flex flex-col gap-4">
+    <PendingRegion className="flex flex-col gap-3">
+      {/* The result count moved here from the title (D-023): it describes this list, not the inventory. */}
+      <div className="nx-rise nx-delay-2 flex items-baseline justify-between gap-3 px-1">
+        <h2 className="text-headline-sm text-ink">Daftar barang</h2>
+        <p className="text-body-md text-ink-body tabular-nums">
+          Hasil <span className="font-bold text-ink">{formatCount(list.total)}</span> barang
+        </p>
+      </div>
       <CatalogTable
         rows={list.rows}
         caption={`Daftar barang, halaman ${list.page} dari ${list.pageCount}`}

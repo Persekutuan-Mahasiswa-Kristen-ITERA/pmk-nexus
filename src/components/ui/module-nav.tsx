@@ -32,7 +32,7 @@ export function ModuleNav({ label, items, current }: { label: string; items: Mod
                 aria-current={active ? "page" : undefined}
                 aria-label={item.accessibleLabel}
                 className={`${cn(
-                  "flex min-h-14 w-full items-center justify-center rounded-lg px-2 py-1.5 text-center leading-tight text-balance transition-colors duration-150 motion-reduce:transition-none",
+                  "flex min-h-14 w-full items-center justify-center rounded-lg px-2 py-1.5 text-center leading-tight text-balance transition-[color,background-color,transform] duration-150 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100",
                   active
                     ? "bg-walnut font-bold text-primary-foreground"
                     : "text-ink-body hover:bg-surface hover:text-ink",

@@ -48,10 +48,8 @@ export function BackLink({ href, children }: { href: string; children: ReactNode
   );
 }
 
-/** Flat placeholder bar. No shimmer, no pulse (MOTION 1). */
-export function SkeletonBar({ className, width }: { className: string; width?: string }) {
-  return <div style={width ? { width } : undefined} className={`max-w-full rounded-sm bg-ivory ${className}`} />;
-}
+/** Flat placeholder bar (shared; kept here so module imports stay short). */
+export { SkeletonBar } from "@/components/ui/skeleton-bar";
 
 /** Plain card section with an h2 (detail and form pages). */
 export function SectionCard({ title, children, id }: { title: string; children: ReactNode; id?: string }) {

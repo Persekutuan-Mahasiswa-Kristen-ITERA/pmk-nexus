@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
 import { AlertMessage } from "@/components/ui/alert-message";
 import { ModuleNav, type ModuleNavItem } from "@/components/ui/module-nav";
-import type { InventoryCapabilities } from "../types";
+import { HeaderStat, PageHeaderCard } from "@/components/ui/page-header-card";
+import type { InventoryCapabilities, InventoryStatusCounts } from "../types";
 import { COPY } from "./copy";
+import { formatCount } from "./format";
 import { INVENTORY_PATH, MANAGE_PATH, MY_REQUESTS_PATH, QUEUE_PATH } from "./routes";
 
 export type InventorySection = "catalog" | "mine" | "queue" | "manage";
@@ -50,14 +52,16 @@ export function queueSectionVisible(capabilities: InventoryCapabilities): boolea
 }
 
 /**
- * Title block of a module section page (design 3.2 and 4.2): Playfair title, period line, an optional
- * count box on the right, the segmented control, and the no-active-period banner (4.5).
+ * Title block of a module section page (design 3.2 and 4.2, D-023): the warm header card with the
+ * period pill, the Playfair title and an optional count box or stat tiles, then the no-active-period
+ * banner (4.5) and the segmented control.
  */
 export function InventoryHeader({
   capabilities,
   periodLabel,
   current,
   countBox,
+  stats,
   queueActionCount = null,
 }: {
   capabilities: InventoryCapabilities;
@@ -65,30 +69,45 @@ export function InventoryHeader({
   current: InventorySection;
   /** "Hasil 42 barang" / "Pengajuan 3 berjalan"; null while unknown. */
   countBox?: { label: string; value: string; unit: string } | null;
+  /** Inventory-wide figures under the title (Katalog); null hides the row (unknown or failed). */
+  stats?: InventoryStatusCounts | null;
   queueActionCount?: number | null;
 }) {
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-end justify-between gap-4 border-b border-surface-line pb-3">
-        <div className="min-w-0">
-          <h1 className="font-heading text-display-lg text-balance text-title">{COPY.moduleTitle}</h1>
-          {periodLabel ? <p className="text-body-md text-ink-body">Periode {periodLabel}</p> : null}
-        </div>
-        {countBox ? <CountBox {...countBox} /> : null}
-      </div>
+      <PageHeaderCard periodLabel={periodLabel} title={COPY.moduleTitle} aside={countBox ? <CountBox {...countBox} /> : null}>
+        {stats ? <StatTiles counts={stats} /> : null}
+      </PageHeaderCard>
       {capabilities.hasActivePeriod ? null : (
         <AlertMessage role="status" tone="info">
           {COPY.noActivePeriod}
         </AlertMessage>
       )}
-      <ModuleNav label={COPY.navLabel} items={inventorySections(capabilities, queueActionCount)} current={current} />
+      <div className="nx-rise nx-delay-1">
+        <ModuleNav label={COPY.navLabel} items={inventorySections(capabilities, queueActionCount)} current={current} />
+      </div>
     </div>
+  );
+}
+
+/**
+ * Three figures from the same counts as the Dashboard card. "Unit baik" includes the loaned units, so
+ * the loan count is a note under it rather than a tile of its own (the tiles never add up wrongly).
+ */
+function StatTiles({ counts }: { counts: InventoryStatusCounts }) {
+  if (counts.itemCount === 0) return null; // the list below already says the inventory is empty
+  return (
+    <dl aria-label="Ringkasan inventaris" className="mt-1 grid grid-cols-3 gap-2 md:gap-3">
+      <HeaderStat label="Barang" value={counts.itemCount} />
+      <HeaderStat label="Unit baik" value={counts.goodCount} note={`${formatCount(counts.goodOnLoanCount)} dipinjam`} />
+      <HeaderStat label="Perlu servis" value={counts.needsServiceCount} warn={counts.needsServiceCount > 0} />
+    </dl>
   );
 }
 
 function CountBox({ label, value, unit }: { label: string; value: string; unit: string }) {
   return (
-    <p className="shrink-0 rounded-lg border border-surface-line bg-surface px-3 py-1.5 text-right">
+    <p className="shrink-0 rounded-lg border border-gold-tint-line bg-surface px-3 py-1.5 text-right">
       <span className="block text-body-sm text-ink-meta">{label}</span>
       <span className="text-numeric-metric text-walnut tabular-nums">{value}</span>{" "}
       <span className="text-body-sm text-ink-body">{unit}</span>
