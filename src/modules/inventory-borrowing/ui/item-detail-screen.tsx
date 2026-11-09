@@ -85,7 +85,7 @@ export function ItemDetailScreen({
         <div className="flex flex-col gap-4 md:grid md:grid-cols-2">
           <SectionCard title="Rincian" id="item-info">
             {item.description ? <p className="mb-3 text-body-md break-words whitespace-pre-line text-ink-body">{item.description}</p> : null}
-            <dl className="grid grid-cols-[6rem_1fr] gap-x-3 gap-y-2 text-body-md">
+            <dl className="grid grid-cols-[6rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-body-md">
               <dt className="text-ink-meta">Kategori</dt>
               <dd className="break-words text-ink">{item.categoryName ?? COPY.noCategory}</dd>
               <dt className="text-ink-meta">Lokasi</dt>

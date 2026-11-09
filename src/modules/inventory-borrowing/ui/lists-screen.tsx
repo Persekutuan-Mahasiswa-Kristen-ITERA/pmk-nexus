@@ -72,7 +72,7 @@ export function ListsScreen({ kind, entries }: { kind: InventoryListKind; entrie
         ]}
       />
 
-      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[20rem_1fr] lg:items-start">
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start">
         <AddEntryCard key={kind} kind={kind} onAdded={() => setAnnounce(text.added)} />
 
         <div className="flex flex-col gap-3">

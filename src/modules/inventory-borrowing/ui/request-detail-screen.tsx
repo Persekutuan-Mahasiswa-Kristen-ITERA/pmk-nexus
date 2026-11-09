@@ -97,7 +97,7 @@ export function RequestDetailScreen({
       ) : null}
 
       <SectionCard title="Ringkasan" id="request-summary">
-        <dl className="grid grid-cols-[6.5rem_1fr] gap-x-3 gap-y-2 text-body-md">
+        <dl className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-body-md">
           <dt className="text-ink-meta">Pemohon</dt>
           <dd className="break-words text-ink">
             {detail.isOutsideParty ? (
