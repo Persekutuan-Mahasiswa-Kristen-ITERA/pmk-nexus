@@ -1,6 +1,6 @@
 # PMK-NEXUS Open Questions and Active Assumptions
 
-Last updated: 2026-11-09 (section F-bis added: Inventory and Borrowing application-layer security review; A-IB43 upload cap narrowed to 24 hours). Earlier: 2026-11-07 (Inventory and Borrowing answers IB1-IB15, D-022; A7, B4, C7 answered; section H added). Earlier: 2026-11-06 (Member Data answers, D-019; section G added).
+Last updated: 2026-11-09 (A2/C6 provisional, D-024; C14-C15 added; section F-bis added: Inventory and Borrowing application-layer security review; A-IB43 upload cap narrowed to 24 hours). Earlier: 2026-11-07 (Inventory and Borrowing answers IB1-IB15, D-022; A7, B4, C7 answered; section H added). Earlier: 2026-11-06 (Member Data answers, D-019; section G added).
 Tags: **[UNKNOWN]** no answer yet, **[ASSUMPTION]** working guess that needs confirmation, **[ANSWERED]** resolved (move the decision to `DECISIONS.md`).
 Priority: **P0** blocks the next step, **P1** blocks a specific module, **P2** can wait.
 
@@ -11,7 +11,7 @@ Priority: **P0** blocks the next step, **P1** blocks a specific module, **P2** c
 | # | Question | Status | Priority | Notes |
 |---|---|---|---|---|
 | A1 | Final name: PMK-NEXUS or PI-NEXUS? | [UNKNOWN] | P2 | Stitch screens use "PMK-NEXUS". |
-| A2 | Exact letter numbering rules: outgoing code (e.g. `SK`), yearly reset, who assigns numbers? | [UNKNOWN] | P1 (Letters) | Only `PMK/NEX/SM/2026/001` is known. |
+| A2 | Exact letter numbering rules: outgoing code (e.g. `SK`), yearly reset, who assigns numbers? | **Provisional** 2026-11-09 (D-024) | P2 | Owner: use the design format for now, changeable later. [ASSUMPTION] system assigns, yearly reset, one sequence per type, never reused. Confirm with the PMK secretaries. |
 | A3 | List of PMK departments and organizational structure | **Partly answered** | P1 | PI-CORE seeds 7 departments, 1 bureau, 16 divisions (`docs/picore/schema-report.md` section 8). Owner to confirm this matches reality. |
 | A4 | Sample official letter formats | [UNKNOWN] | P1 (Letters) | |
 | A5 | Exact Figma colors and fonts | [UNKNOWN] | P1 (UI) | Stitch has exact values (see section C), but they differ from the context doc. Which design wins? |
@@ -58,7 +58,7 @@ Details in `docs/design/stitch/comparison.md`.
 | C3 | Fonts: Playfair Display + Plus Jakarta Sans OK? | **[ANSWERED]** 2026-11-06: yes (D-014) | - | |
 | C4 | Member status values: Stitch shows Aktif / Cuti / Alumni / Pembina, PI-CORE has only active/inactive. Show only Aktif / Nonaktif? | **[ANSWERED]** 2026-11-06: only Aktif / Nonaktif (D-019, M1) | - | "Pembina" is shown as a marker for lecturers (M6), not as a status. |
 | C5 | Remove "+ Tambah Anggota" from Data Anggota (read-only rule)? | [ASSUMPTION] remove (the Member Data spec already removes it) | P1 | Members are managed in PI-CORE. Not asked separately; follows the read-only decision. |
-| C6 | Outgoing letter code `SK` (seen in Stitch `PMK/NEX/SK/2026/012`): correct? | [UNKNOWN] | P1 (Letters) | Same as A2. |
+| C6 | Outgoing letter code `SK` (seen in Stitch `PMK/NEX/SK/2026/012`): correct? | **Provisional** 2026-11-09 (D-024) | P2 | Used for now; the code is a setting. |
 | C7 | Borrowing rule "H-3 kegiatan" (request at least 3 days before the event): real rule or Stitch filler? | **[ANSWERED]** 2026-11-07 (D-022, IB4 option a) | - | Filler. No lead time. The Stitch notice (and "Koordinator Logistik") is not adopted. |
 | C8 | Meeting status (Selesai / Terjadwal / Mendatang) on the Dashboard: do meetings need a schedule/status field? | [UNKNOWN] | P2 | Not in context doc. |
 | C9 | Minutes attachments: PDF/DOCX, max 10 MB? | [ASSUMPTION] yes | P2 | Watch Supabase free-tier storage (1 GB). |
