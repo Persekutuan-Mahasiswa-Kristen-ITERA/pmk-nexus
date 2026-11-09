@@ -243,4 +243,25 @@ Status tags: **[DECIDED]** final, **[ASSUMPTION]** needs owner confirmation.
 - **What:** Owner: "buat aja seperti itu, tapi nanti bisa diubah". Until PMK confirms its real rules, NEXUS numbers letters in the format seen in the design: incoming `PMK/NEX/SM/{year}/{seq}` and outgoing `PMK/NEX/SK/{year}/{seq}` (`seq` = three digits, e.g. `001`). The format (prefix, type codes, digits) must be **settings, not code**, so it can change later without a rewrite and without renumbering letters already issued.
 - **Working assumptions (to confirm, `OPEN_QUESTIONS.md` A2, C6):** numbers are assigned by the system when a letter is registered or a request is issued (not typed by hand); the sequence restarts at 001 every calendar year (the year in the number); one sequence per type (SM, SK); a number is never reused, also after a letter is archived or cancelled.
 - **Why:** the owner wants the module started now; the design format is a reasonable default, and making it a setting keeps the later correction cheap.
-- **Still open:** A4 (sample official letter formats) matters only if NEXUS ever generates letter documents; the Phase 1 spec decides whether it does.
+- **Still open:** A4 (sample official letter formats) matters only if NEXUS ever generates letter documents; the Phase 1 spec decides whether it does. (Answered by D-025 L1: it does not in Phase 1, so A4 is not needed.)
+
+## D-025 Letters module rules [DECIDED]
+- **Date:** 2026-11-09
+- **What:** The owner accepted every recommendation of `docs/modules/letters.md` section 10 (L1-L11):
+  - L1 (a): NEXUS only registers and archives finished letters; it does not generate documents, and signing happens outside NEXUS.
+  - L2 (b): request status path Diajukan, Diproses, then Diterbitkan, Ditolak or Dibatalkan; the number is assigned only at Diterbitkan, together with the file.
+  - L3 (b): a request holds Perihal, Ditujukan kepada and Keperluan, plus optional "Atas nama", "Dibutuhkan paling lambat" and up to 3 attachments.
+  - L4 (a): an outgoing letter can be registered directly by a `letters.manage` holder or created by issuing a request.
+  - L5 (a): register entries have no workflow status, only Aktif or Dibatalkan; the Stitch statuses (Verifikasi, Menunggu, Disposisi) are not adopted.
+  - L6 (a): details are editable by a manager in the active period with a history row; the number is never editable; a wrong letter is voided with a reason and its number is never reused.
+  - L7 (b): the System Admin sets the next sequence per type and year once at go-live; old letters may be registered with their original number typed by hand and marked "Nomor lama" (does not move the counter, must be unique).
+  - L8 (b): files are PDF, JPG or PNG, 5 MB each, up to 3 per letter or request; images are resized in the browser.
+  - L9 (a): the requester may download the issued file of their own request (answers B23).
+  - L10 (b): at most 5 open requests (Diajukan or Diproses) and 10 new requests per Jakarta day per member.
+  - L11 (a): the Dashboard card shows counts only (incoming and outgoing letters in the active period, plus waiting requests for processors), for `letters.view` holders; no letter titles (answers C10).
+- **Why:** the owner wants the module started now with the simplest safe path: no templates or official formats to invent, no workflow nobody defined, a trustworthy gap-free sequence, and the requester gets the letter without chasing the secretary.
+- **Tech-lead decision (D-021 exception):** the "Surat Menyurat" drawer item is shown to every active member, because everyone may file letter requests (access control L9). The register tabs stay behind `letters.view`. This is an explicit exception to D-021 (drawer by view permission); no new permission key and no baseline `letters.view`.
+- **Gaps 2-4 of the spec (section 12) resolved by adopting the spec's definitions:** A-LT6 ("processed" means leaves Diajukan, the requester cancels only while Diajukan; Diproses exists); A-LT3 (the register is the archive, no separate archive action); A-LT4 (issuing from a request needs only `letter_requests.process` and creates the register row; direct registration needs `letters.manage`).
+- **Impact:** A4 (sample letter formats) is not needed in Phase 1. B23 answered yes. C10 answered by L11. A2 and C6 stay provisional (D-024), with the L7 rule added. No new permission keys; default rules D06-D08 and D15-D23 stay as they are. The letter request flow screens (A6) are still to be designed by the UX designer. Remaining details stay [ASSUMPTION] A-LT1, A-LT5, A-LT7 to A-LT22 (`OPEN_QUESTIONS.md` section I).
+- **Risks:** letters, minutes and borrowing evidence share the free-tier 1 GB storage (watch it). Numbers that PMK already issued on paper may not use the D-024 format; confirm with the secretaries before go-live.
+- **Answers:** `OPEN_QUESTIONS.md` A4, B23, C10; adds the L7 note to A2 and C6, and section I.

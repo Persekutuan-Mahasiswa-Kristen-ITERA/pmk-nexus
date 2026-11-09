@@ -2,7 +2,7 @@
 
 > Reference document for the PMK-NEXUS project. Written in English for the AI assistant. The project owner communicates in Indonesian.
 > Status legend: **[DECIDED]** = final decision, **[ASSUMPTION]** = needs confirmation, **[PLANNED]** = future work, **[UNKNOWN]** = information still missing.
-> Last updated: 2026-11-09 (section 5.6 marked implemented on the local stack). Earlier: 2026-11-07 (Inventory and Borrowing decided, D-022: sections 4, 5.1, 5.6, 6, 8 updated). Earlier: 2026-11-07 (section 5.2 marked implemented on the local stack). Earlier: 2026-11-06 (sections 2, 4, 5.1, 5.2 and 8 updated for Member Data, D-019; section 6 replaced by the Stitch design, D-014; section 8 item 12 answered). Earlier: 2026-11-05 (sections 2, 3, 4, 7, 8, verified PI-CORE schema).
+> Last updated: 2026-11-09 (Letters decided, D-025: section 5.5 rewritten, section 8 items 4, 6, 8 updated). Earlier: 2026-11-09 (section 5.6 marked implemented on the local stack). Earlier: 2026-11-07 (Inventory and Borrowing decided, D-022: sections 4, 5.1, 5.6, 6, 8 updated). Earlier: 2026-11-07 (section 5.2 marked implemented on the local stack). Earlier: 2026-11-06 (sections 2, 4, 5.1, 5.2 and 8 updated for Member Data, D-019; section 6 replaced by the Stitch design, D-014; section 8 item 12 answered). Earlier: 2026-11-05 (sections 2, 3, 4, 7, 8, verified PI-CORE schema).
 
 ---
 
@@ -155,6 +155,7 @@ Based on the original Figma screens; visual design now follows Stitch (section 6
 - Recent Meetings: latest meetings list (e.g. "Rapat Koordinasi 2026-07-17")
 - Members: member count (from PI-CORE): all members with `is_active = true`, students and lecturers. Shown only to users with `member_data.view` (D-019).
 - Inventory Status [DECIDED 2026-11-07, D-022]: NO percentage (the Stitch/Figma "80%" is dropped). The card shows counts, for example units in good condition, units on loan, units needing service (exact wording at design time). Shown to every active member (baseline `inventory.view`).
+- Letters (Surat Menyurat) [DECIDED 2026-11-09, D-025, L11]: counts only (no letter subjects or counterparts), for `letters.view` holders; processors also see how many requests wait for them.
 
 ### 5.2 Member Data (Data Anggota) [DECIDED 2026-11-06, D-019] [IMPLEMENTED 2026-11-07, local stack only]
 Full spec: `docs/modules/member-data.md` (section 12 lists where the code lives). Built and tested locally; the migration is not yet applied to the hosted project. Not built: the Dashboard "Members" card and a screen to read the export log.
@@ -174,12 +175,15 @@ Full spec: `docs/modules/member-data.md` (section 12 lists where the code lives)
 ### 5.4 Meeting Minutes (Notulensi Rapat)
 Form fields: Date, Meeting Title, Topic, Minutes Content, Decision, and "Upload Attachment" button.
 
-### 5.5 Letters (Surat Menyurat)
-- Tabs/buttons: Incoming Letters (Surat Masuk) and Outgoing Letters (Surat Keluar).
-- Each item shows: letter number (e.g. `PMK/NEX/SM/2026/001`), counterpart party (e.g. "Direktorat Jenderal Pajak"), subject (Perihal, e.g. "Permohonan Verifikasi Berkas").
-- Also needed: archive of letter files, and a **letter request flow** (members request, secretary processes).
-- **Gap:** the letter request flow is not in the Stitch or Figma design. Propose a screen if needed.
-- **[ASSUMPTION]** Numbering format: `PMK/NEX/<type>/<year>/<sequence>`. `SM` appears to mean Surat Masuk. Confirm the code for outgoing letters (e.g. `SK`) and the exact rules.
+### 5.5 Letters (Surat Menyurat) [DECIDED 2026-11-09, D-025] [NOT BUILT YET]
+Full spec: `docs/modules/letters.md` (approved; the screens of the request flow still need the UX design, A6). The sample values in Stitch (Direktorat Jenderal Pajak, statuses like Verifikasi or Disposisi) are filler.
+- **Register:** tabs Incoming Letters (Surat Masuk) and Outgoing Letters (Surat Keluar). Each item shows the letter number, counterpart party, subject (Perihal), dates, files, and status Aktif or Dibatalkan (void). No other workflow status (L5). NEXUS only registers and archives finished letters: it does not generate documents and does not handle signing (L1); sample official formats (A4) are not needed in Phase 1.
+- **Numbering [DECIDED, provisional, D-024]:** incoming `PMK/NEX/SM/{year}/{seq}`, outgoing `PMK/NEX/SK/{year}/{seq}`, seq three digits; the format is a setting, not code. [ASSUMPTION, A2/C6] assigned by the system, restarts every calendar year, one sequence per type, never reused. At go-live the System Admin sets the next sequence once; old letters are registered with their original number marked "Nomor lama" (L7).
+- **Corrections:** details are editable in the active period with a history row; the number is never editable; a wrong letter is voided with a reason and its number is never reused (L6).
+- **Letter request flow:** any active member requests (Perihal, Ditujukan kepada, Keperluan, plus optional "Atas nama", needed-by date and up to 3 attachments). Status path: Diajukan, Diproses, then Diterbitkan, Ditolak or Dibatalkan; the number is assigned only at Diterbitkan, together with the file. The requester may cancel only while Diajukan and may download the issued file of their own request (B23 answered yes). BPH secretaries process requests, never their own, and may also register outgoing letters directly (L2, L3, L4, L9). Caps per member: 5 open requests and 10 new requests per Jakarta day (L10).
+- **Files:** private bucket, PDF, JPG or PNG, 5 MB each, up to 3 per letter or request (L8). Shares the free-tier 1 GB with minutes and borrowing evidence.
+- **Access:** register read = BPH (`letters.view`); register write and processing = BPH secretaries (`letters.manage`, `letter_requests.process`); export (Excel, CSV, PDF, logged) = BPH. The drawer item "Surat Menyurat" is shown to every active member because everyone may file requests (an explicit exception to D-021); the register tabs stay behind `letters.view`.
+- **Dashboard card (L11):** counts only (incoming and outgoing letters in the active period, plus waiting requests for processors), for `letters.view` holders; no letter titles.
 
 ### 5.6 Inventory and Item Management (Manajemen & Inventaris Barang) [DECIDED 2026-11-07, D-022] [IMPLEMENTED 2026-11-08, local stack only]
 Full spec: `docs/modules/inventory-borrowing.md`; test record: `docs/qa/inventory-borrowing.md`. Built, tested and security-reviewed locally (pages under `/inventaris`); the five inventory migrations are not yet applied to the hosted project. Not built: the Dashboard "Inventaris Status" card (Dashboard module), a screen to read the export log, and a cleanup of unused evidence uploads (`OPEN_QUESTIONS.md` F11). The sample values in the old Figma/Stitch design (Drum, "OK 1", H-3, "Koordinator Logistik") are filler.
@@ -256,11 +260,11 @@ The full, current list lives in `docs/OPEN_QUESTIONS.md`. Summary:
 1. [x] PI-CORE actual database migration files. Read 2026-11-05.
 2. [ ] Final name: PMK-NEXUS or PI-NEXUS.
 3. [x] Frontend/backend tech stack and hosting choice. See section 3.
-4. [ ] Exact letter numbering rules (including outgoing letters and yearly reset).
+4. [~] Exact letter numbering rules (including outgoing letters and yearly reset). Provisional 2026-11-09 (D-024, D-025): design format, system-assigned, yearly reset, setting not code; confirm with the PMK secretaries.
 5. [~] List of PMK departments and organizational structure. PI-CORE seeds them (section 2); owner to confirm they match reality.
-6. [ ] Sample official letter formats.
+6. [x] Sample official letter formats. Not needed in Phase 1: NEXUS only registers and archives finished letters (L1 a, D-025). Needed again only if a later phase generates documents.
 7. [x] Exact color codes and fonts: from Stitch (D-014).
-8. [ ] Design for login page, letter request flow, and borrowing request flow.
+8. [~] Design for login page, letter request flow, and borrowing request flow. Login and borrowing are designed (D-017, `docs/design/inventory-borrowing.md`). The letter request flow is specified (D-025) and still needs the UX design of its screens.
 9. [x] Definition of "Inventory Status 80%" on the dashboard. Answered 2026-11-07 (D-022): no percentage, counts instead (CLAUDE.md section 14 Q7).
 10. [x] Definition of member "Status" in Member Data: Aktif / Nonaktif from `members.is_active`. Answered 2026-11-06 (D-019).
 11. [x] Who is "the Secretary" for Letters and Minutes. Answered 2026-11-05 (D-008).

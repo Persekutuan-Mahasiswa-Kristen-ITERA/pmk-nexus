@@ -1,6 +1,6 @@
 # PMK-NEXUS Open Questions and Active Assumptions
 
-Last updated: 2026-11-09 (A2/C6 provisional, D-024; C14-C15 added; section F-bis added: Inventory and Borrowing application-layer security review; A-IB43 upload cap narrowed to 24 hours). Earlier: 2026-11-07 (Inventory and Borrowing answers IB1-IB15, D-022; A7, B4, C7 answered; section H added). Earlier: 2026-11-06 (Member Data answers, D-019; section G added).
+Last updated: 2026-11-09 (Letters answers L1-L11, D-025: A4, B23, C10 answered, L7 note on A2/C6, section I statuses updated). Earlier: 2026-11-09 (A2/C6 provisional, D-024; C14-C15 added; section F-bis added: Inventory and Borrowing application-layer security review; A-IB43 upload cap narrowed to 24 hours). Earlier: 2026-11-07 (Inventory and Borrowing answers IB1-IB15, D-022; A7, B4, C7 answered; section H added). Earlier: 2026-11-06 (Member Data answers, D-019; section G added).
 Tags: **[UNKNOWN]** no answer yet, **[ASSUMPTION]** working guess that needs confirmation, **[ANSWERED]** resolved (move the decision to `DECISIONS.md`).
 Priority: **P0** blocks the next step, **P1** blocks a specific module, **P2** can wait.
 
@@ -11,9 +11,9 @@ Priority: **P0** blocks the next step, **P1** blocks a specific module, **P2** c
 | # | Question | Status | Priority | Notes |
 |---|---|---|---|---|
 | A1 | Final name: PMK-NEXUS or PI-NEXUS? | [UNKNOWN] | P2 | Stitch screens use "PMK-NEXUS". |
-| A2 | Exact letter numbering rules: outgoing code (e.g. `SK`), yearly reset, who assigns numbers? | **Provisional** 2026-11-09 (D-024) | P2 | Owner: use the design format for now, changeable later. [ASSUMPTION] system assigns, yearly reset, one sequence per type, never reused. Confirm with the PMK secretaries. |
+| A2 | Exact letter numbering rules: outgoing code (e.g. `SK`), yearly reset, who assigns numbers? | **Provisional** 2026-11-09 (D-024) | P2 | Owner: use the design format for now, changeable later. [ASSUMPTION] system assigns, yearly reset, one sequence per type, never reused. Confirm with the PMK secretaries. **L7 (b), 2026-11-09 (D-025):** the System Admin sets the next sequence once at go-live; old letters are registered with their original number marked "Nomor lama". |
 | A3 | List of PMK departments and organizational structure | **Partly answered** | P1 | PI-CORE seeds 7 departments, 1 bureau, 16 divisions (`docs/picore/schema-report.md` section 8). Owner to confirm this matches reality. |
-| A4 | Sample official letter formats | [UNKNOWN] | P1 (Letters) | |
+| A4 | Sample official letter formats | **[ANSWERED]** 2026-11-09: not needed in Phase 1 (L1 a, D-025) | - | NEXUS only registers and archives finished letters. Needed again only if a later phase generates documents. |
 | A5 | Exact Figma colors and fonts | [UNKNOWN] | P1 (UI) | Stitch has exact values (see section C), but they differ from the context doc. Which design wins? |
 | A6 | Designs for login, letter request flow, borrowing request flow | [UNKNOWN] | P1 | See section C for what Stitch contains. PI-CORE's Stitch project has login screens ("Masuk PMK ITERA") that could be reused. |
 | A7 | Meaning of "Inventory Status 80%" (CLAUDE.md Q7) | **[ANSWERED]** 2026-11-07 (D-022, IB12 option d) | - | No percentage. The Dashboard card shows counts (units in good condition, on loan, needing service; exact wording at design time, A-IB32). The Stitch "80%" is dropped, a design deviation the owner approved. |
@@ -44,7 +44,7 @@ Priority: **P0** blocks the next step, **P1** blocks a specific module, **P2** c
 | B20 | Who may read previous-period records? | [ASSUMPTION] whoever currently has view rights, all periods | P1 | From access-control spec. |
 | B21 | May a processor approve their own request? | [ASSUMPTION] blocked | P1 | From access-control spec. |
 | B22 | Does a department secretary's scope include child divisions? | [ASSUMPTION] own unit only | P2 | From access-control spec. |
-| B23 | May a requester download the issued letter file? | [ASSUMPTION] yes | P2 | From access-control spec. |
+| B23 | May a requester download the issued letter file? | **[ANSWERED]** 2026-11-09: yes (L9 a, D-025) | - | Own request only; never the register. |
 | B15 | Lecturers (`member_type = lecturer`, pembina) cannot hold assignments. What NEXUS access do they get? | [UNKNOWN] | P2 | |
 
 ## C. Design (Stitch vs context document)
@@ -62,7 +62,7 @@ Details in `docs/design/stitch/comparison.md`.
 | C7 | Borrowing rule "H-3 kegiatan" (request at least 3 days before the event): real rule or Stitch filler? | **[ANSWERED]** 2026-11-07 (D-022, IB4 option a) | - | Filler. No lead time. The Stitch notice (and "Koordinator Logistik") is not adopted. |
 | C8 | Meeting status (Selesai / Terjadwal / Mendatang) on the Dashboard: do meetings need a schedule/status field? | [UNKNOWN] | P2 | Not in context doc. |
 | C9 | Minutes attachments: PDF/DOCX, max 10 MB? | [ASSUMPTION] yes | P2 | Watch Supabase free-tier storage (1 GB). |
-| C10 | Dashboard "Surat Menyurat" card (not in context doc): keep? | [UNKNOWN] | P2 | |
+| C10 | Dashboard "Surat Menyurat" card (not in context doc): keep? | **[ANSWERED]** 2026-11-09: keep, counts only (L11 a, D-025) | - | For `letters.view` holders: incoming and outgoing counts in the active period, plus waiting requests for processors; no letter titles. Exact wording at design time. |
 | C11 | Export: Stitch shows mostly PDF; context requires Excel, CSV, PDF. Keep all three? | **[ANSWERED]** 2026-11-06: all three (D-019 M5, D-020) | - | |
 | C12 | Real PMK logo file (SVG/PNG) for the header | [ASSUMPTION] 2026-11-09: use PI-CORE's `public/brand/pmk-logo.png` (round PMK ITERA emblem), copied to NEXUS `public/brand/` (D-023) | P1 (UI) | Owner to confirm it is the official logo. Only PNG; an SVG would be sharper. |
 | C13 | Login screen: reuse PI-CORE's "Masuk PMK ITERA" design? | **[ANSWERED]** 2026-11-06: reuse structure and wording, Stitch look (D-017) | - | One account for all apps. |
@@ -221,12 +221,12 @@ Spec: `docs/modules/inventory-borrowing.md` section 10 (IB1-IB15 are answered, D
 
 ## I. Letters assumptions (2026-11-09)
 
-Spec: `docs/modules/letters.md` (draft for owner approval). Its section 10 holds the owner questions L1-L11 (document generation, request status path, request fields, direct outgoing letters, register status, corrections, go-live numbering, file types and size, requester download (B23), request caps, Dashboard card (C10)). The details below are what the spec assumes without asking; they stay [ASSUMPTION] until confirmed. Related open items: A2 and C6 (numbering, provisional, D-024), A4 (sample formats, needed only if L1 chooses document generation), A6 (request flow design), B17, B23, C10.
+Spec: `docs/modules/letters.md` (approved 2026-11-09, D-025). The owner accepted all recommendations for L1-L11 (document generation, request status path, request fields, direct outgoing letters, register status, corrections, go-live numbering, file types and size, requester download (B23), request caps, Dashboard card (C10)). The details below are what the spec assumes without asking; they stay [ASSUMPTION] until confirmed, except A-LT2 and part of A-LT13, which the answers settled. Related open items: A2 and C6 (numbering, provisional, D-024), A4 (sample formats, needed only if L1 chooses document generation), A6 (request flow design), B17, B23, C10.
 
 | # | Assumption | Status | Priority |
 |---|---|---|---|
 | A-LT1 | Numbering year = Jakarta calendar year at the moment the number is assigned (not the letter date, not the period); one sequence per type; never reused. Inherited from the D-024 working assumptions. | [ASSUMPTION] | P1 |
-| A-LT2 | A request has an optional free-text "Atas nama" (unit or committee) instead of a unit list, because committees are not PI-CORE entities (B7). | [ASSUMPTION] | P2 |
+| A-LT2 | A request has an optional free-text "Atas nama" (unit or committee) instead of a unit list, because committees are not PI-CORE entities (B7). | **[DECIDED]** 2026-11-09 (L3 b, D-025) | - |
 | A-LT3 | The register is the archive; no separate "archive" action or screen (the word in the `letters.manage` key text means files are kept). | [ASSUMPTION] | P2 |
 | A-LT4 | Issuing from a request needs only `letter_requests.process`; the issue function creates the register row. Direct registration needs `letters.manage`. | [ASSUMPTION] | P1 |
 | A-LT5 | A secretary may issue directly from Diajukan (the Diproses step is optional). | [ASSUMPTION] | P2 |
@@ -237,7 +237,7 @@ Spec: `docs/modules/letters.md` (draft for owner approval). Its section 10 holds
 | A-LT10 | A submitted request cannot be edited; cancel and resubmit. | [ASSUMPTION] | P2 |
 | A-LT11 | Voiding the letter behind an issued request leaves the request Diterbitkan with a visible "Nomor dibatalkan" flag. | [ASSUMPTION] | P2 |
 | A-LT12 | The numbering settings are edited by the System Admin (logged) and readable by the BPH secretaries; no new permission key. | [ASSUMPTION] | P1 |
-| A-LT13 | Signed file links last 300 seconds; at most 10 unattached uploads per member per 24 hours; at most 3 files per letter or request. Storage estimate (about 150 letters a year, about 200 MB a year) is a guess; verify against the 1 GB free tier (C9, F11). | [ASSUMPTION] | P1 |
+| A-LT13 | **Decided 2026-11-09 (L8 b, D-025):** PDF, JPG and PNG, 5 MB each, at most 3 files per letter or request, images resized in the browser. **Still an assumption:** signed file links last 300 seconds; at most 10 unattached uploads per member per 24 hours. Storage estimate (about 150 letters a year, about 200 MB a year) is a guess; verify against the 1 GB free tier (C9, F11). | [ASSUMPTION] for the remaining parts | P1 |
 | A-LT14 | Department and bureau secretaries cannot read the register (B17 default); no confidential flag in Phase 1. | [ASSUMPTION] | P1 |
 | A-LT15 | Page size 20; search on number, counterpart and Perihal; the period filter defaults to the active period. | [ASSUMPTION] | P2 |
 | A-LT16 | Export header shows the period filter and the export date in WIB, like Member Data. | [ASSUMPTION] | P2 |

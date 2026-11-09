@@ -1,8 +1,8 @@
 # Letters / Surat Menyurat (module spec)
 
-> Status: **Draft for owner approval, 2026-11-09.** Step 1 of `CLAUDE.md` sections 9 and 18. Nothing is built; no database or code work starts before the owner answers or accepts section 10.
+> Status: **Approved 2026-11-09 (owner accepted all recommendations L1-L11, D-025).** Step 1 of `CLAUDE.md` sections 9 and 18 is done. Nothing is built yet; the next step is the UX design of the missing screens (section 7), then the database layer. Recorded in `docs/DECISIONS.md` D-025.
 > Sources: `CLAUDE.md` (4-8, 11), `docs/PMK-NEXUS-context.md` (4, 5.5, 6), `docs/DECISIONS.md` (D-007, D-008, D-009, D-010, D-011, D-013, D-014, D-019, D-020, D-021, D-022, D-024), `docs/OPEN_QUESTIONS.md` (A2, A4, A6, B17, B21, B23, C6, C10, section B-bis), `docs/modules/access-control.md` (keys, D06-D08, D15-D23, L1, L4-L12, R11, R15, E4, E8, E15, A-n9), `docs/modules/inventory-borrowing.md` and `docs/modules/member-data.md` (structure and patterns), `docs/design/stitch/screens.md` (10, 11) and `html/10-*.html`, `html/11-*.html`, `docs/design/stitch/comparison.md`, `docs/picore/schema-report.md`.
-> Tags: **[ASSUMPTION]** = my guess, needs the owner (A-LT1 to A-LT22, section 9, `docs/OPEN_QUESTIONS.md` section I). **[UNKNOWN]** = no source. **L1-L11** (no dash) = owner questions, section 10. **LT-01 to LT-48** = acceptance criteria, section 11. A bare "L1" to "L11" always means an owner question of this spec. The locked rules of access control (also numbered L1-L12) are always written "access control L6" and so on.
+> Tags: **[ASSUMPTION]** = my guess, still needs the owner (A-LT1 to A-LT22, section 9, `docs/OPEN_QUESTIONS.md` section I; those settled by the L1-L11 answers are marked DECIDED). **[UNKNOWN]** = no source. **L1-L11** (no dash) = owner questions, all answered, section 10. **LT-01 to LT-48** = acceptance criteria, section 11. A bare "L1" to "L11" always means an owner question of this spec. The locked rules of access control (also numbered L1-L12) are always written "access control L6" and so on.
 > No code, no SQL, no visual design. PMK facts (letter types, institution names, signatories) are NOT invented. Everything Stitch shows (Direktorat Jenderal Pajak, Rektorat, "Dokumen Disposisi", the statuses) is filler.
 
 ---
@@ -59,7 +59,7 @@ Rights come from permission keys (access control, section 2.1), never from a per
 - **Self-processing (access control L6).** Nobody accepts, rejects or issues their own request. It applies only to processing a request. A secretary who needs a letter for themselves uses direct registration (F4), which is not a request; the register row names the creator. This keeps the single-secretary case workable (A-n9) and is the honest consequence of the owner's rule D-008.
 - **Direct registration needs `letters.manage`.** Issuing from a request needs only `letter_requests.process`; the issue function creates the register row itself [A-LT4].
 - **Without a key.** A direct link to the register or the queue shows the shared "no permission" page; API calls return no rows. Buttons without the key are absent, not greyed.
-- **Drawer.** Every active member can open "Surat Menyurat" (to reach "Permohonan Saya"), so the drawer item cannot follow D-021 literally (no baseline `letters.view` exists). See note 1 in section 12.
+- **Drawer.** Every active member can open "Surat Menyurat" (to reach "Permohonan Saya"), so the drawer item is shown to every active member. This is an explicit exception to D-021 (D-025); the register tabs stay behind `letters.view`. See note 1 in section 12.
 - **Scope** of all letter keys is "all" (access control 2.1); letters carry no org unit.
 
 ---
@@ -169,10 +169,10 @@ Register letter status: **Aktif** to **Dibatalkan** (void) only. Voiding the let
 - **Working assumptions** (confirm with the PMK secretaries; A2, C6): the system assigns the number when a letter is registered or issued, nobody types it; one sequence per type; the sequence restarts at 001 every calendar year (Asia/Jakarta, the year at the moment the number is assigned, regardless of the letter date and of the period); a number is never reused, also after a void.
 - Past 999 the sequence simply grows to four digits.
 - Who edits the numbering settings: the System Admin on the NEXUS settings screen, every change logged; BPH secretaries read the settings [A-LT12]. No new permission key.
-- Continuing numbers that PMK already issued before NEXUS: see L7.
+- **Continuing numbers PMK already issued before NEXUS (L7 b, decided):** the System Admin sets the next sequence per type and year once at go-live. Old letters may be registered with their original number typed by hand and marked "Nomor lama"; such a number does not move the counter, must be unique per type, and is the only case where a person types a number. [UNKNOWN] whether PMK's old numbers use this format (A2 stays provisional).
 
 ### 4.4 Files [A-LT13, L8]
-Private bucket, short-lived signed links (300 seconds, as A-IB51), only the server issues them. A file is readable by (a) `letters.view` holders for register letters and by (b) the requester and `letter_requests.view_all` holders for request attachments and for the issued file of the request. Limits, to be confirmed in L8: types, size, and at most 3 files per letter or request. Uploaded files never attached to a saved letter or request are not kept as records; a cap of 10 unattached uploads per member per 24 hours limits abuse (the same pattern as A-IB43, F11).
+Private bucket, short-lived signed links (300 seconds, as A-IB51), only the server issues them. A file is readable by (a) `letters.view` holders for register letters and by (b) the requester and `letter_requests.view_all` holders for request attachments and for the issued file of the request. Limits (L8 b, decided): PDF, JPG and PNG only, 5 MB each, at most 3 files per letter or request; images are resized in the browser. Uploaded files never attached to a saved letter or request are not kept as records; a cap of 10 unattached uploads per member per 24 hours limits abuse (the same pattern as A-IB43, F11).
 
 **Free-tier note (warn the owner).** Supabase free storage is about 1 GB and is shared with meeting minutes and borrowing evidence. [ASSUMPTION] If PMK handles about 150 letters a year at about 1.5 files and 1 MB per file, letters alone use about 200 MB a year, so the storage lasts a few years at best. Phone photos of letters are 3 to 5 MB, so the plan is a 5 MB cap and browser-side resizing of images. Record the real usage at each period handover.
 
@@ -254,12 +254,12 @@ The request flow (screens 6 to 8) is the missing design of A6. The UX designer s
 
 ## 9. Assumptions
 
-All [ASSUMPTION] until the owner confirms; copied to `docs/OPEN_QUESTIONS.md` section I.
+All [ASSUMPTION] until the owner confirms, except the rows marked **DECIDED**, which the owner's answers L1-L11 of 2026-11-09 settled (D-025). Copied to `docs/OPEN_QUESTIONS.md` section I.
 
 | Id | Assumption |
 |---|---|
-| A-LT1 | Numbering year = the Jakarta calendar year when the number is assigned (not the letter date, not the period). One sequence per type. Inherited from D-024's working assumptions (A2, C6) |
-| A-LT2 | A request carries the optional text "Atas nama" instead of a unit list, because committees and teams are not PI-CORE entities (B7) |
+| A-LT1 | Numbering year = the Jakarta calendar year when the number is assigned (not the letter date, not the period). One sequence per type. Inherited from D-024's working assumptions (A2, C6); stays provisional |
+| A-LT2 | **DECIDED (L3 b).** A request carries the optional text "Atas nama" instead of a unit list, because committees and teams are not PI-CORE entities (B7) |
 | A-LT3 | The register is the archive. There is no separate "archive" action or screen; "archive" in the key text means files are kept (access control keys `letters.manage`) |
 | A-LT4 | Issuing from a request needs only `letter_requests.process`; the function creates the register row. Direct registration needs `letters.manage` |
 | A-LT5 | A secretary may issue directly from Diajukan (Proses is optional), so a small task needs no extra click |
@@ -270,7 +270,7 @@ All [ASSUMPTION] until the owner confirms; copied to `docs/OPEN_QUESTIONS.md` se
 | A-LT10 | A submitted request cannot be edited; cancel and resubmit (same as A-IB7) |
 | A-LT11 | Voiding the letter behind an issued request leaves the request Diterbitkan with a visible "Nomor dibatalkan" flag |
 | A-LT12 | The numbering settings are edited by the System Admin, logged, and readable by BPH secretaries |
-| A-LT13 | Signed links last 300 seconds; at most 10 unattached uploads per member per 24 hours; at most 3 files per letter or request |
+| A-LT13 | **At most 3 files per letter or request, types and size: DECIDED (L8 b: PDF, JPG, PNG, 5 MB each).** Still an assumption: signed links last 300 seconds; at most 10 unattached uploads per member per 24 hours |
 | A-LT14 | Department and bureau secretaries read nothing of the register (B17 default); the admin can add a rule, logged. No confidential flag exists in Phase 1 |
 | A-LT15 | Page size 20; search on number, counterpart and Perihal; the period filter defaults to the active period |
 | A-LT16 | Export header shows the period filter and export date in WIB, like Member Data |
@@ -285,68 +285,68 @@ All [ASSUMPTION] until the owner confirms; copied to `docs/OPEN_QUESTIONS.md` se
 
 ## 10. Questions for the owner
 
-Each has options and my recommendation. Nothing here is decided until the owner answers.
+**All eleven questions were answered on 2026-11-09: the owner accepted every recommendation as written (D-025).** The options and recommendations stay below as the record; the chosen option is tagged under each question.
 
-**L1. Does NEXUS write the letter documents, or only register and archive finished files?** (This decides whether A4, sample official formats, is needed.)
+**L1. Does NEXUS write the letter documents, or only register and archive finished files?** **[ANSWERED 2026-11-09: (a)]** Register and archive only; signing stays outside NEXUS; A4 (sample formats) is not needed in Phase 1. (This decides whether A4, sample official formats, is needed.)
 - (a) Register and archive only. Secretaries write the letter in Word or Google Docs, get it signed, then upload the final file.
 - (b) NEXUS fills a template per letter type and produces the PDF (needs A4: sample formats, letterhead, signatory rules).
 - (c) (a) now, (b) as a later phase.
 - **Recommendation: (a).** It matches the Phase 1 scope in the context document and needs no official formats. Signing stays outside NEXUS. Choose (c) if you expect templates soon; the data model does not block it.
 
-**L2. What is the status path of a letter request, and when does the number appear?**
+**L2. What is the status path of a letter request, and when does the number appear?** **[ANSWERED 2026-11-09: (b)]** Diajukan, Diproses, then Diterbitkan, Ditolak or Dibatalkan; the number is assigned only at Diterbitkan, together with the file.
 - (a) Diajukan, then Diterbitkan or Ditolak (or Dibatalkan). One step: the secretary finishes the letter offline and then records the result.
 - (b) Diajukan, Diproses (secretary accepted, requester can no longer cancel), then Diterbitkan, Ditolak or Dibatalkan. The number is assigned only at Diterbitkan, together with the file.
 - (c) (b) plus Disetujui, with the number reserved at approval and the file added later.
 - **Recommendation: (b).** The requester sees someone is working on it, and no number is used by a letter that is never finished. (c) creates numbers without files.
 
-**L3. What does a letter request contain?**
+**L3. What does a letter request contain?** **[ANSWERED 2026-11-09: (b)]** Perihal, Ditujukan kepada, Keperluan, plus optional "Atas nama", "Dibutuhkan paling lambat" and up to 3 attachments.
 - (a) Perihal, Ditujukan kepada, Keperluan (free text).
 - (b) (a) plus "Atas nama" (optional), "Dibutuhkan paling lambat" (optional date) and optional attachments (up to 3 files).
 - (c) A separate form per letter type (needs PMK's list of letter types and A4).
 - **Recommendation: (b).** Enough for the secretary to write the letter without chasing the requester, and no invented letter types.
 
-**L4. Is an outgoing letter always created from a request, or may a secretary register one directly?**
+**L4. Is an outgoing letter always created from a request, or may a secretary register one directly?** **[ANSWERED 2026-11-09: (a)]** Both: direct registration and request issue create the same kind of outgoing register row.
 - (a) Both. A secretary registers a letter directly; a request issue creates the same kind of outgoing register row.
 - (b) Only through requests (a secretary who needs a letter files a request, and another secretary processes it).
 - (c) Only directly; requests are only notes.
 - **Recommendation: (a).** Most official letters (to the campus, partners, churches) are written by the secretaries themselves; forcing a request would make the single-secretary case impossible (the rule that nobody processes their own request stays in force).
 
-**L5. Do register entries have a workflow status (for example for incoming letters: new, followed up, done, or a disposition)?**
+**L5. Do register entries have a workflow status (for example for incoming letters: new, followed up, done, or a disposition)?** **[ANSWERED 2026-11-09: (a)]** No; a register entry is a record with status Aktif or Dibatalkan. The Stitch statuses are not adopted.
 - (a) No. A register entry is a record with status Aktif or Dibatalkan.
 - (b) Incoming letters get a follow-up status (needs PMK's definitions and who may change it).
 - (c) Adopt the Stitch statuses (Verifikasi, Disetujui, Menunggu): not recommended, nobody defined them.
 - **Recommendation: (a).** Nothing in the context document asks for a workflow; (b) can be added later when PMK says what the statuses mean.
 
-**L6. How are mistakes in a registered letter corrected?**
+**L6. How are mistakes in a registered letter corrected?** **[ANSWERED 2026-11-09: (a)]** Details are editable by a manager in the active period with a history row; the number is never editable; a wrong letter is voided with a reason and its number is never reused.
 - (a) Details (date, counterpart, Perihal, notes) can be edited by a manager in the active period with a history row; the number is never editable; a wrong letter is voided with a reason, stays visible as "Dibatalkan", and its number is never reused.
 - (b) Nothing is editable. Void and register again.
 - (c) The number can also be edited by a manager, with a log.
 - **Recommendation: (a).** Typing mistakes are common; changing a number that may already be on a printed letter is not allowed, which keeps the sequence trustworthy.
 
-**L7. How does numbering continue from letters PMK already issued before NEXUS?** (If paper letters already used `PMK/.../2026/045`, a fresh counter would repeat numbers.)
+**L7. How does numbering continue from letters PMK already issued before NEXUS?** (If paper letters already used `PMK/.../2026/045`, a fresh counter would repeat numbers.) **[ANSWERED 2026-11-09: (b)]** The System Admin sets the next sequence per type and year once at go-live, and old letters may be registered with their original number typed by hand, marked "Nomor lama" (does not move the counter; refused if the text already exists).
 - (a) The System Admin sets the next sequence per type and year once at go-live (for example SK continues from 046). Old letters are not entered.
 - (b) (a), and old letters may also be registered with their original number typed by hand and marked "Nomor lama" (does not move the counter; refused if the text already exists).
 - (c) Start fresh at 001 at go-live; old letters stay on paper.
 - **Recommendation: (b).** The archive becomes complete and numbers never clash. It needs one narrow exception to "nobody types a number", limited to letters marked "Nomor lama". [UNKNOWN] whether PMK's old numbers even use this format (A2 stays provisional).
 
-**L8. Which files are accepted, and how big?** (Storage is about 1 GB for everything, see 4.4.)
+**L8. Which files are accepted, and how big?** **[ANSWERED 2026-11-09: (b)]** PDF, JPG and PNG, 5 MB each, up to 3 files per letter or request; images are resized in the browser. (Storage is about 1 GB for everything, see 4.4.)
 - (a) PDF only, 5 MB, up to 3 files per letter.
 - (b) PDF, JPG and PNG, 5 MB each, up to 3 files per letter; images are resized in the browser.
 - (c) PDF, DOCX, JPG and PNG, 10 MB (like the minutes assumption C9).
 - **Recommendation: (b).** Secretaries often have a phone photo of an incoming letter, and PDF keeps the archive readable. Editable DOCX files are not needed because the archive keeps the final signed letter.
 
-**L9. May the requester download the issued letter file from their own request?** (Answers B23; today a default.)
+**L9. May the requester download the issued letter file from their own request?** **[ANSWERED 2026-11-09: (a)]** Yes, number and file, for their own request only. Answers B23. (Answers B23; today a default.)
 - (a) Yes, number and file.
 - (b) Number and status only; the secretary hands the letter over outside NEXUS.
 - **Recommendation: (a).** It is the point of the request flow, and it follows the own-record right (access control L9). The requester can read only their own request's file, never the register.
 
-**L10. Should there be limits on how many requests one member can file?** (Like A-IB47 for borrowing.)
+**L10. Should there be limits on how many requests one member can file?** **[ANSWERED 2026-11-09: (b)]** At most 5 open requests (Diajukan or Diproses) and at most 10 new requests per Jakarta day. (Like A-IB47 for borrowing.)
 - (a) At most 5 open requests (Diajukan or Diproses) and at most 20 new requests per Jakarta day, as in borrowing.
 - (b) At most 5 open and at most 10 new per Jakarta day.
 - (c) No limit.
 - **Recommendation: (b).** Letter requests are rarer than borrowing and each one costs a secretary real work; 10 a day is already generous. The caps are checked by the database too.
 
-**L11. What does the Dashboard "Surat Menyurat" card (C10) show, if there is one?**
+**L11. What does the Dashboard "Surat Menyurat" card (C10) show, if there is one?** **[ANSWERED 2026-11-09: (a)]** A card for `letters.view` holders with counts of incoming and outgoing letters in the active period, and for `process` holders also the waiting requests; no letter titles. Answers C10.
 - (a) A card for `letters.view` holders: counts "{n} surat masuk, {m} surat keluar" in the active period, and for `process` holders also "{k} permohonan menunggu". No letter titles.
 - (b) (a) plus the Stitch tile with the latest letter (number, counterpart, Perihal).
 - (c) No card in Phase 1.
@@ -424,13 +424,13 @@ Personas: `docs/modules/access-control.md` section 9. Defaults D06-D08 and D15-D
 
 ---
 
-## 12. Notes for other documents (contradictions and gaps found, nothing changed there)
+## 12. Notes for other documents (contradictions and gaps found) and how they were resolved (D-025)
 
-1. **D-021 versus this module.** D-021 shows a drawer item only if the user holds the module's view permission. For letters every member needs the page (to make and follow requests) but no baseline view key exists. Recommendation: show "Surat Menyurat" to every active member (like Inventory, whose baseline is D01) and keep register tabs behind `letters.view`. No new key, no baseline `letters.view`.
-2. **Access control L9 versus the key texts.** L9 says "cancel before it is processed", while `letter_requests.process` is described as "approve, reject, issue a number". This spec defines the missing step (Diproses, A-LT6) and the number moment (L2). The key text "archive" in `letters.manage` has no action behind it (A-LT3).
-3. **Two ways to a number.** `letters.manage` "assigns letter numbers" and `letter_requests.process` "issues a number". Defined in A-LT4.
+1. **D-021 versus this module. RESOLVED (tech lead decision, D-025).** The "Surat Menyurat" drawer item is shown to every active member, because everyone may file requests (access control L9); register tabs stay behind `letters.view`. This is an explicit exception to D-021. No new key, no baseline `letters.view`.
+2. **Access control L9 versus the key texts. RESOLVED (A-LT6, A-LT3).** "Processed" means "leaves Diajukan" (Diproses exists, L2 b); the number is assigned at Diterbitkan. The key text "archive" in `letters.manage` means files are kept in the register; there is no separate archive action.
+3. **Two ways to a number. RESOLVED (A-LT4).** `letters.manage` registers directly; `letter_requests.process` issues from a request and the function creates the register row.
 4. **Access control L6 and direct registration.** The self-processing block cannot stop a secretary who registers their own letter directly. Intended, since a register entry is not a request; named so no one is surprised.
 5. **Numbering year versus period.** Periods follow the management term (for example 2026/2027), numbers follow the calendar year (D-024). Both are kept; the combination is described in R4 and R6.
-6. **`docs/PMK-NEXUS-context.md` 5.5 and section 8** still call the numbering format an assumption and list A2 and A4 as open. D-024 made the format provisional. The document should be updated after the owner approves this spec.
+6. **`docs/PMK-NEXUS-context.md` 5.5 and section 8** called the numbering format an assumption and listed A2 and A4 as open. Updated 2026-11-09 after the approval (D-024, D-025).
 7. **Stitch** lists an SM number under "Surat Keluar" on the Dashboard card and an SK letter under the "Surat Masuk" tab (`comparison.md`); both are filler.
 8. **Free tier.** Letters, minutes (C9) and borrowing evidence (F11) share about 1 GB of storage. Check real usage before go-live.
