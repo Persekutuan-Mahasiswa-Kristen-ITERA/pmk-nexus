@@ -1,6 +1,6 @@
 import "server-only";
 import { attachmentDisposition } from "@/lib/export/datetime";
-import { mayBeTruncated } from "@/lib/supabase/limits";
+import { isCut } from "@/lib/supabase/limits";
 import { exportMemberRows } from "@/lib/picore/member-data";
 import type { AccessState } from "@/lib/auth/types";
 import {
@@ -177,13 +177,12 @@ export async function handleMemberDataExport(
   const exportedAt = new Date();
   const rows = await exportMemberRows(gate.supabase, body.format, body.filters);
   if (!rows.ok) return memberExportError(rows.error);
-  // INTERIM guard (2026-11-08): PostgREST max_rows silently cuts a `returns table` answer at 1000 rows,
-  // so an answer of that size may be incomplete. Refuse it rather than hand out a partial list. The log
-  // row is already written (same transaction). Replace when the export is paged or returns one value.
-  if (mayBeTruncated(rows.data.length)) return memberExportError({ code: "export_too_large" });
+  // PostgREST max_rows silently cuts a `returns table` answer; fewer rows than the database counted
+  // (total_count) = cut. Refuse rather than hand out a partial list. The log row is already written.
+  if (isCut(rows.data)) return memberExportError({ code: "export_too_large" });
 
   try {
-    const file = await buildMemberExportFile(body.format, rows.data, {
+    const file = await buildMemberExportFile(body.format, rows.data.rows, {
       periodLabel: gate.member.activePeriodLabel,
       exportedAt,
     });

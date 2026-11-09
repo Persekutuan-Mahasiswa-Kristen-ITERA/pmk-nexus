@@ -144,7 +144,7 @@ No other defect was found in the application code. Deliberately probed and found
 4. **Sekretaris Departemen Operasional** (IB-02, IB-20): create the account in the seed or on the hosted project, confirm manage and handle but no approve.
 5. **Restore default rules (IB-57)**: in the admin screen (when built) press "restore default access rules" and confirm D30 stays off.
 6. **Dashboard card empty state (IB-45)**: on a database with no items, the card says "Belum ada barang di inventaris." and shows no "0%".
-7. **Export of very large lists**: 1000 rows or more returns `export_too_large` (interim guard); try with real data volume before launch.
+7. **Export of very large lists**: since 2026-11-09 the server compares the rows received with the database's `total_count` (migration 20261109100000), so an export of up to the API row limit (1000 by default) works and only a cut answer (more than that many rows) returns `export_too_large`. Try with real data volume before launch.
 8. **Phones**: 390 px on a real Android and an iPhone (date picker, camera "Ambil foto", keyboard covering the dialog notes), plus the 1280 px desktop layout.
 9. **Backup and restore of storage** (evidence photos are never purged): follow `docs/ops` after the Storage bucket exists on hosted.
 

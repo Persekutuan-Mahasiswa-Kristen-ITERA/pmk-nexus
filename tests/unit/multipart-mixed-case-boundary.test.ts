@@ -75,7 +75,7 @@ beforeEach(() => {
   uploadEvidencePhoto.mockReset();
   exportInventoryRows.mockReset();
   uploadEvidencePhoto.mockImplementation(async (_c: unknown, path: string) => ({ ok: true, data: { path } }));
-  exportInventoryRows.mockResolvedValue({ ok: true, data: [] });
+  exportInventoryRows.mockResolvedValue({ ok: true, data: { rows: [], totalCount: 0 } });
 });
 
 describe("evidence upload accepts a browser (mixed-case) multipart boundary", () => {

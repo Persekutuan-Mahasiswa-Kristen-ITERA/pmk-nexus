@@ -39,8 +39,8 @@ function req(fields: Record<string, string> | null, init: Init = {}): Request {
 
 // Extra columns on purpose: a database that returned more than the contract must not leak through.
 const dbRows = [
-  { row_no: 1, member_id: "11111111-1111-1111-1111-111111111111", full_name: "Alfa", member_type: "student", is_active: true, unit_name: "Logistik", parent_unit_name: "Departemen Operasional", position_name: "Staff", email: "alfa@nexus.test", phone: "08123456789", nim: "123451001", nip: "1980", user_id: "uuid-x", access_level: "admin" },
-  { row_no: 2, member_id: "22222222-2222-2222-2222-222222222222", full_name: "Dosen", member_type: "lecturer", is_active: true, unit_name: null, parent_unit_name: null, position_name: null, email: "dosen@nexus.test" },
+  { row_no: 1, member_id: "11111111-1111-1111-1111-111111111111", full_name: "Alfa", member_type: "student", is_active: true, unit_name: "Logistik", parent_unit_name: "Departemen Operasional", position_name: "Staff", total_count: 2, email: "alfa@nexus.test", phone: "08123456789", nim: "123451001", nip: "1980", user_id: "uuid-x", access_level: "admin" },
+  { row_no: 2, member_id: "22222222-2222-2222-2222-222222222222", full_name: "Dosen", member_type: "lecturer", is_active: true, unit_name: null, parent_unit_name: null, position_name: null, total_count: 2, email: "dosen@nexus.test" },
 ];
 
 const call = (r: Request, state: AccessState | (() => Promise<AccessState>) = BPH) =>
@@ -304,5 +304,36 @@ describe("database failures: fail closed, codes only (MD-35, A-MD12)", () => {
     rpc.mockResolvedValue({ data: null, error: { code: "57014" } });
     await call(req({ format: "csv" }));
     expect(rpc).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("cut answers (PostgREST max_rows) are detected with total_count (migration 20261109100000)", () => {
+  const rowsOf = (n: number, total: number) =>
+    Array.from({ length: n }, (_, i) => ({ ...dbRows[0], row_no: i + 1, member_id: `00000000-0000-0000-0000-${String(i + 1).padStart(12, "0")}`, total_count: total }));
+
+  it("fewer rows than total_count -> 422 export_too_large, no file", async () => {
+    rpc.mockResolvedValue({ data: rowsOf(3, 1500), error: null });
+    const res = await call(req({ format: "csv" }));
+    expect(res.status).toBe(422);
+    expect((await errorBody(res)).error).toEqual({ code: "export_too_large" });
+  });
+  it("exactly 1000 complete rows -> 200 (the old 1000-row guard no longer refuses them)", async () => {
+    rpc.mockResolvedValue({ data: rowsOf(1000, 1000), error: null });
+    const res = await call(req({ format: "csv" }));
+    expect(res.status).toBe(200);
+    const lines = (await res.text()).replace("\uFEFF", "").trim().split("\r\n");
+    expect(lines).toHaveLength(1001);
+  });
+  it("rows that disagree on total_count, or more rows than counted -> 503 (inconsistent, fail closed)", async () => {
+    rpc.mockResolvedValue({ data: [{ ...dbRows[0], total_count: 2 }, { ...dbRows[1], total_count: 3 }], error: null });
+    expect((await call(req({ format: "csv" }))).status).toBe(503);
+    rpc.mockResolvedValue({ data: rowsOf(3, 2), error: null });
+    expect((await call(req({ format: "csv" }))).status).toBe(503);
+  });
+  it("a row without total_count (old database function) -> 503, never a file", async () => {
+    const withoutTotal: Record<string, unknown> = { ...dbRows[0] };
+    delete withoutTotal.total_count;
+    rpc.mockResolvedValue({ data: [withoutTotal], error: null });
+    expect((await call(req({ format: "csv" }))).status).toBe(503);
   });
 });

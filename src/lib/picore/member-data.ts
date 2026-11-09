@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { readTotalCount, type CountedRows } from "@/lib/supabase/limits";
 import type {
   MemberDataError,
   MemberDataInputField,
@@ -48,7 +49,8 @@ const listRow = z.object({
   page_size: z.number().int().positive(),
 });
 
-const exportRow = z.object(memberRowShape);
+// total_count (migration 20261109100000) = rows of the full filtered result, on every row.
+const exportRow = z.object({ ...memberRowShape, total_count: count });
 
 const unitOptionRow = z.object({
   id: uuid,
@@ -132,7 +134,7 @@ export async function exportMemberRows(
   supabase: SupabaseClient,
   format: MemberExportFormat,
   filters: MemberListFilters,
-): Promise<MemberDataResult<MemberRow[]>> {
+): Promise<MemberDataResult<CountedRows<MemberRow>>> {
   const result = await callRpc(supabase, "member_data_export", z.array(exportRow), {
     p_format: format,
     p_search: filters.search,
@@ -140,7 +142,9 @@ export async function exportMemberRows(
     p_status: filters.status,
   });
   if (!result.ok) return result;
-  return { ok: true, data: result.data.map(toMemberRow) };
+  const totalCount = readTotalCount(result.data);
+  if (totalCount === null) return fail("member_data_export", "inconsistent_total");
+  return { ok: true, data: { rows: result.data.map(toMemberRow), totalCount } };
 }
 
 /** nexus.member_data_export_log_list(): newest first (System Admin or member_data.view_export_log). */

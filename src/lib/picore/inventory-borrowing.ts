@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { readTotalCount, type CountedRows } from "@/lib/supabase/limits";
 import {
   EVIDENCE_BUCKET,
   EVIDENCE_MAX_BYTES,
@@ -808,6 +809,7 @@ const inventoryExportRow = z.object({
   qty_total: count.nullable(),
   item_is_active: z.boolean(),
   free_qty: count.nullable(),
+  total_count: count, // migration 20261109100000: rows of the full filtered result, on every row
 });
 
 const borrowingExportRow = z.object({
@@ -838,6 +840,7 @@ const borrowingExportRow = z.object({
   overdue_days: count,
   is_not_picked_up: z.boolean(),
   is_partially_returned: z.boolean(),
+  total_count: count, // migration 20261109100000
 });
 
 /**
@@ -1679,7 +1682,7 @@ export async function exportInventoryRows(
   supabase: SupabaseClient,
   format: InventoryExportFormat,
   filters: CatalogFilters,
-): Promise<InventoryResult<InventoryExportRow[]>> {
+): Promise<InventoryResult<CountedRows<InventoryExportRow>>> {
   const result = await callRpc(
     supabase,
     "inventory_export",
@@ -1697,25 +1700,30 @@ export async function exportInventoryRows(
     { dateField: "availableTo" },
   );
   if (!result.ok) return result;
+  const totalCount = readTotalCount(result.data);
+  if (totalCount === null) return fail("inventory_export", "inconsistent_total");
   return {
     ok: true,
-    data: result.data.map((r) => ({
-      rowNo: r.row_no,
-      itemId: r.item_id,
-      code: r.code,
-      itemName: r.item_name,
-      mode: r.mode,
-      categoryName: r.category_name,
-      locationName: r.location_name,
-      unitCondition: r.unit_condition,
-      unitStatus: r.unit_status,
-      qtyGood: r.qty_good,
-      qtyNeedsService: r.qty_needs_service,
-      qtyDamaged: r.qty_damaged,
-      qtyTotal: r.qty_total,
-      itemIsActive: r.item_is_active,
-      freeQty: r.free_qty,
-    })),
+    data: {
+      totalCount,
+      rows: result.data.map((r) => ({
+        rowNo: r.row_no,
+        itemId: r.item_id,
+        code: r.code,
+        itemName: r.item_name,
+        mode: r.mode,
+        categoryName: r.category_name,
+        locationName: r.location_name,
+        unitCondition: r.unit_condition,
+        unitStatus: r.unit_status,
+        qtyGood: r.qty_good,
+        qtyNeedsService: r.qty_needs_service,
+        qtyDamaged: r.qty_damaged,
+        qtyTotal: r.qty_total,
+        itemIsActive: r.item_is_active,
+        freeQty: r.free_qty,
+      })),
+    },
   };
 }
 
@@ -1724,7 +1732,7 @@ export async function exportBorrowingRows(
   supabase: SupabaseClient,
   format: InventoryExportFormat,
   filters: QueueFilters,
-): Promise<InventoryResult<BorrowingExportRow[]>> {
+): Promise<InventoryResult<CountedRows<BorrowingExportRow>>> {
   const result = await callRpc(
     supabase,
     "borrowing_export",
@@ -1741,37 +1749,42 @@ export async function exportBorrowingRows(
     { dateField: "to", viewField: "view" },
   );
   if (!result.ok) return result;
+  const totalCount = readTotalCount(result.data);
+  if (totalCount === null) return fail("borrowing_export", "inconsistent_total");
   return {
     ok: true,
-    data: result.data.map((r) => ({
-      rowNo: r.row_no,
-      reference: r.reference,
-      status: r.status,
-      periodLabel: r.period_label,
-      requesterName: r.requester_name,
-      isOutsideParty: r.is_outside_party,
-      outsideOrgName: r.outside_org_name,
-      outsideContactName: r.outside_contact_name,
-      purpose: r.purpose,
-      items: r.items.map(toItemSummary),
-      unitsHandedOver: r.units_handed_over,
-      startDate: r.start_date,
-      endDate: r.end_date,
-      extensionCount: r.extension_count,
-      decidedByName: r.decided_by_name,
-      decidedAt: r.decided_at,
-      decisionNote: r.decision_note,
-      handedOverAt: r.handed_over_at,
-      returnedAt: r.returned_at,
-      returnedGood: r.returned_good,
-      returnedDamaged: r.returned_damaged,
-      returnedLost: r.returned_lost,
-      hasIssue: r.has_issue,
-      isOverdue: r.is_overdue,
-      overdueDays: r.overdue_days,
-      isNotPickedUp: r.is_not_picked_up,
-      isPartiallyReturned: r.is_partially_returned,
-    })),
+    data: {
+      totalCount,
+      rows: result.data.map((r) => ({
+        rowNo: r.row_no,
+        reference: r.reference,
+        status: r.status,
+        periodLabel: r.period_label,
+        requesterName: r.requester_name,
+        isOutsideParty: r.is_outside_party,
+        outsideOrgName: r.outside_org_name,
+        outsideContactName: r.outside_contact_name,
+        purpose: r.purpose,
+        items: r.items.map(toItemSummary),
+        unitsHandedOver: r.units_handed_over,
+        startDate: r.start_date,
+        endDate: r.end_date,
+        extensionCount: r.extension_count,
+        decidedByName: r.decided_by_name,
+        decidedAt: r.decided_at,
+        decisionNote: r.decision_note,
+        handedOverAt: r.handed_over_at,
+        returnedAt: r.returned_at,
+        returnedGood: r.returned_good,
+        returnedDamaged: r.returned_damaged,
+        returnedLost: r.returned_lost,
+        hasIssue: r.has_issue,
+        isOverdue: r.is_overdue,
+        overdueDays: r.overdue_days,
+        isNotPickedUp: r.is_not_picked_up,
+        isPartiallyReturned: r.is_partially_returned,
+      })),
+    },
   };
 }
 

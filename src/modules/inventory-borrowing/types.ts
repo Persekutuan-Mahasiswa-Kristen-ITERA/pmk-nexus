@@ -1319,7 +1319,7 @@ export type InventoryError =
   | { code: "too_many_open_requests"; limit: number } // R29: 5 Diajukan
   | { code: "daily_request_limit"; limit: number } // R29: 20 per Jakarta day
   // Server only (no database hint). Added 2026-11-08 (tech lead).
-  /** Export answer may have been cut by the API row limit (POSTGREST_MAX_ROWS); interim guard, HTTP 422. */
+  /** Export answer was cut by the API row limit (fewer rows than the database's total_count). HTTP 422. */
   | { code: "export_too_large" }
   /** Upload above the bucket limit EVIDENCE_MAX_BYTES; maxMb = that limit in MB (1.5). HTTP 413. */
   | { code: "photo_too_large"; maxMb: number };
@@ -1845,6 +1845,6 @@ export function defaultQueueView(capabilities: InventoryCapabilities): QueueView
  *   The catalog file has ONE status column, inventoryExportStatusLabel(row) (Aktif / Nonaktif / Hilang).
  *   Both: same-origin check, ONE call to inventory_export / borrowing_export (writes the export-log row
  *   in the same transaction; no row, no file), Cache-Control no-store. 401/403/400/503: InventoryErrorBody.
- *   422 export_too_large: the answer reached the API row limit (POSTGREST_MAX_ROWS = 1000), so it may be
- *   cut; no file is returned (interim guard until exports are paged or returned as one value).
+ *   422 export_too_large: the API row limit (PostgREST max_rows) cut the answer, i.e. fewer rows arrived
+ *   than the database's total_count (migration 20261109100000); no file is returned.
  */

@@ -4,7 +4,7 @@ import type { AccessState, MemberContext } from "@/lib/auth/types";
 import { attachmentDisposition } from "@/lib/export/datetime";
 import { isSameOriginRequest, methodNotAllowed, readCappedBody } from "@/lib/http/request";
 import { exportBorrowingRows, exportInventoryRows } from "@/lib/picore/inventory-borrowing";
-import { mayBeTruncated } from "@/lib/supabase/limits";
+import { isCut } from "@/lib/supabase/limits";
 import {
   borrowingExportSchema,
   catalogExportSchema,
@@ -199,10 +199,9 @@ async function handleExport<S extends z.ZodType>(
 }
 
 /**
- * INTERIM guard (2026-11-08): PostgREST max_rows (1000) silently cuts a `returns table` answer, so an
- * answer of that size may be incomplete. Refuse it (export_too_large) rather than hand out a partial
- * list. The export-log row is already written in the same transaction. Replace when the exports are
- * paged or return one value (to be decided with the owner).
+ * PostgREST max_rows silently cuts a `returns table` answer. The database returns the full count
+ * (total_count, migration 20261109100000), so fewer rows than counted = cut: refuse (export_too_large)
+ * rather than hand out a partial list. The export-log row is already written in the same transaction.
  */
 const TOO_LARGE = { ok: false as const, error: { code: "export_too_large" as const } };
 
@@ -222,9 +221,9 @@ export function handleInventoryExport(request: Request, readAccessState: () => P
       if (past) return { ok: false, error: past };
       const rows = await exportInventoryRows(gate.supabase, body.format, body.filters);
       if (!rows.ok) return rows;
-      if (mayBeTruncated(rows.data.length)) return TOO_LARGE;
+      if (isCut(rows.data)) return TOO_LARGE;
       const meta = { periodLabel: gate.member.activePeriodLabel, exportedAt };
-      return { ok: true, file: () => buildInventoryExportFile(body.format, rows.data, body.filters, meta) };
+      return { ok: true, file: () => buildInventoryExportFile(body.format, rows.data.rows, body.filters, meta) };
     },
   });
 }
@@ -239,9 +238,9 @@ export function handleBorrowingExport(request: Request, readAccessState: () => P
     run: async (gate, body, exportedAt) => {
       const rows = await exportBorrowingRows(gate.supabase, body.format, body.filters);
       if (!rows.ok) return rows;
-      if (mayBeTruncated(rows.data.length)) return TOO_LARGE;
+      if (isCut(rows.data)) return TOO_LARGE;
       const meta = { periodLabel: gate.member.activePeriodLabel, exportedAt };
-      return { ok: true, file: () => buildBorrowingExportFile(body.format, rows.data, body.filters, meta) };
+      return { ok: true, file: () => buildBorrowingExportFile(body.format, rows.data.rows, body.filters, meta) };
     },
   });
 }

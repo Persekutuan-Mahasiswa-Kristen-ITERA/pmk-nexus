@@ -197,8 +197,8 @@ export type MemberDataResult<T> = { ok: true; data: T } | { ok: false; error: Me
 
 /**
  * Errors of POST /api/member-data/export: the general ones plus export_too_large (HTTP 422), added
- * 2026-11-08: the answer reached the API row limit (1000 rows) and may be cut, so no file is returned.
- * Interim guard until exports are paged or returned as one value.
+ * 2026-11-08: the API row limit (PostgREST max_rows) cut the answer, i.e. fewer rows arrived than the
+ * database's total_count (migration 20261109100000), so no file is returned.
  */
 export type MemberExportError = MemberDataError | { code: "export_too_large" };
 

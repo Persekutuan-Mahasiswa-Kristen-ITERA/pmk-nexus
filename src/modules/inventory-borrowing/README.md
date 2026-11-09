@@ -17,12 +17,12 @@ Status (2026-11-08): **server built** (contract round 2 plus `export_too_large` 
 | `server/borrowing.ts` | server | Borrowing reads: `listMyRequests`, `listQueue`, `getQueueCounts`, `listOpenLoans`, `listBorrowingPeriods`, `getRequestDetail`, `getRequestDetailByReference`, `listHandoverUnits`, `getEvidencePhotoLinks` |
 | `server/borrowing-actions.ts` | server | Server Actions for the state machine: submit, approve, reject, extend, cancel, hand over, return, correct return |
 | `server/validation.ts` | server | zod failure -> contract error (first issue; `field`, `ref`), start-date check, `safely()` (never throws) |
-| `server/export.ts` | server | Catalog and borrowing export handlers (same pattern as Data Anggota), HTTP status per error. Interim guard: an answer of 1000 rows (PostgREST `max_rows`) is refused with `export_too_large` |
+| `server/export.ts` | server | Catalog and borrowing export handlers (same pattern as Data Anggota), HTTP status per error. An answer with fewer rows than the database's `total_count` (cut by PostgREST `max_rows`) is refused with `export_too_large` |
 | `server/export-file.ts` | server | Builds the xlsx / csv / PDF (landscape) files with `src/lib/export/*`; one status column via `inventoryExportStatusLabel()`; dates in WIB |
 | `server/evidence.ts` | server | Evidence upload handler (A-IB50): same-origin, `borrowing.handle`, size (`photo_too_large`), declared type and magic bytes (`invalid_photo`), upload with the user's client, random name, no overwrite |
 | `ui/` | both | Screens and components (frontend engineer) |
 
-Shared helpers: `src/lib/http/request.ts` (same-origin check, size-capped body reader, 405), `src/lib/supabase/limits.ts` (`POSTGREST_MAX_ROWS`). Route files: `src/app/api/inventory/export`, `src/app/api/inventory/borrowing/export`, `src/app/api/inventory/evidence` (thin; they call `getAccessState()` and delegate).
+Shared helpers: `src/lib/http/request.ts` (same-origin check, size-capped body reader, 405), `src/lib/supabase/limits.ts` (`readTotalCount`, `isCut`). Route files: `src/app/api/inventory/export`, `src/app/api/inventory/borrowing/export`, `src/app/api/inventory/evidence` (thin; they call `getAccessState()` and delegate).
 
 The RPC wrappers (and the evidence bucket calls) are in `src/lib/picore/inventory-borrowing.ts`: the functions return PI-CORE names and period labels and check PI-CORE assignments, so they belong to the single PI-CORE access layer (CLAUDE.md 4).
 
