@@ -5,6 +5,9 @@
 --   20261108100000_nexus_inventory_borrowing_fixes.sql (detail by reference, once-only correction and
 --                                                      its hints, catalog export = list, borrowing period
 --                                                      filter; section 15)
+--   20261109100000_nexus_export_totals_and_evidence_window.sql (export column total_count, evidence
+--                                                      upload cap counts the last 24 hours only;
+--                                                      section 14 "Fix 1" and section 16)
 -- Spec: docs/modules/inventory-borrowing.md (rev. 2) sections 2-5, 8, 11 (IB-01..IB-48), 11b; D-022.
 --
 -- LOCAL / THROWAWAY DATABASE ONLY. Same guards as the other two files: it refuses to run without
@@ -1742,6 +1745,52 @@ select case when nexus_test.has_storage()
           'L6: ... enforced by the Storage policy')
   else skip('Storage not installed', 1) end;
 
+-- 20261109100000 Fix 1: only unattached files created in the last 24 hours count. Age every waiting
+-- file of r15 (the 10 above + the earlier policy upload) to 25 hours: abandoned uploads stop blocking.
+reset role; select nexus_test.logout();
+select nexus_test.sto(format($$update storage.objects set created_at = now() - interval '25 hours'
+                               where bucket_id = 'nexus-borrowing-evidence' and name like %L$$,
+                             nexus_test.id('r15')::text || '/%')) as sto_result \gset
+select case when nexus_test.has_storage()
+  then is(nexus_test.sto_count(format($$bucket_id = 'nexus-borrowing-evidence' and name like %L and created_at < now() - interval '24 hours'$$,
+                                      nexus_test.id('r15')::text || '/%')), 11,
+          'Fix 1 setup: 11 unattached files in r15, all older than 24 hours')
+  else skip('Storage not installed', 1) end;
+select nexus_test.login_as(8);
+select case when nexus_test.has_storage()
+  then ok(nexus.borrowing_evidence_can_upload(nexus_test.id('r15')::text || '/' || gen_random_uuid()::text || '.jpg'),
+          'Fix 1: unattached files older than 24 hours no longer block the upload')
+  else skip('Storage not installed', 1) end;
+select case when nexus_test.has_storage()
+  then is(nexus_test.sto(format($$insert into storage.objects (bucket_id, name) values ('nexus-borrowing-evidence', %L)$$,
+                                nexus_test.id('r15')::text || '/' || gen_random_uuid()::text || '.jpg')), 'ok',
+          'Fix 1: ... and the Storage policy lets it through (1 recent file now)')
+  else skip('Storage not installed', 1) end;
+-- 9 more recent files = 10 recent unattached: blocked again.
+reset role; select nexus_test.logout();
+select count(nexus_test.photo('r15')) as flood_files_recent from generate_series(1, 9) \gset
+select nexus_test.login_as(8);
+select case when nexus_test.has_storage()
+  then ok(not nexus.borrowing_evidence_can_upload(nexus_test.id('r15')::text || '/' || gen_random_uuid()::text || '.jpg'),
+          'Fix 1: 10 unattached files from the last 24 hours still block (cap 10 unchanged)')
+  else skip('Storage not installed', 1) end;
+select case when nexus_test.has_storage()
+  then is(nexus_test.sto(format($$insert into storage.objects (bucket_id, name) values ('nexus-borrowing-evidence', %L)$$,
+                                nexus_test.id('r15')::text || '/' || gen_random_uuid()::text || '.jpg')), '42501',
+          'Fix 1: ... enforced by the Storage policy')
+  else skip('Storage not installed', 1) end;
+-- Boundary: a file 23 hours old still counts (inside the window).
+reset role; select nexus_test.logout();
+select nexus_test.sto(format($$update storage.objects set created_at = now() - interval '23 hours'
+                               where bucket_id = 'nexus-borrowing-evidence' and name like %L
+                                 and created_at >= now() - interval '1 hour'$$,
+                             nexus_test.id('r15')::text || '/%')) as sto_result \gset
+select nexus_test.login_as(8);
+select case when nexus_test.has_storage()
+  then ok(not nexus.borrowing_evidence_can_upload(nexus_test.id('r15')::text || '/' || gen_random_uuid()::text || '.jpg'),
+          'Fix 1: files 23 hours old still count (window is 24 hours)')
+  else skip('Storage not installed', 1) end;
+
 -- Review M2: the bucket guard never changes an existing bucket; it stops on any difference
 reset role; select nexus_test.logout();
 select case when nexus_test.has_storage()
@@ -2012,6 +2061,118 @@ reset role; select nexus_test.login_as(3);
 select is((select count(*)::int from nexus.borrowing_export('pdf', 'all', p_period_id => nexus_test.period(3))),
           (select count(*)::int from nexus.borrowing_queue('all', p_period_id => nexus_test.period(3), p_page_size => 50)),
   'Fix 4: BPH (view_all + export) may use the period filter');
+reset role;
+
+-- =============================================================================================
+-- 16. Export totals (migration 20261109100000_nexus_export_totals_and_evidence_window, Fix 2):
+--     inventory_export and borrowing_export end with total_count bigint = count(*) over () of the
+--     full filtered result; everything else unchanged.
+-- =============================================================================================
+reset role; select nexus_test.logout();
+create function nexus_test.out_cols_of(p regprocedure) returns text[] language sql stable
+as $$
+  select array_agg(a.n order by a.i)
+  from pg_proc f, unnest(f.proargnames, f.proargmodes::text[]) with ordinality as a(n, m, i)
+  where f.oid = p and a.m = 't'
+$$;
+grant execute on function nexus_test.out_cols_of(regprocedure) to authenticated;
+
+-- Structure: same signatures, one version each, new trailing column, same security and grants.
+select is(nexus_test.out_cols_of('nexus.inventory_export(text,text,uuid,uuid,text,text,date,date)'),
+          array['row_no', 'item_id', 'code', 'item_name', 'mode', 'category_name', 'location_name', 'unit_condition',
+                'unit_status', 'qty_good', 'qty_needs_service', 'qty_damaged', 'qty_total', 'item_is_active', 'free_qty',
+                'total_count'],
+  'Fix 2: inventory_export columns = the old list + total_count at the end');
+select is(nexus_test.out_cols_of('nexus.borrowing_export(text,text,text,date,date,uuid,uuid)'),
+          array['row_no', 'reference', 'status', 'period_label', 'requester_name', 'is_outside_party', 'outside_org_name',
+                'outside_contact_name', 'purpose', 'items', 'units_handed_over', 'start_date', 'end_date', 'extension_count',
+                'decided_by_name', 'decided_at', 'decision_note', 'handed_over_at', 'returned_at', 'returned_good',
+                'returned_damaged', 'returned_lost', 'has_issue', 'is_overdue', 'overdue_days', 'is_not_picked_up',
+                'is_partially_returned', 'total_count'],
+  'Fix 2: borrowing_export columns = the old list + total_count at the end');
+select ok((select bool_and(format_type(t.typ, null) = 'bigint')
+           from pg_proc f, unnest(f.proallargtypes, f.proargnames, f.proargmodes::text[]) as t(typ, n, m)
+           where f.oid in ('nexus.inventory_export(text,text,uuid,uuid,text,text,date,date)'::regprocedure,
+                           'nexus.borrowing_export(text,text,text,date,date,uuid,uuid)'::regprocedure,
+                           'nexus.member_data_export(text,text,uuid,text)'::regprocedure)
+             and t.m = 't' and t.n = 'total_count'),
+  'Fix 2: total_count is bigint in all three exports');
+select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = 'nexus' and p.proname in ('inventory_export', 'borrowing_export', 'member_data_export')), 3,
+  'Fix 2: exactly one version of each export function');
+select is((select count(*)::int from pg_proc p
+           where p.oid in ('nexus.inventory_export(text,text,uuid,uuid,text,text,date,date)'::regprocedure,
+                           'nexus.borrowing_export(text,text,text,date,date,uuid,uuid)'::regprocedure,
+                           'nexus.member_data_export(text,text,uuid,text)'::regprocedure)
+             and p.prosecdef and p.provolatile = 'v' and coalesce(p.proconfig @> array['search_path=""'], false)
+             and has_function_privilege('authenticated', p.oid, 'execute')
+             and not has_function_privilege('anon', p.oid, 'execute')
+             and not has_function_privilege('service_role', p.oid, 'execute')
+             and not exists (select 1 from aclexplode(p.proacl) a where a.grantee = 0)), 3,
+  'Fix 2: the three exports stay SECURITY DEFINER, VOLATILE, search_path empty, EXECUTE for authenticated only');
+select ok((select p.prosecdef and coalesce(p.proconfig @> array['search_path=""'], false)
+                  and has_function_privilege('authenticated', p.oid, 'execute')
+                  and not has_function_privilege('anon', p.oid, 'execute')
+                  and not has_function_privilege('service_role', p.oid, 'execute')
+                  and not exists (select 1 from aclexplode(p.proacl) a where a.grantee = 0)
+           from pg_proc p where p.oid = 'nexus.borrowing_evidence_can_upload(text)'::regprocedure),
+  'Fix 1: the upload check keeps SECURITY DEFINER, empty search_path, EXECUTE for authenticated only');
+
+-- Rows: total_count = number of rows returned, on every row, whatever the filter.
+select nexus_test.log_count() as logs_before_totals \gset
+select nexus_test.login_as(8);
+select ok((select count(*) > 0 and count(*) = min(e.total_count) and count(*) = max(e.total_count)
+           from nexus.inventory_export('csv') e),
+  'Fix 2: catalog export, default filter: total_count = rows returned (manager)');
+select is((select array[count(*), min(e.total_count), max(e.total_count)]::int[] from nexus.inventory_export('csv', p_search => 'Uji Q') e),
+          array[4, 4, 4], 'Fix 2: catalog export with a search: total_count follows the filter (4)');
+select ok((select count(*) > 0 and count(*) = min(e.total_count) and count(*) = max(e.total_count)
+           from nexus.borrowing_export('csv', 'all') e),
+  'Fix 2: borrowing export "all": total_count = rows returned');
+select ok((select count(*) > 0 and count(*) = min(e.total_count) and count(*) = max(e.total_count)
+           from nexus.borrowing_export('csv', 'closed') e),
+  'Fix 2: borrowing export "closed": total_count = rows returned');
+select is((select count(*)::int from nexus.borrowing_export('csv', 'all', p_period_id => nexus_test.period(1))), 0,
+  'Fix 2: an export without matches returns no rows (the server reads that as total 0)');
+reset role; select nexus_test.logout();
+select is(nexus_test.log_count(), :logs_before_totals + 5, 'Fix 2/IB-44: still exactly one log row per export');
+-- The five exports above, oldest first: catalog, catalog "Uji Q", borrowing all, closed, period 1.
+select is((select array[a[2], a[5]] from (select array_agg(l.module || ':' || l.row_count order by l.id) as a
+           from (select id, module, row_count from nexus.inventory_borrowing_export_logs order by id desc limit 5) l) t),
+          array['inventory:4', 'borrowing:0'],
+  'Fix 2/IB-44: the logged row_count still counts the rows (4 for the searched catalog export, 0 for the empty one)');
+reset role; select nexus_test.login_as(3);
+select ok((select count(*) > 0 and count(*) = min(e.total_count) and count(*) = max(e.total_count)
+           from nexus.inventory_export('csv') e),
+  'Fix 2: catalog export for a non-manager (P-KETUM): total_count = rows returned');
+
+-- No log row, no data: a failing log insert still fails the whole export (same transaction).
+reset role; select nexus_test.logout();
+select nexus_test.log_count() as logs_before_fail \gset
+create function nexus_test.fail_ib_log_insert() returns trigger language plpgsql
+as $$ begin raise exception 'simulated export log failure'; end $$;
+create trigger zz_test_fail_ib_log before insert on nexus.inventory_borrowing_export_logs
+  for each row execute function nexus_test.fail_ib_log_insert();
+select nexus_test.login_as(8);
+select throws_ok($$select * from nexus.inventory_export('csv')$$, 'P0001', 'simulated export log failure',
+  'Fix 2: catalog export returns nothing when its log row cannot be written');
+select throws_ok($$select * from nexus.borrowing_export('csv', 'all')$$, 'P0001', 'simulated export log failure',
+  'Fix 2: borrowing export returns nothing when its log row cannot be written');
+reset role; select nexus_test.logout();
+drop trigger zz_test_fail_ib_log on nexus.inventory_borrowing_export_logs;
+select is(nexus_test.log_count(), :logs_before_fail, 'Fix 2: and no log row exists');
+
+-- Refusals unchanged.
+select nexus_test.login_as(11);
+select is(nexus_test.hint_of($$select * from nexus.inventory_export('csv')$$), 'permission_required',
+  'Fix 2: P-PLAIN still cannot export the catalog');
+reset role; select nexus_test.login_as(10);
+select is(nexus_test.hint_of($$select * from nexus.borrowing_export('csv')$$), 'permission_required',
+  'Fix 2: P-STAFF-PUB still cannot export borrowing');
+reset role; select nexus_test.logout();
+set local role anon;
+select throws_ok($$select * from nexus.inventory_export('csv')$$, '42501', null, 'Fix 2: anon cannot call the catalog export');
+select throws_ok($$select * from nexus.borrowing_export('csv')$$, '42501', null, 'Fix 2: anon cannot call the borrowing export');
 reset role;
 
 select * from finish();

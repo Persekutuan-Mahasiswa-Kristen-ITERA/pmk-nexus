@@ -1,4 +1,5 @@
--- pgTAP tests for the Member Data module (migration 20261106200000_nexus_member_data.sql).
+-- pgTAP tests for the Member Data module (migration 20261106200000_nexus_member_data.sql; export
+-- column total_count from 20261109100000_nexus_export_totals_and_evidence_window.sql).
 -- Spec: docs/modules/member-data.md (rev. 2) sections 2, 4, 4.2, 5, 7, 9 (MD-xx); D-019.
 --
 -- LOCAL / THROWAWAY DATABASE ONLY. Never run against the hosted (shared) project, and not on the NEXUS
@@ -292,8 +293,11 @@ select is(nexus_test.out_cols('nexus.member_data_list(text,uuid,text,integer,int
   'MD-10: list returns exactly the whitelisted columns');
 select is(nexus_test.out_cols('nexus.member_data_export(text,text,uuid,text)'),
           array['row_no', 'member_id', 'full_name', 'member_type', 'is_active', 'unit_name', 'unit_type',
-                'parent_unit_name', 'position_name'],
-  'MD-10: export returns exactly the whitelisted columns (same as the screen)');
+                'parent_unit_name', 'position_name', 'total_count'],
+  'MD-10: export returns exactly the whitelisted columns (same as the screen) plus total_count (20261109100000)');
+select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = 'nexus' and p.proname = 'member_data_export'), 1,
+  '20261109100000: exactly one member_data_export (dropped and re-created, no leftover overload)');
 select is(nexus_test.out_cols('nexus.member_data_unit_options()'), array['id', 'name', 'type', 'sort_order'],
   'unit options return only id, name, type, sort_order');
 select is(nexus_test.out_cols('nexus.member_data_export_log_list(integer,integer)'),
@@ -786,6 +790,18 @@ select is((select count(*)::int from nexus.member_data_export('pdf', '   ')), 18
 select ok((select l.format = 'pdf' and not l.search_used from nexus_test.last_log() l),
   'A-MD11: a blank search is logged as "no search"');
 select is(nexus_test.log_count(), :log_before + 3, 'three exports, three log rows');
+select nexus_test.log_count() as log_before_total \gset
+select is((select array[count(*), min(e.total_count), max(e.total_count)]::int[] from nexus.member_data_export('csv') e),
+          array[18, 18, 18],
+  '20261109100000: every export row carries total_count = the number of rows returned (18)');
+select is((select array[count(*), min(e.total_count), max(e.total_count)]::int[]
+           from nexus.member_data_export('csv', 'persona', nexus_test.unit('Departemen Operasional'), 'all') e),
+          (select array[count(*), count(*), count(*)]::int[]
+           from nexus.member_data_list('persona', nexus_test.unit('Departemen Operasional'), 'all', 1, 50) l),
+  '20261109100000: total_count follows the filters (= rows of the filtered list)');
+select is((select count(*)::int from nexus.member_data_export('csv', 'no-such-member-xyz')), 0,
+  '20261109100000: an export without matches returns no rows (the server reads that as total 0)');
+select is(nexus_test.log_count(), :log_before_total + 3, '20261109100000: still exactly one log row per export');
 
 select nexus_test.log_count() as log_before \gset
 select is(nexus_test.hint_of($$select * from nexus.member_data_export('docx')$$), 'invalid_format', 'only xlsx, csv, pdf');
@@ -893,6 +909,9 @@ select is((select total_count::int from nexus.member_data_list() limit 1), nexus
   'list total counts every active member');
 select is((select count(*)::int from nexus.member_data_export('csv')), nexus_test.active_members(),
   'MD-29: export returns ALL matching rows (more than one page)');
+select ok((select count(*) = nexus_test.active_members() and bool_and(e.total_count = nexus_test.active_members())
+           from nexus.member_data_export('csv') e),
+  '20261109100000: total_count = all matching rows on every row, also beyond one page');
 select is(nexus.member_data_active_count(), nexus_test.active_members(), 'MD-38: count follows new members at once');
 
 select * from finish();
