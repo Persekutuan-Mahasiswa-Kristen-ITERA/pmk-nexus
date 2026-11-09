@@ -1,6 +1,6 @@
 # PMK-NEXUS Open Questions and Active Assumptions
 
-Last updated: 2026-11-09 (Letters answers L1-L11, D-025: A4, B23, C10 answered, L7 note on A2/C6, section I statuses updated). Earlier: 2026-11-09 (A2/C6 provisional, D-024; C14-C15 added; section F-bis added: Inventory and Borrowing application-layer security review; A-IB43 upload cap narrowed to 24 hours). Earlier: 2026-11-07 (Inventory and Borrowing answers IB1-IB15, D-022; A7, B4, C7 answered; section H added). Earlier: 2026-11-06 (Member Data answers, D-019; section G added).
+Last updated: 2026-11-09 (Letters amendment "Ambil nomor" and design approval, D-025: A6 answered, A-LT5 superseded, A-LT20 amended, A-LT23 and A-LT24 added). Earlier: 2026-11-09 (Letters answers L1-L11, D-025: A4, B23, C10 answered, L7 note on A2/C6, section I statuses updated). Earlier: 2026-11-09 (A2/C6 provisional, D-024; C14-C15 added; section F-bis added: Inventory and Borrowing application-layer security review; A-IB43 upload cap narrowed to 24 hours). Earlier: 2026-11-07 (Inventory and Borrowing answers IB1-IB15, D-022; A7, B4, C7 answered; section H added). Earlier: 2026-11-06 (Member Data answers, D-019; section G added).
 Tags: **[UNKNOWN]** no answer yet, **[ASSUMPTION]** working guess that needs confirmation, **[ANSWERED]** resolved (move the decision to `DECISIONS.md`).
 Priority: **P0** blocks the next step, **P1** blocks a specific module, **P2** can wait.
 
@@ -15,7 +15,7 @@ Priority: **P0** blocks the next step, **P1** blocks a specific module, **P2** c
 | A3 | List of PMK departments and organizational structure | **Partly answered** | P1 | PI-CORE seeds 7 departments, 1 bureau, 16 divisions (`docs/picore/schema-report.md` section 8). Owner to confirm this matches reality. |
 | A4 | Sample official letter formats | **[ANSWERED]** 2026-11-09: not needed in Phase 1 (L1 a, D-025) | - | NEXUS only registers and archives finished letters. Needed again only if a later phase generates documents. |
 | A5 | Exact Figma colors and fonts | [UNKNOWN] | P1 (UI) | Stitch has exact values (see section C), but they differ from the context doc. Which design wins? |
-| A6 | Designs for login, letter request flow, borrowing request flow | [UNKNOWN] | P1 | See section C for what Stitch contains. PI-CORE's Stitch project has login screens ("Masuk PMK ITERA") that could be reused. |
+| A6 | Designs for login, letter request flow, borrowing request flow | **[ANSWERED]** login 2026-11-06 (D-017), borrowing 2026-11-07 (`docs/design/inventory-borrowing.md`), letter request flow 2026-11-09 (`docs/design/letters.md`, D-025) | - | The letters design needs one revision for "Ambil nomor" (D-025 amendment G1: design P6 and section 12.5); the UX designer does it. |
 | A7 | Meaning of "Inventory Status 80%" (CLAUDE.md Q7) | **[ANSWERED]** 2026-11-07 (D-022, IB12 option d) | - | No percentage. The Dashboard card shows counts (units in good condition, on loan, needing service; exact wording at design time, A-IB32). The Stitch "80%" is dropped, a design deviation the owner approved. |
 | A8 | Meaning of member "Status" in Member Data | **[ANSWERED]** 2026-11-06 (D-019, M1) | - | Aktif / Nonaktif from `members.is_active`. Filter defaults to Aktif. |
 
@@ -229,7 +229,7 @@ Spec: `docs/modules/letters.md` (approved 2026-11-09, D-025). The owner accepted
 | A-LT2 | A request has an optional free-text "Atas nama" (unit or committee) instead of a unit list, because committees are not PI-CORE entities (B7). | **[DECIDED]** 2026-11-09 (L3 b, D-025) | - |
 | A-LT3 | The register is the archive; no separate "archive" action or screen (the word in the `letters.manage` key text means files are kept). | [ASSUMPTION] | P2 |
 | A-LT4 | Issuing from a request needs only `letter_requests.process`; the issue function creates the register row. Direct registration needs `letters.manage`. | [ASSUMPTION] | P1 |
-| A-LT5 | A secretary may issue directly from Diajukan (the Diproses step is optional). | [ASSUMPTION] | P2 |
+| A-LT5 | A secretary may issue directly from Diajukan (the Diproses step is optional). | **[SUPERSEDED]** 2026-11-09 by the "Ambil nomor" amendment (D-025 G1): the path is always Diajukan, Diproses, Ambil nomor, Terbitkan | - |
 | A-LT6 | "Processed" in access control L9 means "leaves Diajukan": the requester cancels only while Diajukan. | [ASSUMPTION] | P1 |
 | A-LT7 | A request needs an active period; lecturers may request (B15 stays open). | [ASSUMPTION] | P2 |
 | A-LT8 | A voided letter cannot be restored; the correction is a new letter with a new number. | [ASSUMPTION] | P1 |
@@ -244,7 +244,9 @@ Spec: `docs/modules/letters.md` (approved 2026-11-09, D-025). The owner accepted
 | A-LT17 | Members cannot export their own requests; the request list itself is not exportable in Phase 1. | [ASSUMPTION] | P2 |
 | A-LT18 | Field limits: Perihal 200 characters, counterpart 150, purpose text 1000, notes and processor notes 500, on-behalf-of 120, counterpart's own letter number 60. | [ASSUMPTION] | P2 |
 | A-LT19 | A received date and a letter date cannot be in the future. | [ASSUMPTION] | P2 |
-| A-LT20 | A request issued after a period change creates its letter in the ACTIVE period, linked to the old request. | [ASSUMPTION] | P2 |
+| A-LT20 | **Amended 2026-11-09 (G1).** A number taken ("Ambil nomor") after a period change creates its letter in the ACTIVE period, linked to the old request; a letter whose number was taken before keeps its old period and still receives its final file at Terbitkan as an open item. | [ASSUMPTION] | P2 |
 | A-LT21 | The queue has a filter "Belum selesai (semua periode)" for the period handover. | [ASSUMPTION] | P2 |
 | A-LT22 | Progja can later link to a letter by id without a rewrite (letters carry `period_id`). | [ASSUMPTION] | P2 |
+| A-LT23 | New 2026-11-09 (G1): Terbitkan needs a taken number (no issue without "Ambil nomor"), so Proses is no longer optional. | [ASSUMPTION] | P1 |
+| A-LT24 | New 2026-11-09 (G1): while the linked request is Diproses, the register letter cannot be voided or get files through the register; the processor uses Terbitkan or rejects the request (which voids the row with the rejection note). | [ASSUMPTION] | P1 |
 
