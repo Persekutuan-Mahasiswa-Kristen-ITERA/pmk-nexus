@@ -1,6 +1,6 @@
 # PMK-NEXUS Open Questions and Active Assumptions
 
-Last updated: 2026-11-09 (sections J Meeting Minutes and K Finance added: draft specs, owner questions N1-N7 and K1-K6, assumptions A-MN1-A-MN18 and A-FN1-A-FN21). Earlier: 2026-11-09 (Letters amendment "Ambil nomor" and design approval, D-025: A6 answered, A-LT5 superseded, A-LT20 amended, A-LT23 and A-LT24 added). Earlier: 2026-11-09 (Letters answers L1-L11, D-025: A4, B23, C10 answered, L7 note on A2/C6, section I statuses updated). Earlier: 2026-11-09 (A2/C6 provisional, D-024; C14-C15 added; section F-bis added: Inventory and Borrowing application-layer security review; A-IB43 upload cap narrowed to 24 hours). Earlier: 2026-11-07 (Inventory and Borrowing answers IB1-IB15, D-022; A7, B4, C7 answered; section H added). Earlier: 2026-11-06 (Member Data answers, D-019; section G added).
+Last updated: 2026-11-09 (owner accepted all recommendations of the Meeting Minutes and Finance specs, D-027 and D-028: N1-N7 and K1-K6 answered; C8, C9 and B6 (for Finance) answered; B19 answered for the unit head; sections J and K updated; B37 to be raised with the PI-CORE maintainer before go-live). Earlier: 2026-11-09 (sections J Meeting Minutes and K Finance added: draft specs, owner questions N1-N7 and K1-K6, assumptions A-MN1-A-MN18 and A-FN1-A-FN21). Earlier: 2026-11-09 (Letters amendment "Ambil nomor" and design approval, D-025: A6 answered, A-LT5 superseded, A-LT20 amended, A-LT23 and A-LT24 added). Earlier: 2026-11-09 (Letters answers L1-L11, D-025: A4, B23, C10 answered, L7 note on A2/C6, section I statuses updated). Earlier: 2026-11-09 (A2/C6 provisional, D-024; C14-C15 added; section F-bis added: Inventory and Borrowing application-layer security review; A-IB43 upload cap narrowed to 24 hours). Earlier: 2026-11-07 (Inventory and Borrowing answers IB1-IB15, D-022; A7, B4, C7 answered; section H added). Earlier: 2026-11-06 (Member Data answers, D-019; section G added).
 Tags: **[UNKNOWN]** no answer yet, **[ASSUMPTION]** working guess that needs confirmation, **[ANSWERED]** resolved (move the decision to `DECISIONS.md`).
 Priority: **P0** blocks the next step, **P1** blocks a specific module, **P2** can wait.
 
@@ -28,7 +28,7 @@ Priority: **P0** blocks the next step, **P1** blocks a specific module, **P2** c
 | B3 | Treasurer = only Bendahara Umum 1/2 (role `bendahara`)? | [ASSUMPTION] yes | P1 (Finance) | No department-level treasurers exist in PI-CORE. |
 | B4 | "Operations Department Head and staff" = Kepala Departemen of `Departemen Operasional` + Kepala Divisi + Staff of its divisions `Logistik` and `Akomodasi` (+ Sekretaris Departemen?) | **[ANSWERED]** 2026-11-07 (D-022, IB2 option b) | - | Every position in the Operations units (including Sekretaris Departemen Operasional) manages inventory and records handover/return (`borrowing.handle`). Only Kepala Departemen and Kepala Divisi approve, reject, extend (`borrowing.approve`). Still to verify before applying: that the Kepala Divisi positions of Logistik and Akomodasi are filled in the real data. Migration written 2026-11-07 (`20261107100000`, commit 7a8399a), not yet applied to hosted. |
 | B5 | How to identify `Departemen Operasional` safely? | **[ANSWERED]** 2026-11-05 | - | NEXUS-side settings table storing PI-CORE org unit IDs. See `DECISIONS.md` D-009. |
-| B6 | "BPH view all" = everyone holding role `bph` (Ketua Umum, Sekjen, Sekum 1/2, Bendahara Umum 1/2)? | [ASSUMPTION] yes | P1 | |
+| B6 | "BPH view all" = everyone holding role `bph` (Ketua Umum, Sekjen, Sekum 1/2, Bendahara Umum 1/2)? | **[ANSWERED for Finance]** 2026-11-09: yes (K1 a, D-028); other modules [ASSUMPTION] yes | - | All six BPH positions read and export Finance (rules D02, D03); only the two Treasurers record and void (D24). |
 | B7 | Committee (panitia): needed in NEXUS? PI-CORE has no such role. | [UNKNOWN] | P2 | Context doc lists "Committee" as a role. |
 | B8 | Regular member (G7) = EVERY active member (baseline rights; officers get more on top). What do they see? Spec recommends: own requests + read-only inventory catalog + dashboard cards they may open. | [ASSUMPTION] | P1 | PI-CORE has no "anggota" role. See `docs/modules/access-control.md`. |
 | B9 | Member Data: which roles may see the member list, and which fields (name, department, status; never email/phone/NIM/NIP)? | **[ANSWERED]** 2026-11-06 (D-019, M2) | - | View: role `bph` + role `kepala_departemen` (new default rule D32, needs a written reason, L12); export: BPH only. "All active members" is blocked by L12. Fields: name, main unit/position, active/inactive, "Pembina" marker. Migration for D32 still to be written. |
@@ -40,7 +40,7 @@ Priority: **P0** blocks the next step, **P1** blocks a specific module, **P2** c
 | B16 | How does NEXUS recognize a BPH secretary? | **[ANSWERED]** 2026-11-05 | - | NEXUS-side settings table storing PI-CORE position IDs. See `DECISIONS.md` D-009. |
 | B17 | Can department/bureau secretaries READ letters (archive) or only submit requests? Can they read minutes of other units? | [ASSUMPTION] submit requests only; read only their own unit's minutes | P1 | BPH can view all (role `bph`). |
 | B18 | Should System Admin see business data (Finance, minutes, letters, Member Data)? | [ASSUMPTION] no, settings only | P1 | From access-control spec. |
-| B19 | May members of a unit read their own unit's minutes? | [ASSUMPTION] no, only dept secretary and BPH | P2 | From access-control spec. |
+| B19 | May members of a unit read their own unit's minutes? | **[ANSWERED]** 2026-11-09: only the unit head (N1 b, D-027); ordinary members no | - | Kepala Departemen and Kepala Biro read their own unit's minutes, read only (new default rule D37). Dept secretary and BPH as before. |
 | B20 | Who may read previous-period records? | [ASSUMPTION] whoever currently has view rights, all periods | P1 | From access-control spec. |
 | B21 | May a processor approve their own request? | [ASSUMPTION] blocked | P1 | From access-control spec. |
 | B22 | Does a department secretary's scope include child divisions? | [ASSUMPTION] own unit only | P2 | From access-control spec. |
@@ -60,8 +60,8 @@ Details in `docs/design/stitch/comparison.md`.
 | C5 | Remove "+ Tambah Anggota" from Data Anggota (read-only rule)? | [ASSUMPTION] remove (the Member Data spec already removes it) | P1 | Members are managed in PI-CORE. Not asked separately; follows the read-only decision. |
 | C6 | Outgoing letter code `SK` (seen in Stitch `PMK/NEX/SK/2026/012`): correct? | **Provisional** 2026-11-09 (D-024) | P2 | Used for now; the code is a setting. |
 | C7 | Borrowing rule "H-3 kegiatan" (request at least 3 days before the event): real rule or Stitch filler? | **[ANSWERED]** 2026-11-07 (D-022, IB4 option a) | - | Filler. No lead time. The Stitch notice (and "Koordinator Logistik") is not adopted. |
-| C8 | Meeting status (Selesai / Terjadwal / Mendatang) on the Dashboard: do meetings need a schedule/status field? | [UNKNOWN] | P2 | Not in context doc. |
-| C9 | Minutes attachments: PDF/DOCX, max 10 MB? | [ASSUMPTION] yes | P2 | Watch Supabase free-tier storage (1 GB). |
+| C8 | Meeting status (Selesai / Terjadwal / Mendatang) on the Dashboard: do meetings need a schedule/status field? | **[ANSWERED]** 2026-11-09: no (N4 a, D-027) | - | No schedule, no agenda, no meeting statuses; a minute is only Aktif or Dibatalkan. The Dashboard card shows counts only (N5 a). Stitch statuses and "+ Buat Agenda" are not adopted. |
+| C9 | Minutes attachments: PDF/DOCX, max 10 MB? | **[ANSWERED]** 2026-11-09: no, PDF/JPG/PNG 5 MB, up to 3 (N6 a, D-027) | - | Same rule as Letters. Storage plan: check usage at every handover, warn at 70% (N7 a). |
 | C10 | Dashboard "Surat Menyurat" card (not in context doc): keep? | **[ANSWERED]** 2026-11-09: keep, counts only (L11 a, D-025) | - | For `letters.view` holders: incoming and outgoing counts in the active period, plus waiting requests for processors; no letter titles. Exact wording at design time. |
 | C11 | Export: Stitch shows mostly PDF; context requires Excel, CSV, PDF. Keep all three? | **[ANSWERED]** 2026-11-06: all three (D-019 M5, D-020) | - | |
 | C12 | Real PMK logo file (SVG/PNG) for the header | [ASSUMPTION] 2026-11-09: use PI-CORE's `public/brand/pmk-logo.png` (round PMK ITERA emblem), copied to NEXUS `public/brand/` (D-023) | P1 (UI) | Owner to confirm it is the official logo. Only PNG; an SVG would be sharper. |
@@ -88,7 +88,7 @@ Since 2026-11-05, B3, B4, B6, B7, B8, B9, B17, B18, B19, B22, B23 are answered a
 | B34 | Allow enable/disable of a rule directly in the SQL editor (emergency), logged with no actor? | [ASSUMPTION] yes | P2 | Still logged; the log cannot be edited. |
 | B35 | Inactive org units: a rule pointing to an inactive unit matches nobody, but an assignment inside an inactive unit still counts. | [ASSUMPTION] confirm | P2 | Spec section 5 and E21 read differently; both implemented this way. |
 | B36 | How to apply NEXUS migrations to the shared project without breaking PI-CORE's migration history? | [ASSUMPTION] backup first, then run each file once in the SQL editor (or psql single transaction); never `supabase db push`, `migration repair`, or `db reset` from NEXUS | P0 (before applying) | See `supabase/README.md`. |
-| B37 | Known risk (security review W2): PI-CORE position-derived admins (Ketua Umum, Sekjen, Sekum, Kepala Departemen/Biro) can create assignments for themselves in PI-CORE, e.g. fill a vacant Bendahara Umum 2, and NEXUS then grants Finance. Not fixable in NEXUS. Plan: record as accepted risk, tell the PI-CORE maintainer (suggest assignment writes for super_admin only), later add a NEXUS report of self-made assignments from PI-CORE's audit log. | [ASSUMPTION] accept + inform PI-CORE maintainer | P1 | |
+| B37 | Known risk (security review W2): PI-CORE position-derived admins (Ketua Umum, Sekjen, Sekum, Kepala Departemen/Biro) can create assignments for themselves in PI-CORE, e.g. fill a vacant Bendahara Umum 2, and NEXUS then grants Finance. Not fixable in NEXUS. Plan: record as accepted risk, tell the PI-CORE maintainer (suggest assignment writes for super_admin only), later add a NEXUS report of self-made assignments from PI-CORE's audit log. | [ASSUMPTION] accept + inform PI-CORE maintainer. **2026-11-09 (D-028):** most serious for Finance (a self-assigned Bendahara Umum 2 gets Finance); to be raised with the PI-CORE maintainer **before go-live** | P1 | |
 | B38 | Hosted project has extra schemas `drizzle` and `pmk_core_v1`. Is hosted `public` really PI-CORE v2? | **[ANSWERED]** 2026-11-05 from `pi-core-v2/docs/OPERATIONS.md` (not verified live) | P0 → re-check before applying | `pmk_core_v1` = PI-CORE v1 tables archived on 2026-11-01 (moved, not deleted; no anon/authenticated access, not exposed). `drizzle` = v1 migration-tool schema (its table was moved too). Hosted `public` = v2 with all 5 migrations ("local = remote" on 2026-11-02). NEXUS must not touch `pmk_core_v1`/`drizzle`. The M2 seed name check before applying acts as the live verification. |
 | B39 | "Automatically expose new tables" is ON in the hosted project (shared with PI-CORE). Turn it OFF? | [ASSUMPTION] turn OFF after agreeing with the PI-CORE maintainer | P1 | Supabase recommends OFF. NEXUS and PI-CORE migrations already revoke grants explicitly, so not urgent. |
 
@@ -249,20 +249,23 @@ Spec: `docs/modules/letters.md` (approved 2026-11-09, D-025). The owner accepted
 | A-LT22 | Progja can later link to a letter by id without a rewrite (letters carry `period_id`). | [ASSUMPTION] | P2 |
 | A-LT23 | New 2026-11-09 (G1): Terbitkan needs a taken number (no issue without "Ambil nomor"), so Proses is no longer optional. | [ASSUMPTION] | P1 |
 | A-LT24 | New 2026-11-09 (G1): while the linked request is Diproses, the register letter cannot be voided or get files through the register; the processor uses Terbitkan or rejects the request (which voids the row with the rejection note). | [ASSUMPTION] | P1 |
+| A-LT25 | Tech lead 2026-11-10 (fast mode): a register file (`parent: "letter"`) opens only for `letters.view` holders; a requester opens the issued file through their own request (`parent: "request"`). | [ASSUMPTION] | P2 |
+| A-LT26 | Tech lead 2026-11-10: the register export header says "Dengan pencarian" when a search was used but never prints the search text (it could hold personal data, same reasoning as A-MD11). | [ASSUMPTION] | P2 |
+| A-LT27 | Tech lead 2026-11-10: register export columns: No, Nomor surat, Nomor lama, Tanggal diterima (masuk), Tanggal surat, Pengirim / Ditujukan kepada, Nomor surat dari pengirim (masuk), Perihal, Catatan, Status, Alasan pembatalan, Dari permohonan, Periode, Dicatat oleh, Waktu dicatat, Jumlah berkas. | [ASSUMPTION] | P2 |
 
 ## J. Meeting Minutes questions and assumptions (2026-11-09)
 
-Spec: `docs/modules/meeting-minutes.md` (DRAFT for the owner's approval package, D-026). N1-N7 are owner questions with a recommendation in the spec, section 10; they stay [UNKNOWN] until answered. Related older items: B17, B19, B22 (reading rights), C8 (meeting status), C9 (attachments). Those rows are not edited here; N1, N4 and N6 would answer them.
+Spec: `docs/modules/meeting-minutes.md` (approved 2026-11-09, D-027; the owner accepted every recommendation). N1-N7 are answered; the options stay in the spec, section 10. Related older items: B17, B19 (answered for the unit head), B22 (reading rights), C8 and C9 (answered by N4 and N6). Nothing built yet; default rule D37 is not yet in a migration.
 
 | # | Question | Status | Priority | Recommendation |
 |---|---|---|---|---|
-| N1 | Who may read minutes? (a) BPH all + department/bureau secretary own unit; (b) (a) + Kepala Departemen/Biro own unit (new default rule D37); (c) (a) + every member of the unit | [UNKNOWN] | P1 | (b). Extends B17 and B19 |
-| N2 | Which units may a minute belong to? (a) BPH, departments, bureau; (b) any unit incl. divisions; (c) (a) + root "Seluruh organisasi" | [UNKNOWN] | P1 | (c) |
-| N3 | Correction and draft: (a) no draft, edit in the active period with history, void with reason; (b) draft then locked "Terbitkan"; (c) no edits | [UNKNOWN] | P1 | (a) |
-| N4 | Meeting schedule or status needed? (a) no; (b) planned meetings that become minutes | [UNKNOWN] | P2 | (a). Answers C8 |
-| N5 | Dashboard "Recent Meetings" card: (a) counts + latest date, no titles; (b) latest 3 titles; (c) no card | [UNKNOWN] | P2 | (a) |
-| N6 | Attachments: (a) PDF/JPG/PNG 5 MB, up to 3 (as Letters); (b) PDF/DOCX 10 MB (Stitch); (c) none | [UNKNOWN] | P1 | (a). Answers C9 |
-| N7 | Storage plan for the shared 1 GB (about 560 MB a year across letters, minutes, finance proofs, borrowing evidence; all guesses): (a) keep limits, resize, check at each handover, warn at 70%; (b) tighter limits; (c) paid plan now | [UNKNOWN] | P1 | (a) |
+| N1 | Who may read minutes? (a) BPH all + department/bureau secretary own unit; (b) (a) + Kepala Departemen/Biro own unit (new default rule D37); (c) (a) + every member of the unit | **[ANSWERED]** 2026-11-09: (b) (D-027) | - | Rule D37, read only, no export. Extends B17 and B19 |
+| N2 | Which units may a minute belong to? (a) BPH, departments, bureau; (b) any unit incl. divisions; (c) (a) + root "Seluruh organisasi" | **[ANSWERED]** 2026-11-09: (c) (D-027) | - | Divisions not offered; "Seluruh organisasi" readable by BPH only |
+| N3 | Correction and draft: (a) no draft, edit in the active period with history, void with reason; (b) draft then locked "Terbitkan"; (c) no edits | **[ANSWERED]** 2026-11-09: (a) (D-027) | - | "Simpan Draft" dropped |
+| N4 | Meeting schedule or status needed? (a) no; (b) planned meetings that become minutes | **[ANSWERED]** 2026-11-09: (a) (D-027) | - | Answers C8 |
+| N5 | Dashboard "Recent Meetings" card: (a) counts + latest date, no titles; (b) latest 3 titles; (c) no card | **[ANSWERED]** 2026-11-09: (a) (D-027) | - | Counts only, scope-limited |
+| N6 | Attachments: (a) PDF/JPG/PNG 5 MB, up to 3 (as Letters); (b) PDF/DOCX 10 MB (Stitch); (c) none | **[ANSWERED]** 2026-11-09: (a) (D-027) | - | Answers C9 |
+| N7 | Storage plan for the shared 1 GB (about 560 MB a year across letters, minutes, finance proofs, borrowing evidence; all guesses): (a) keep limits, resize, check at each handover, warn at 70%; (b) tighter limits; (c) paid plan now | **[ANSWERED]** 2026-11-09: (a) (D-027) | - | "Check storage" step goes into the handover guide; warn the owner at about 700 MB |
 
 | # | Assumption | Status | Priority |
 |---|---|---|---|
@@ -274,29 +277,29 @@ Spec: `docs/modules/meeting-minutes.md` (DRAFT for the owner's approval package,
 | A-MN6 | Search on title, topic, content; page size 20; newest meeting date first; filters Unit, Periode, Status (default Aktif). | [ASSUMPTION] | P2 |
 | A-MN7 | Every reader sees the edit history with before and after; withdrawn files only to managers. | [ASSUMPTION] | P2 |
 | A-MN8 | List export = all rows matching filters and scope; a single-minute export from the detail uses the same endpoint. | [ASSUMPTION] | P2 |
-| A-MN9 | File handling reuses Letters: signed links 300 s, 10 unattached uploads per member per 24 h, withdrawn files not counted toward 3, magic-byte check, browser resize to about 2000 px. | [ASSUMPTION] | P2 |
+| A-MN9 | File handling reuses Letters. **Decided 2026-11-09 (N6 a): PDF/JPG/PNG, 5 MB, up to 3.** Still assumption: signed links 300 s, 10 unattached uploads per member per 24 h, withdrawn files not counted toward 3, magic-byte check, browser resize to about 2000 px. | [ASSUMPTION] for the remaining parts | P2 |
 | A-MN10 | A minute has no number or reference code. | [ASSUMPTION] | P2 |
 | A-MN11 | Leaving the form with unsaved typing asks first; no draft stored in the browser. | [ASSUMPTION] | P2 |
 | A-MN12 | The unit name is read live from PI-CORE, inactive units included. | [ASSUMPTION] | P2 |
-| A-MN13 | Header tiles and the Dashboard card count Aktif minutes of the active period inside the user's scope. | [ASSUMPTION] | P2 |
+| A-MN13 | Header tiles and the Dashboard card count Aktif minutes of the active period inside the user's scope. Counts only, no titles: decided 2026-11-09 (N5 a); the exact counting rule stays an assumption. | [ASSUMPTION] for the counting rule | P2 |
 | A-MN14 | Drawer label and H1 "Notulensi Rapat". | [ASSUMPTION] | P2 |
 | A-MN15 | Void cannot be restored; there is no separate "archive" action (the key text word means void). | [ASSUMPTION] | P1 |
 | A-MN16 | Export header shows period filter and export date in WIB; no file links in exports. | [ASSUMPTION] | P2 |
 | A-MN17 | A minute of a deactivated unit stays readable by scope. | [ASSUMPTION] | P2 |
-| A-MN18 | Divisions are not offered as owning unit; their meetings are recorded under the department (follows N2 (a) or (c)). | [ASSUMPTION] | P1 |
+| A-MN18 | Divisions are not offered as owning unit; their meetings are recorded under the department. | **[DECIDED]** 2026-11-09 (N2 c, D-027) | - |
 
 ## K. Finance questions and assumptions (2026-11-09)
 
-Spec: `docs/modules/finance.md` (DRAFT for the owner's approval package, D-026). K1-K6 are owner questions with a recommendation in the spec, section 10; they stay [UNKNOWN] until answered. Related older items: B3 (Treasurer), B6 (BPH views Finance), B18 (admin sees no Finance), B37 (position-derived admins can self-assign as Treasurer). Those rows are not edited here; K1 would answer B6. Finance needs the strictest security review and the owner's approval before anything touches the hosted project.
+Spec: `docs/modules/finance.md` (approved 2026-11-09, D-028; the owner accepted every recommendation). K1-K6 are answered; the options stay in the spec, section 10. Related older items: B3 (Treasurer, still [ASSUMPTION]), B6 (answered for Finance by K1), B18 (admin sees no Finance), B37 (position-derived admins can self-assign as Treasurer: to be raised with the PI-CORE maintainer before go-live). Nothing built yet. Finance needs the strictest security review and the owner's approval (after a backup) before anything touches the hosted project.
 
 | # | Question | Status | Priority | Recommendation |
 |---|---|---|---|---|
-| K1 | Who may see and export Finance? (a) all six BPH read and export, the two Treasurers also record and void; (b) only Ketua Umum, Sekretaris Jenderal and the Treasurers; (c) BPH see totals only (needs a new key) | [UNKNOWN] | P1 | (a). Answers B6 |
-| K2 | Corrections: (a) never edit; void in the active period and re-record, old-period errors by a new linked entry; (b) (a) + edit Keterangan/Catatan with history; (c) edit in the active period with history | [UNKNOWN] | P1 | (a). Needs the key text of `finance.manage` and AC-14, AC-15, AC-58 reworded |
-| K3 | Carry-over: (a) a "Saldo awal" entry per period typed after counting, previous closing shown as a hint; (b) automatic; (c) none, each period starts at Rp 0 | [UNKNOWN] | P1 | (a) |
-| K4 | One cash pool or several accounts? (a) one pool; (b) an account field with a balance per account | [UNKNOWN] | P1 | (a) |
-| K5 | Is proof required? (a) optional with a visible "Tanpa bukti" mark and filter; (b) required for every Pengeluaran; (c) required above an amount the owner names | [UNKNOWN] | P1 | (a) |
-| K6 | Second-person check? (a) none, history shows who; (b) the other Treasurer marks "Terverifikasi" | [UNKNOWN] | P2 | (a) |
+| K1 | Who may see and export Finance? (a) all six BPH read and export, the two Treasurers also record and void; (b) only Ketua Umum, Sekretaris Jenderal and the Treasurers; (c) BPH see totals only (needs a new key) | **[ANSWERED]** 2026-11-09: (a) (D-028) | - | Answers B6 for Finance. Rules D02, D03, D24, D25 stay |
+| K2 | Corrections: (a) never edit; void in the active period and re-record, old-period errors by a new linked entry; (b) (a) + edit Keterangan/Catatan with history; (c) edit in the active period with history | **[ANSWERED]** 2026-11-09: (a) (D-028) | - | Key text of `finance.manage` and AC-14, AC-15, AC-58 reworded to "record, void, correct" |
+| K3 | Carry-over: (a) a "Saldo awal" entry per period typed after counting, previous closing shown as a hint; (b) automatic; (c) none, each period starts at Rp 0 | **[ANSWERED]** 2026-11-09: (a) (D-028) | - | New-period guide gets a "count cash, record Saldo awal" step |
+| K4 | One cash pool or several accounts? (a) one pool; (b) an account field with a balance per account | **[ANSWERED]** 2026-11-09: (a) (D-028) | - | |
+| K5 | Is proof required? (a) optional with a visible "Tanpa bukti" mark and filter; (b) required for every Pengeluaran; (c) required above an amount the owner names | **[ANSWERED]** 2026-11-09: (a) (D-028) | - | Review after one period |
+| K6 | Second-person check? (a) none, history shows who; (b) the other Treasurer marks "Terverifikasi" | **[ANSWERED]** 2026-11-09: (a) (D-028) | - | |
 
 | # | Assumption | Status | Priority |
 |---|---|---|---|
@@ -307,7 +310,7 @@ Spec: `docs/modules/finance.md` (DRAFT for the owner's approval package, D-026).
 | A-FN5 | Limits: Keterangan 200, Catatan 500, reasons 500 characters; plain text. | [ASSUMPTION] | P2 |
 | A-FN6 | Proof: PDF/JPG/PNG, 5 MB, up to 3, magic-byte check, browser resize to about 2000 px, signed links 300 s, 10 unattached uploads per member per 24 h, withdrawn files kept; proof can be added only while the entry is Aktif and in the active period. | [ASSUMPTION] | P1 |
 | A-FN7 | Void: any `finance.manage` holder, Aktif entries of the active period, reason required, not restorable; "Catat ulang" copies a voided entry into the form. | [ASSUMPTION] | P1 |
-| A-FN8 | An old-period entry is corrected by a new entry in the active period with an optional link "Koreksi atas {nomor}"; old totals are not restated. | [ASSUMPTION] | P1 |
+| A-FN8 | An old-period entry is corrected by a new entry in the active period with an optional link "Koreksi atas {nomor}"; old totals are not restated. | **[DECIDED]** 2026-11-09 (K2 a, D-028) | - |
 | A-FN9 | A negative Total Saldo is allowed and shown with a hint. | [ASSUMPTION] | P2 |
 | A-FN10 | Each form submit carries an idempotency token; a double tap or retry saves one entry. | [ASSUMPTION] | P1 |
 | A-FN11 | No categories and no per-row sub-line in Phase 1. | [ASSUMPTION] | P2 |
@@ -316,7 +319,7 @@ Spec: `docs/modules/finance.md` (DRAFT for the owner's approval package, D-026).
 | A-FN14 | Export header summarises the whole period; text cells starting with `=`, `+`, `-`, `@` are neutralised; no links; row cap 1000 with `total_count` (D-022). | [ASSUMPTION] | P1 |
 | A-FN15 | No key and no screen to read the Finance export log yet; database only until the log screen exists (A-MD14). | [ASSUMPTION] | P1 |
 | A-FN16 | Viewing Finance is not logged; exports are. | [ASSUMPTION] | P2 |
-| A-FN17 | Both Treasurers have equal rights; either may void the other's entry; no approval, so access control L6 is not involved. | [ASSUMPTION] | P2 |
+| A-FN17 | Both Treasurers have equal rights; either may void the other's entry; no approval, so access control L6 is not involved. | **[DECIDED]** 2026-11-09 (K6 a, D-028) | - |
 | A-FN18 | History before go-live stays outside NEXUS; at go-live the Treasurer records Saldo awal and may add real-dated entries of the active period. | [ASSUMPTION] | P1 |
 | A-FN19 | The System Admin without a Finance rule sees nothing (B18); a self-benefit rule is logged (D-012). | [ASSUMPTION] | P2 |
 | A-FN20 | Dashboard card: Saldo, Pemasukan, Pengeluaran of the active period for `finance.view` holders; no percentages. | [ASSUMPTION] | P2 |

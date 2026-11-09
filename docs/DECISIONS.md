@@ -276,3 +276,41 @@ Status tags: **[DECIDED]** final, **[ASSUMPTION]** needs owner confirmation.
 - **Kept:** security review per module (Finance with extra care), automated tests, owner approval before anything touches the hosted project (shared with PI-CORE), and owner decisions on rules, money, access rights and data retention.
 - **Why:** waiting for approval between every step was the main source of delay; the owner almost always accepted the recommendations.
 - **Progress reporting:** as weighted percentages, not time estimates (owner, 2026-11-09).
+
+## D-027 Meeting Minutes module rules [DECIDED]
+- **Date:** 2026-11-09
+- **What:** The owner accepted every recommendation of `docs/modules/meeting-minutes.md` section 10 (N1-N7), and the spec's screens (section 7, including the Indonesian copy) count as the approved design (fast mode, D-026; no separate UX round):
+  - N1 (b): BPH reads all minutes; a department or bureau secretary reads her own unit; the Kepala Departemen and Kepala Biro read their own unit's minutes, read only, no export (new default rule D37: role `kepala_departemen`, `minutes.view`, scope own unit). Answers B17 and B19 for the unit head.
+  - N2 (c): a minute belongs to exactly one unit from this list: `BPH PMK ITERA`, the departments, the bureau, and the root shown as "Seluruh organisasi" (readable by BPH only). Divisions are not offered; their meetings are recorded under the department.
+  - N3 (a): no draft. A manager edits an Aktif minute of the active period; every edit writes a history row with before and after; a wrong or duplicate minute is voided with a reason (not restorable). "Simpan Draft" from Stitch is dropped.
+  - N4 (a): no meeting schedule or agenda and no meeting statuses (Selesai, Terjadwal, Mendatang); "+ Buat Agenda" is dropped. Answers C8.
+  - N5 (a): the Dashboard card shows counts and the date of the latest meeting, no titles, limited to the user's scope.
+  - N6 (a): attachments are PDF, JPG or PNG, 5 MB each, up to 3 per minute, images resized in the browser (same as Letters L8). Stitch's "PDF/DOCX, 10 MB" is dropped. Answers C9.
+  - N7 (a): keep these limits, resize images, check real storage usage at every period handover (a step in the handover guide), and warn the owner at 70% of the free-tier quota (about 700 MB); then the owner decides between cleaning old files and paying. Applies to all modules that store files.
+- **Access-control changes (`docs/modules/access-control.md`):** default rule D37 added (enabled default rules 35 -> 36, plus 1 retired); no new key (22 keys stay); the `minutes.manage` key text now says "void" instead of "archive" (A-MN15).
+- **Why:** the unit head is responsible for the decisions of the meeting, so they should be able to read the record; the other answers follow the Letters pattern (one rule for files, edit with history, void instead of delete) and keep the module small. Counts-only on the Dashboard keeps sensitive meeting titles inside the module.
+- **Impact:** the unit field ("Unit") is added to the minute form (context 5.4); the migration adds D37 and the minute tables and bucket; `OPEN_QUESTIONS.md` C8, C9 answered and section J updated; the handover guide gets a "check storage" step.
+- **Risks:** (1) Minutes can hold sensitive talk (personnel, money); the unit head's read access widens the audience, though the System Admin can disable D37 (D-011). (2) A minute of a closed period cannot be corrected (locked rule L7); the fix is a new minute that refers to it. (3) A wrong unit cannot be changed after saving; void and record again. (4) Storage is shared with letters, finance proofs and borrowing evidence (estimate about 560 MB a year, all guesses). (5) Minutes render user text and the Content-Security-Policy is still open (`OPEN_QUESTIONS.md` F1); the plain-text rule (spec R10) is the mitigation.
+- **Owner:** answered 2026-11-09. Spec status: approved; nothing built yet; nothing applied to hosted.
+- **Answers:** `OPEN_QUESTIONS.md` C8, C9, section J (N1-N7).
+
+## D-028 Finance module rules [DECIDED]
+- **Date:** 2026-11-09
+- **What:** The owner accepted every recommendation of `docs/modules/finance.md` section 10 (K1-K6), and the spec's screens (section 7, including the Indonesian copy) count as the approved design (fast mode, D-026; no separate UX round):
+  - K1 (a): all six BPH positions read everything and export; the two Bendahara Umum also record and void (default rules D02, D03, D24, D25 stay). Department heads, secretaries and the System Admin alone see nothing. Answers B6 for Finance.
+  - K2 (a): a saved entry is never edited. A mistake in the active period is voided with a reason and re-recorded ("Catat ulang"); a mistake in an old period is corrected by a new, linked entry in the active period ("Koreksi atas {nomor}"). Only proof files can be added later.
+  - K3 (a): "Saldo awal" is a normal entry typed once per period after the Treasurer counts the real cash and bank money. The screen shows the previous period's closing balance as a hint ("Pakai angka ini"), never as a silent prefill. This also covers go-live.
+  - K4 (a): one cash pool in Phase 1; bank or cash detail goes into Keterangan. No account field.
+  - K5 (a): proof (nota, bukti transfer) is optional for every entry; entries without proof carry a visible "Tanpa bukti" mark and a filter.
+  - K6 (a): no second-person check; either Treasurer records and voids; the append-only history shows who. Stitch's "diverifikasi oleh Badan Pengawas" is dropped.
+- **Access-control changes (`docs/modules/access-control.md`):** no new key and no new rule. The `finance.manage` key text now reads "Record, void and correct transactions (active period)" instead of "Create, edit, void"; AC-14, AC-15 and AC-58 are reworded from "edit" to "record, void, correct" (K2).
+- **Why:** money records must not change quietly: the cost is one extra void for a typo, and the history stays honest. Carry-over by a typed, counted number makes the Treasurer check the real cash, and any mismatch becomes visible. One pool, optional proof and no second check match what the context defines and avoid inventing accounts, thresholds or an approval step nobody asked for.
+- **Impact:** `finance.manage` holders can no longer change a saved entry (the database refuses any update except the one-time void); the new-period guide gets a step "count cash and bank with the outgoing Treasurer, then record Saldo awal"; the context document section 5.3 is filled in; `OPEN_QUESTIONS.md` B6 answered for Finance and section K updated.
+- **Risks:**
+  1. **B37 (accepted risk, to be raised before go-live):** a PI-CORE position-derived admin can create an assignment for themselves in PI-CORE, for example a vacant Bendahara Umum 2, and NEXUS then grants Finance. NEXUS cannot fix this and Finance is where it matters most. To be raised with the PI-CORE maintainer **before go-live** (suggestion: assignment writes for super_admin only); later a NEXUS report of assignments made shortly before finance activity.
+  2. With K6 (a) one Treasurer can record and void alone; control comes from the immutable history, BPH read access and logged exports.
+  3. The Finance export log has no screen to read it yet (A-FN15, with A-MD14).
+  4. Proof files add to the shared 1 GB storage (about 150 MB a year, a guess; plan in D-027 N7).
+  5. Finance is the most sensitive module: the security review must be closed with no CRITICAL or HIGH finding, and the owner approves (after a backup) before anything is applied to the hosted project (D-026).
+- **Owner:** answered 2026-11-09. Spec status: approved; nothing built yet; nothing applied to hosted.
+- **Answers:** `OPEN_QUESTIONS.md` B6 (for Finance), section K (K1-K6).

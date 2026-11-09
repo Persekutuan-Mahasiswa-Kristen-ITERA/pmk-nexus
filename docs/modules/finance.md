@@ -1,8 +1,8 @@
 # Finance / Keuangan (module spec)
 
-> Status: **DRAFT for owner approval (2026-11-09).** One approval package in fast mode (D-026): this spec plus the screens in section 7 (including the Indonesian copy). After approval, database, code, tests and docs proceed without stopping, but **owner approval is still needed before anything touches the hosted project, and the security review is mandatory and extra strict for this module.** Nothing is built yet. Not recorded in `docs/DECISIONS.md` or the context document until the owner approves.
+> Status: **Approved 2026-11-09 (owner accepted all recommendations, D-027 / D-028).** One approval package in fast mode (D-026): this spec plus the screens in section 7 (including the Indonesian copy) count as the approved design; no separate UX round. Database, code, tests and docs proceed without stopping, but **owner approval is still needed before anything touches the hosted project, and the security review is mandatory and extra strict for this module.** Nothing is built yet. Recorded in `docs/DECISIONS.md` (D-028 Finance module rules; D-027 is the Meeting Minutes module) and in the context document (section 5.3).
 > Sources: `CLAUDE.md` (4-8, 11, 17, 18), `docs/PMK-NEXUS-context.md` (4, 5.1, 5.3, 6), `docs/DECISIONS.md` (D-007, D-011, D-012, D-013, D-014, D-019, D-020, D-021, D-022, D-023, D-025, D-026), `docs/OPEN_QUESTIONS.md` (B3, B6, B18, B20, B37, C8, A-LT13, F5, F9, F11), `docs/modules/access-control.md` (keys `finance.*`, rules D02, D03, D24, D25, L1, L4-L8, L11, L12, R9, R11, R15, E1, E4, E15, AC-14, AC-15, AC-39 to AC-41, AC-58, AC-68), `docs/modules/letters.md` (structure template and reused patterns), `docs/picore/schema-report.md` (positions), `docs/design/stitch/screens.md` (05, 06, 07, Dashboard card 1).
-> Tags: **[ASSUMPTION]** = my guess, needs the owner (A-FN1 to A-FN21, section 9, copied to `docs/OPEN_QUESTIONS.md` section K). **[UNKNOWN]** = no source. **K1-K6** = owner questions (section 10). **FN-01 to FN-40** = acceptance criteria (section 11). Locked rules of access control are always written "access control L7" and so on.
+> Tags: **[ASSUMPTION]** = my guess, still open unless section 9 marks it decided (A-FN1 to A-FN21, section 9, copied to `docs/OPEN_QUESTIONS.md` section K). **[UNKNOWN]** = no source. **K1-K6** = owner questions (section 10), all answered 2026-11-09. **FN-01 to FN-40** = acceptance criteria (section 11). Locked rules of access control are always written "access control L7" and so on.
 > No code, no SQL. PMK facts (bank accounts, budgets, committees, the real cash balance) are NOT invented. Every number, account and note in Stitch is filler.
 
 ---
@@ -22,8 +22,8 @@
 
 **Out of scope (Phase 1)**
 - Budgets (RAB) or budget-versus-actual, invoices, reimbursements, payments, bank integration or statement import.
-- Several cash accounts (kas tunai, rekening bank) unless the owner chooses it in K4; categories [A-FN11]; attachments other than proof.
-- Approval workflows: no approval exists, so access control L6 does not apply (K6).
+- Several cash accounts (kas tunai, rekening bank): decided one cash pool in Phase 1 (K4 a); categories [A-FN11]; attachments other than proof.
+- Approval workflows: no approval exists, so access control L6 does not apply (K6 a, decided: no second-person check).
 - A member-facing "transparency" summary: finance keys can never go to every active member (access control L12), so it cannot be offered without a new exception. Not proposed.
 - Program of work (progja): not Phase 1. The module is self-contained (`src/modules/finance`); every entry carries `period_id`, so a progja budget can later link to entries by id without a rewrite.
 
@@ -38,7 +38,7 @@ Rights come from permission keys (access control 2.1), never from a person. **No
 | Key | Unlocks | Default holders |
 |---|---|---|
 | `finance.view` | Open Finance; read entries, totals, proof files; Dashboard Finance card | Role `bph`: Ketua Umum, Sekretaris Jenderal, Sekretaris Umum 1/2, Bendahara Umum 1/2 (D02). Included in `finance.manage` |
-| `finance.manage` | Record entries, void entries, add and withdraw proof. Includes view. **Not editing** (K2): the key text "edit (active period)" is to be reworded | Role `bendahara`: Bendahara Umum 1 and 2 (D24, B3) |
+| `finance.manage` | Record entries, void entries, add and withdraw proof. Includes view. **Never editing** (K2 a, decided): the key text now reads "Record, void and correct transactions (active period)"; "correct" means void and re-record, or a linked correction entry, never changing a saved entry | Role `bendahara`: Bendahara Umum 1 and 2 (D24, B3) |
 | `finance.export` | Export | Role `bph` (D03) and role `bendahara` (D25, explicit so the Treasurer keeps export if D03 is disabled) |
 
 Both Bendahara Umum positions carry roles `bph` and `bendahara`, so a Treasurer gets view through two rules; this is fine (union, access control R2).
@@ -57,8 +57,8 @@ Both Bendahara Umum positions carry roles `bph` and `bendahara`, so a Treasurer 
 - Enforced in server code AND RLS on every table (CLAUDE.md 11, access control R10). A direct API call with a valid token must give the same result as the UI.
 - Writes happen only through server functions: no user holds direct insert, update or delete rights on Finance tables.
 - Buttons without the key are absent, not greyed. A direct link without `finance.view` shows the shared "no permission" page; API calls return no rows. The drawer item "Finance" shows only to `finance.view` holders (D-021).
-- Either Treasurer may void an entry recorded by the other (K6 (a)); the history names who did it.
-- Known risk, accepted earlier (B37): a PI-CORE position-derived admin can create an assignment for themselves, for example a vacant Bendahara Umum 2, and NEXUS then grants Finance. NEXUS cannot fix this; it matters most for this module. Mitigation to plan: tell the PI-CORE maintainer; later a NEXUS report of assignments made shortly before finance activity.
+- Either Treasurer may void an entry recorded by the other (K6 a, decided); the history names who did it.
+- Known risk, accepted earlier (B37): a PI-CORE position-derived admin can create an assignment for themselves, for example a vacant Bendahara Umum 2, and NEXUS then grants Finance. NEXUS cannot fix this; it matters most for this module. Mitigation: raise it with the PI-CORE maintainer **before go-live** (suggest assignment writes for super_admin only); later a NEXUS report of assignments made shortly before finance activity (D-028).
 - Treasurers and BPH read all periods (L8); only the active period can be written (L7).
 
 ---
@@ -80,12 +80,12 @@ Every step runs on the server. Each page and action checks session, active membe
 4. The server re-validates everything: active member, key, active period (R11), integer amount in range, date, field limits, file rules, and an idempotency token (pressing "Simpan" twice, or a retry after a timeout, saves one entry [A-FN10]). It saves status Aktif, `period_id` = the active period, recorder = the session member, the next number, and a history row.
 5. She lands on the detail page. No active period: "Belum ada periode aktif. Transaksi belum bisa dicatat."
 
-### F3. Record the opening balance (`finance.manage`) [K3]
+### F3. Record the opening balance (`finance.manage`) [K3 a: decided carry-over rule]
 1. A hint on the Finance page (managers only, when the active period has no active Saldo awal): "Saldo awal periode ini belum dicatat." with the button "Catat saldo awal".
 2. Same form, Jenis fixed to "Saldo awal". It shows the previous period's closing balance as a hint with the button "Pakai angka ini" (it does not prefill silently). The Treasurer should count the real cash and bank money and type that number.
 3. At most one active Saldo awal per period (A-FN21). A wrong one is voided and a new one recorded. Saldo awal is not counted as income.
 
-### F4. Void (`finance.manage`) [K2]
+### F4. Void (`finance.manage`) [K2 a: decided, never edit]
 1. "Batalkan transaksi" on the detail of an Aktif entry **of the active period**. Reason required.
 2. The entry stays, shows "Dibatalkan" with who, when and why, and is excluded from every total. It cannot be restored. The detail then offers "Catat ulang": the record form prefilled with a copy, for the corrected entry.
 3. An entry of an old period cannot be voided or changed (access control L7, AC-41), see F5.
@@ -145,7 +145,7 @@ All tables: RLS on, default deny, explicit policies. Writes only through server 
 ### 4.3 State machine
 Entry: **Aktif** to **Dibatalkan** only. A voided entry cannot be restored, changed, or given proof.
 
-### 4.4 Files [K5]
+### 4.4 Files [K5 a: proof optional, decided]
 Private bucket, signed links of 300 seconds, issued only by the server to `finance.view` holders. Limits (reuse of Letters L8): PDF, JPG, PNG, 5 MB each, up to 3 per entry, real type checked by the first bytes, images resized in the browser to about 2000 px on the long side. Uploads go to the uploader's own folder before the entry exists; files never attached to a saved entry are not shown; at most 10 unattached uploads per member per 24 hours (A-LT13, F11 pattern).
 
 **Free-tier note.** Storage is about 1 GB, shared by all modules. [ASSUMPTION, my estimate] Finance proofs about 150 MB a year (about 300 expenses, one photo each, about 0.5 MB). The total across modules is about 560 MB a year; see `docs/modules/meeting-minutes.md` N7 for the decision. Receipt photos are the biggest single driver, which is why K5 recommends proof that is optional but visible when missing.
@@ -183,11 +183,11 @@ Private bucket, signed links of 300 seconds, issued only by the server to `finan
 |---|---|---|
 | All amounts ("Rp 999.999.999", "Rp 100.000.000", "Rp 899.999.999", row amounts) and row texts ("Persembahan Ibadah Padang", "Sewa Gedung Retret", ...) | Sample values | Real data only |
 | Badges "12%" and "4.2%", "+12.4% vs bln lalu", "Surplus", "Terkontrol", "Tercatat TA 2026", "Anggaran RKA" | Invented metrics and a budget concept NEXUS does not have | Dropped |
-| "Rekening Giro Utama Kas Operasional", "Rekening BNI Resmi PMK (No. Rek 182-004-9811)", "Update per 24 Oktober 2026" | Invented bank account and date | Dropped. One cash pool unless K4 says otherwise |
+| "Rekening Giro Utama Kas Operasional", "Rekening BNI Resmi PMK (No. Rek 182-004-9811)", "Update per 24 Oktober 2026" | Invented bank account and date | Dropped. One cash pool (K4 a, decided) |
 | Badge "Aktif / Klir", panel label "KAS LIKUID TERSEDIA" | Invented status wording | Dropped; the hero is "Total Saldo" |
 | Gradient accent bar on the hero card | Decoration against the D-023 style | Dropped |
 | Sub-line under each row ("Divisi Kerohanian", "Inventaris Musik", "5 Departemen", "Panitia Retret Akbar") | Invented fields; committees are not PI-CORE entities | Dropped; free Keterangan and Catatan |
-| Note card "Transparansi Dana Terverifikasi": "...diverifikasi oleh Bendahara Umum PMK ITERA bersama Badan Pengawas Organisasi sesuai dengan AD/ART..." | A verification claim and a supervisory body nobody defined (K6) | Dropped |
+| Note card "Transparansi Dana Terverifikasi": "...diverifikasi oleh Bendahara Umum PMK ITERA bersama Badan Pengawas Organisasi sesuai dengan AD/ART..." | A verification claim and a supervisory body nobody defined (K6 a: no second-person check) | Dropped |
 | Chip "4 Data Terbaru" and pagination "Halaman 1 dari 5" | Sample counts | Real count; server pagination keeps the "Halaman x dari y" pattern |
 | Income chip green and expense chip amber, expense amount red | Keep the palette; add a sign so colour is not the only cue | Kept with +/- signs |
 | Button "Input Kas" | Leads nowhere | "Catat transaksi", managers only, active period only |
@@ -255,7 +255,7 @@ Stitch has the landing page only (05, 06). The rest is missing and is described 
 
 ## 9. Assumptions
 
-All [ASSUMPTION] until the owner confirms. Copied to `docs/OPEN_QUESTIONS.md` section K.
+All [ASSUMPTION] until the owner confirms, except the rows marked DECIDED. The 2026-11-09 answers settled: the correction rule A-FN8 and the no-edit rule behind A-FN7 (K2 a), A-FN17 (K6 a), the carry-over and go-live parts of A-FN18 and A-FN21 (K3 a: "Saldo awal" typed once per period, previous closing as a hint), and that proof is optional with a mark and filter in A-FN6 and A-FN13 (K5 a). Copied to `docs/OPEN_QUESTIONS.md` section K.
 
 | Id | Assumption |
 |---|---|
@@ -266,7 +266,7 @@ All [ASSUMPTION] until the owner confirms. Copied to `docs/OPEN_QUESTIONS.md` se
 | A-FN5 | Limits: Keterangan 200 characters, Catatan 500, void and withdraw reasons 500. Plain text |
 | A-FN6 | Proof: PDF, JPG, PNG, 5 MB, up to 3, magic-byte check, browser resize to about 2000 px, signed links 300 seconds, unattached uploads capped at 10 per member per 24 hours, withdrawn files kept and hidden from non-managers and not counted toward the 3. Proof can be added while the entry is Aktif and in the active period |
 | A-FN7 | Void: any `finance.manage` holder, only Aktif entries of the active period, reason required, not restorable, whole entry only. "Catat ulang" copies a voided entry into the form |
-| A-FN8 | An old-period entry is corrected by a new entry in the active period with an optional link "Koreksi atas {nomor}" (the target must exist and be Aktif); the old period's totals are not restated |
+| A-FN8 | **DECIDED (K2 a, D-028):** an old-period entry is corrected by a new entry in the active period with an optional link "Koreksi atas {nomor}" (the target must exist and be Aktif); the old period's totals are not restated |
 | A-FN9 | A negative Total Saldo is allowed and shown with a hint; never blocked |
 | A-FN10 | Each form submit carries an idempotency token; a double tap or a retry saves one entry |
 | A-FN11 | No categories in Phase 1 (not in context 5.3); a category column can be added later without a rewrite. No sub-line per row |
@@ -275,7 +275,7 @@ All [ASSUMPTION] until the owner confirms. Copied to `docs/OPEN_QUESTIONS.md` se
 | A-FN14 | Export header summarises the whole period and lists the filters; text cells that begin with `=`, `+`, `-` or `@` are neutralised; no links or file contents; row cap 1000 with `total_count` (D-022) |
 | A-FN15 | No key and no screen to read the Finance export log yet; readable only in the database until the log screen exists (A-MD14) |
 | A-FN16 | Viewing Finance is not logged; only exports are |
-| A-FN17 | Both Treasurers have equal rights; either may void the other's entry; no approval, so access control L6 is not involved |
+| A-FN17 | **DECIDED (K6 a, D-028):** both Treasurers have equal rights; either may void the other's entry; no approval, so access control L6 is not involved |
 | A-FN18 | History before go-live stays outside NEXUS; at go-live the Treasurer records Saldo awal and may add real-dated entries of the active period |
 | A-FN19 | The System Admin without a Finance rule sees nothing (B18); a rule granting Finance to the admin's own position is logged as "self-benefit" (D-012) |
 | A-FN20 | The Dashboard card shows Saldo, Pemasukan, Pengeluaran of the active period to `finance.view` holders; no percentages or growth |
@@ -285,47 +285,47 @@ All [ASSUMPTION] until the owner confirms. Copied to `docs/OPEN_QUESTIONS.md` se
 
 ## 10. Questions for the owner
 
-Six owner-level questions (rules, money, rights, retention). Everything else is an assumption above.
+Six owner-level questions (rules, money, rights, retention), **all answered 2026-11-09: the owner accepted every recommendation (D-028).** Options are kept below for the record. Everything else is an assumption above.
 
-**K1. Who may see Finance, and who may export?** (B6, a default today.)
+**K1. Who may see Finance, and who may export?** [ANSWERED 2026-11-09: (a); answers B6 for Finance] (B6, a default today.)
 - (a) All six BPH positions read everything and export; the two Treasurers also record and void. (Default rules D02, D03, D24, D25.)
 - (b) Only Ketua Umum, Sekretaris Jenderal and the two Treasurers read and export.
 - (c) All BPH see only the totals, details only the Ketua Umum and the Treasurers (needs a new permission key and a new design).
-- **Recommendation: (a).** It is the existing default, simple, and every BPH member shares responsibility for the money. The System Admin can narrow it later with a logged rule (D-011). Department heads and the System Admin alone see nothing.
+- **Owner answer 2026-11-09: (a), as recommended.** It is the existing default, simple, and every BPH member shares responsibility for the money. The System Admin can narrow it later with a logged rule (D-011). Department heads and the System Admin alone see nothing.
 
-**K2. How are mistakes corrected?** (Context 5.3 says nothing; the key text says "edit (active period), void".)
+**K2. How are mistakes corrected?** [ANSWERED 2026-11-09: (a)] (Context 5.3 says nothing; the key text says "edit (active period), void".)
 - (a) Never edit. Void an entry of the active period with a reason, then record the right one ("Catat ulang"). A mistake in an old period is corrected by a new, linked entry in the active period. Only proof files can be added later.
 - (b) (a), plus Keterangan and Catatan can be edited with a history row (money fields never).
 - (c) Everything editable in the active period with a history row.
-- **Recommendation: (a).** Money records must not change quietly. The cost is one extra void for a typo, softened by "Catat ulang". Choose (b) if typos in Keterangan bother you. If (a) or (b), reword the key text of `finance.manage` and AC-14, AC-15, AC-58 (section 12).
+- **Owner answer 2026-11-09: (a), as recommended.** Money records must not change quietly. The cost is one extra void for a typo, softened by "Catat ulang". The key text of `finance.manage` and AC-14, AC-15, AC-58 are reworded accordingly (section 12, access control).
 
-**K3. Does the closing balance of a period carry over to the next period?** (Context 5.1 shows one "current balance"; 5.3 ties transactions to a period.)
+**K3. Does the closing balance of a period carry over to the next period?** [ANSWERED 2026-11-09: (a)] (Context 5.1 shows one "current balance"; 5.3 ties transactions to a period.)
 - (a) Yes, through a "Saldo awal" entry the Treasurer records once per period after counting the real cash and bank money; the screen shows the previous closing balance as a hint. This also covers go-live.
 - (b) Yes, automatically: the opening balance is the previous period's closing balance, with no typing (go-live still needs one manual entry).
 - (c) No. Each period starts at Rp 0 and Total Saldo is per period only.
-- **Recommendation: (a).** Money does not reset at handover. Typing the counted amount makes the Treasurer check the real cash, and any difference from the books becomes visible. (b) hides a mismatch; (c) makes "Total Saldo" meaningless for the organisation.
+- **Owner answer 2026-11-09: (a), as recommended.** Money does not reset at handover. Typing the counted amount makes the Treasurer check the real cash, and any difference from the books becomes visible. (b) hides a mismatch; (c) makes "Total Saldo" meaningless for the organisation.
 
-**K4. Does PMK keep one cash pool, or several accounts?** (Stitch shows a bank account; the context says nothing.)
+**K4. Does PMK keep one cash pool, or several accounts?** [ANSWERED 2026-11-09: (a)] (Stitch shows a bank account; the context says nothing.)
 - (a) One pool in Phase 1: all money is one balance; the bank or cash detail goes into Keterangan.
 - (b) An account field (for example Tunai, Bank) with a balance per account; the owner names the accounts.
-- **Recommendation: (a).** Nothing in the context defines accounts, and adding one later is a small change. Choose (b) now only if PMK really tracks cash and bank separately.
+- **Owner answer 2026-11-09: (a), as recommended.** Nothing in the context defines accounts, and adding one later is a small change.
 
-**K5. Is proof (nota, bukti transfer) required?**
+**K5. Is proof (nota, bukti transfer) required?** [ANSWERED 2026-11-09: (a)]
 - (a) Optional for every entry. Entries without proof carry a visible mark and a filter "Tanpa bukti".
 - (b) Required for every Pengeluaran.
 - (c) Required for a Pengeluaran above an amount the owner names.
-- **Recommendation: (a).** A lost receipt must not stop an honest entry, and a threshold would be an invented number. The mark and filter let the board see the gaps; review after one period. Proof also drives storage (about 150 MB a year, N7 in the minutes spec).
+- **Owner answer 2026-11-09: (a), as recommended.** A lost receipt must not stop an honest entry, and a threshold would be an invented number. The mark and filter let the board see the gaps; review after one period. Proof also drives storage (about 150 MB a year, N7 in the minutes spec).
 
-**K6. Does a second person check each entry?** (Stitch's "diverifikasi oleh ... Badan Pengawas" suggests it; nothing defines it.)
+**K6. Does a second person check each entry?** [ANSWERED 2026-11-09: (a)] (Stitch's "diverifikasi oleh ... Badan Pengawas" suggests it; nothing defines it.)
 - (a) No. Either Treasurer records and voids; the history shows who.
 - (b) The other Treasurer marks an entry "Terverifikasi" (no effect on totals), and unverified entries are marked.
-- **Recommendation: (a).** No approval exists in the context, there may be only one Treasurer in office, and (b) adds a status and a self-check rule (L6). Control comes from the immutable history, the BPH read access and the logged exports.
+- **Owner answer 2026-11-09: (a), as recommended.** No approval exists in the context, there may be only one Treasurer in office, and (b) adds a status and a self-check rule (L6). Control comes from the immutable history, the BPH read access and the logged exports.
 
 ---
 
 ## 11. Acceptance criteria
 
-Personas: `docs/modules/access-control.md` section 9. Default rules apply unless stated. Every criterion is tested through the UI AND by a direct call with that persona's token. They assume the recommended answers of section 10; the owner's real answers adjust them.
+Personas: `docs/modules/access-control.md` section 9. Default rules apply unless stated. Every criterion is tested through the UI AND by a direct call with that persona's token. They follow the owner's answers of section 10 (all recommendations accepted, 2026-11-09, D-028).
 
 **Permissions**
 - FN-01 P-BEND can record, void, add proof to and export entries of the active period.
@@ -385,12 +385,12 @@ Personas: `docs/modules/access-control.md` section 9. Default rules apply unless
 
 ## 12. Notes for other documents (contradictions and gaps found)
 
-1. **Key text `finance.manage` says "Create, edit (active period), void"**, and AC-14 says "create, edit, void", AC-15 and AC-58 say "edit". K2 recommends no editing. If K2 is (a) or (b), amend the key text and those criteria (record, void, add proof). The locked rule L7 ("Finance corrections go into the active period") already fits the recommendation.
+1. **Key text `finance.manage` says "Create, edit (active period), void"**, and AC-14 says "create, edit, void", AC-15 and AC-58 say "edit". K2 (a) decided: no editing. Resolved 2026-11-09: the key text and AC-14, AC-15, AC-58 in `docs/modules/access-control.md` now say "record, void, correct". The locked rule L7 ("Finance corrections go into the active period") fits the decision.
 2. **AC-41 ("cannot edit or void" an old period) and L7** are consistent with F5: an old-period error is corrected by a new linked entry, never by changing the old one.
-3. **Context 5.1 ("current balance") versus 5.3 (transactions tied to a period)**: without carry-over the "current balance" would mean only this period's. K3 decides. Under the recommendation, Total Saldo of the active period is the organisation's live balance.
-4. **Stitch invents things the context does not have**: a bank account, a budget (RKA), growth percentages, a supervisory body ("Badan Pengawas Organisasi", AD/ART) and "terverifikasi" claims. All dropped (section 6); K6 asks whether a verification step is wanted.
+3. **Context 5.1 ("current balance") versus 5.3 (transactions tied to a period)**: without carry-over the "current balance" would mean only this period's. K3 (a) decided: Total Saldo of the active period, with the typed "Saldo awal", is the organisation's live balance.
+4. **Stitch invents things the context does not have**: a bank account, a budget (RKA), growth percentages, a supervisory body ("Badan Pengawas Organisasi", AD/ART) and "terverifikasi" claims. All dropped (section 6); K6 (a) decided: no verification step.
 5. **Stitch screen 07 is the Dashboard** under a Finance label (known, `screens.md`).
-6. **Admin sees no Finance (B18) and PI-CORE position-derived admins can self-assign as Treasurer (B37).** The second is a known, accepted risk that is most serious here; it needs the owner's attention again at go-live.
+6. **Admin sees no Finance (B18) and PI-CORE position-derived admins can self-assign as Treasurer (B37).** The second is a known, accepted risk that is most serious here; to be raised with the PI-CORE maintainer before go-live (D-028).
 7. **Finance export log has no reader** (A-FN15), unlike Member Data (`member_data.view_export_log`). Decide when the log screen is designed.
 8. **Free tier.** Finance proofs add to the shared 1 GB (minutes spec N7, `OPEN_QUESTIONS.md` F11).
 9. **Drawer language.** "Finance" is English while the rest of the app is Indonesian; kept because the context lists it (A-FN12). One-line change if the owner prefers "Keuangan".

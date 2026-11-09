@@ -2,7 +2,7 @@
 
 > Reference document for the PMK-NEXUS project. Written in English for the AI assistant. The project owner communicates in Indonesian.
 > Status legend: **[DECIDED]** = final decision, **[ASSUMPTION]** = needs confirmation, **[PLANNED]** = future work, **[UNKNOWN]** = information still missing.
-> Last updated: 2026-11-09 (Letters amendment "Ambil nomor" and design approval, D-025: section 5.5 and section 8 item 8). Earlier: 2026-11-09 (Letters decided, D-025: section 5.5 rewritten, section 8 items 4, 6, 8 updated). Earlier: 2026-11-09 (section 5.6 marked implemented on the local stack). Earlier: 2026-11-07 (Inventory and Borrowing decided, D-022: sections 4, 5.1, 5.6, 6, 8 updated). Earlier: 2026-11-07 (section 5.2 marked implemented on the local stack). Earlier: 2026-11-06 (sections 2, 4, 5.1, 5.2 and 8 updated for Member Data, D-019; section 6 replaced by the Stitch design, D-014; section 8 item 12 answered). Earlier: 2026-11-05 (sections 2, 3, 4, 7, 8, verified PI-CORE schema).
+> Last updated: 2026-11-09 (Finance and Meeting Minutes decided, D-028 and D-027: sections 4, 5.1, 5.3 and 5.4 rewritten). Earlier: 2026-11-09 (Letters amendment "Ambil nomor" and design approval, D-025: section 5.5 and section 8 item 8). Earlier: 2026-11-09 (Letters decided, D-025: section 5.5 rewritten, section 8 items 4, 6, 8 updated). Earlier: 2026-11-09 (section 5.6 marked implemented on the local stack). Earlier: 2026-11-07 (Inventory and Borrowing decided, D-022: sections 4, 5.1, 5.6, 6, 8 updated). Earlier: 2026-11-07 (section 5.2 marked implemented on the local stack). Earlier: 2026-11-06 (sections 2, 4, 5.1, 5.2 and 8 updated for Member Data, D-019; section 6 replaced by the Stitch design, D-014; section 8 item 12 answered). Earlier: 2026-11-05 (sections 2, 3, 4, 7, 8, verified PI-CORE schema).
 
 ---
 
@@ -125,13 +125,13 @@ Access is computed from the user's **assignments in the active period** of PI-CO
 | NEXUS group | How it maps to the real PI-CORE schema | NEXUS access | Status |
 |---|---|---|---|
 | System Admin | `members.access_level` in (`admin`, `super_admin`), set by hand. Positions never grant it. | Manage the system | **[DECIDED]** D-007 |
-| Treasurer (Bendahara) | Active-period assignment whose position carries role `bendahara` (Bendahara Umum 1 / 2) | Manage Finance | [ASSUMPTION] B3 |
+| Treasurer (Bendahara) | Active-period assignment whose position carries role `bendahara` (Bendahara Umum 1 / 2) | Manage Finance (record, void, correct; never edit a saved entry) | [ASSUMPTION] B3; Finance rules **[DECIDED]** D-028 |
 | BPH Secretary | Positions Sekretaris Jenderal, Sekretaris Umum 1 / 2 (they carry `bph` + `organization_admin`, not `sekretaris`) | Manage ALL Letters (incl. numbering, archive, letter requests) and ALL Meeting Minutes | **[DECIDED]** D-008; identified through the NEXUS mapping table (D-009) |
 | Department / bureau secretary | Role `sekretaris` (Sekretaris Departemen, Sekretaris Biro) | Manage Meeting Minutes of their OWN org unit only; submit letter requests like other members | **[DECIDED]** D-008; reading rights [ASSUMPTION] B17 |
 | Operations (any position) | Active-period assignment in org unit `Departemen Operasional` or its divisions `Logistik` / `Akomodasi` (Kepala Departemen, Sekretaris Departemen, Kepala Divisi, Staff). No "Operations" role exists. | Manage Inventory; record borrowing handover and return and outside-party requests (`borrowing.handle`); export | **[DECIDED]** D-009 (units), D-022 (positions, B4 answered 2026-11-07) |
 | Operations heads (Kepala Departemen Operasional, Kepala Divisi of Logistik / Akomodasi) | Same unit, limited to those two position names | Approve, reject and extend borrowing (`borrowing.approve`); never on their own request (L6) | **[DECIDED]** D-022. Access-control rules D34, D35; in migration `20261107100000` (not yet on hosted) |
-| BPH (board) | Role `bph` (Ketua Umum, Sekretaris Jenderal, Sekretaris Umum 1 / 2, Bendahara Umum 1 / 2) | View all modules (incl. Member Data view and export) | [ASSUMPTION] B6; Member Data part **[DECIDED]** D-019 |
-| Department / bureau heads | Role `kepala_departemen` (Kepala Departemen, Kepala Biro) | View the Member Data list (no export) | **[DECIDED]** D-019 (default rule D32) |
+| BPH (board) | Role `bph` (Ketua Umum, Sekretaris Jenderal, Sekretaris Umum 1 / 2, Bendahara Umum 1 / 2) | View all modules (incl. Member Data view and export) | [ASSUMPTION] B6; Member Data part **[DECIDED]** D-019; Finance part (all six BPH read and export) **[DECIDED]** D-028 |
+| Department / bureau heads | Role `kepala_departemen` (Kepala Departemen, Kepala Biro) | View the Member Data list (no export); read the Meeting Minutes of their own unit (read only, no export) | **[DECIDED]** D-019 (default rule D32); D-027 (default rule D37) |
 | Staff, regular members | Any active member: with role `staff` / `kepala_divisi` / others not listed above, or with no assignment at all in the active period | Limited access; can request item borrowing and letters | [ASSUMPTION] B8 |
 | Committee (panitia) | Not in PI-CORE | n/a | **[UNKNOWN]** B7 |
 | Lecturers (pembina) | `member_type = 'lecturer'`; cannot hold assignments | n/a | **[UNKNOWN]** B15 |
@@ -151,8 +151,8 @@ Rules:
 Based on the original Figma screens; visual design now follows Stitch (section 6, D-014).
 
 ### 5.1 Dashboard
-- Finance card: current balance (placeholder in design: Rp 999,999,999)
-- Recent Meetings: latest meetings list (e.g. "Rapat Koordinasi 2026-07-17")
+- Finance card [DECIDED 2026-11-09, D-028]: Total Saldo, Pemasukan and Pengeluaran of the active period, no percentage or growth badge; shown only to `finance.view` holders (the Stitch placeholder Rp 999,999,999 is filler).
+- Recent Meetings (Notulensi Rapat) [DECIDED 2026-11-09, D-027, N5 a]: counts and the date of the latest meeting, no titles and no statuses (the Stitch "Rapat Koordinasi 2026-07-17" and "Selesai/Terjadwal/Mendatang" are filler); limited to the minutes the user may read; shown only to `minutes.view` holders.
 - Members: member count (from PI-CORE): all members with `is_active = true`, students and lecturers. Shown only to users with `member_data.view` (D-019).
 - Inventory Status [DECIDED 2026-11-07, D-022]: NO percentage (the Stitch/Figma "80%" is dropped). The card shows counts, for example units in good condition, units on loan, units needing service (exact wording at design time). Shown to every active member (baseline `inventory.view`).
 - Letters (Surat Menyurat) [DECIDED 2026-11-09, D-025, L11]: counts only (no letter subjects or counterparts), for `letters.view` holders; processors also see how many requests wait for them.
@@ -167,13 +167,26 @@ Full spec: `docs/modules/member-data.md` (section 12 lists where the code lives)
 - Access: view = role `bph` and role `kepala_departemen` (Kepala Departemen and Kepala Biro); export (Excel, CSV, PDF through one "Ekspor" button) = BPH only. Every export is logged in an append-only table (who, when, format, filters; no PII).
 - Never shown: email, phone, NIM, NIP.
 
-### 5.3 Finance
-- Total Income (Total Pemasukan), Total Expenses (Total Pengeluaran), Total Balance (Total Saldo).
-- Transaction transcript table: Date (Tanggal), Description (Keterangan), Amount (Jumlah).
-- Transactions tied to a period.
+### 5.3 Finance [DECIDED 2026-11-09, D-028] [NOT BUILT YET]
+Full spec: `docs/modules/finance.md` (approved 2026-11-09, owner accepted all recommendations K1-K6). All amounts, bank accounts, badges and notes in Stitch are filler. Owner approval (after a backup) and a closed security review are required before anything touches the hosted project.
+- **Totals per period:** Total Income (Total Pemasukan), Total Expenses (Total Pengeluaran), Total Balance (Total Saldo). Computed by the database from the entries, never stored or typed. Voided entries count in nothing.
+- **Transactions:** Pemasukan, Pengeluaran and one "Saldo awal" per period; whole rupiah (integer, never floating point); fields Jenis, Tanggal, Jumlah, Keterangan, optional Catatan; automatic number `KAS-0001`; each entry tied to the active period. Table: Date (Tanggal), Description (Keterangan), Amount (Jumlah), plus type, number and a paperclip.
+- **Corrections (K2 a):** a saved entry is never edited. A mistake in the active period is voided with a reason and re-recorded ("Catat ulang"); a mistake in an old period is corrected by a new linked entry in the active period ("Koreksi atas {nomor}"). Old periods are read-only (L7).
+- **Carry-over (K3 a):** the Treasurer types "Saldo awal" once per period after counting the real cash and bank money; the screen shows the previous closing balance as a hint ("Pakai angka ini"), never as a silent prefill. This also covers go-live (history before NEXUS stays outside it).
+- **One cash pool (K4 a):** no account field; bank or cash detail goes into Keterangan.
+- **Proof (K5 a):** optional receipt or transfer slip (PDF, JPG or PNG, 5 MB, up to 3, private bucket); entries without proof carry a "Tanpa bukti" mark and a filter.
+- **No second-person check (K6 a):** either Treasurer records and voids; the append-only history shows who.
+- **Access:** read and export = all six BPH (K1 a); record, void and proof = the two Bendahara Umum (`finance.manage`). The System Admin without a BPH or Treasurer position sees nothing (B18). Export (Excel, CSV, PDF, logged, formula-safe).
+- **Known risk (B37):** a PI-CORE position-derived admin can self-assign as Treasurer and NEXUS then grants Finance; to be raised with the PI-CORE maintainer before go-live.
 
-### 5.4 Meeting Minutes (Notulensi Rapat)
-Form fields: Date, Meeting Title, Topic, Minutes Content, Decision, and "Upload Attachment" button.
+### 5.4 Meeting Minutes (Notulensi Rapat) [DECIDED 2026-11-09, D-027] [NOT BUILT YET]
+Full spec: `docs/modules/meeting-minutes.md` (approved 2026-11-09, owner accepted all recommendations N1-N7). Stitch sample values, "Simpan Draft" and the schedule statuses are filler.
+- **Form fields:** Date, Meeting Title, Topic, Minutes Content, Decision (optional), attachments, **plus the owning Unit** (added because D-008 scopes minutes by unit; the Stitch form had none). Every minute belongs to exactly one unit, fixed after saving, and to the active period.
+- **Unit list (N2 c):** BPH PMK ITERA, the departments, the bureau, and "Seluruh organisasi" for plenary meetings (readable by BPH only). Divisions are not offered; their meetings are recorded under the department.
+- **No draft, no schedule (N3 a, N4 a):** a manager edits an Aktif minute of the active period (history row with before and after) or voids it with a reason; there is no meeting agenda or status.
+- **Attachments (N6 a):** PDF, JPG or PNG, 5 MB each, up to 3 per minute, private bucket (same as Letters).
+- **Access:** record, edit, void = BPH secretaries (all units) and department/bureau secretaries (own unit); read = BPH (all), secretaries (own unit) and, new default rule D37, Kepala Departemen and Kepala Biro (own unit, read only) (N1 b); export = BPH and secretaries (own unit), logged.
+- **Storage (N7 a):** shares the free-tier 1 GB with letters, finance proofs and borrowing evidence; real usage is checked at every period handover and the owner is warned at 70%.
 
 ### 5.5 Letters (Surat Menyurat) [DECIDED 2026-11-09, D-025] [NOT BUILT YET]
 Full spec: `docs/modules/letters.md` (approved); design: `docs/design/letters.md` (approved 2026-11-09, one revision pending for "Ambil nomor"). The sample values in Stitch (Direktorat Jenderal Pajak, statuses like Verifikasi or Disposisi) are filler.
