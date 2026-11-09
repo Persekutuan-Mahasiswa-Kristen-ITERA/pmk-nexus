@@ -21,6 +21,10 @@ export const PERSONAS = {
   kadep: { email: "kadep@nexus.test", name: "Test Kepala Departemen" },
   kabiro: { email: "kabiro@nexus.test", name: "Test Kepala Biro" },
   pembina: { email: "pembina@nexus.test", name: "Test Dosen Pembina" },
+  // Inventory and Borrowing personas (docs/ops/local-setup.md section 3). kadivLogistik = Kepala Divisi Logistik
+  // (Operations head: approve + handle + manage); staffOps = Staff in Akomodasi (Operations staff: handle + manage, no approve).
+  kadivLogistik: { email: "kadiv.logistik@nexus.test", name: "Test Kepala Divisi Logistik" },
+  staffOps: { email: "staff.ops@nexus.test", name: "Test Staff Operasional" },
 } as const;
 export type PersonaKey = keyof typeof PERSONAS;
 

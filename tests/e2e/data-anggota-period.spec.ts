@@ -31,6 +31,8 @@ import {
   xlsxNames,
 } from "./member-data-helpers";
 
+// The inventory module is open to every active member once a period is active (D-021, baseline key inventory.view).
+const INVENTORY_ITEM = "Manajemen & Inventaris";
 const drawerLinks = (page: Page) => page.getByRole("dialog").getByRole("navigation", { name: "Menu utama" }).getByRole("link");
 async function drawerItems(page: Page): Promise<string[]> {
   await page.getByRole("button", { name: "Buka menu" }).click();
@@ -55,10 +57,10 @@ test.describe("MD-07, MD-20, F7: period switch changes access by itself; old ass
       await openList(ketum.page);
       await expectTotal(ketum.page, active);
       await expect(ketum.page.getByText("Periode 2026/2027").first()).toBeVisible();
-      expect(await drawerItems(ketum.page)).toEqual(["Dashboard", "Data Anggota"]);
+      expect(await drawerItems(ketum.page)).toEqual(["Dashboard", "Data Anggota", INVENTORY_ITEM]);
       await regular.page.goto(LIST_PATH);
       await expect(regular.page.getByText("Tidak punya akses", { exact: true })).toBeVisible();
-      expect(await drawerItems(regular.page)).toEqual(["Dashboard"]);
+      expect(await drawerItems(regular.page)).toEqual(["Dashboard", INVENTORY_ITEM]);
 
       // Previous period: member.regular was Kepala Departemen Operasional in 2025/2026 only (a seeded "officer of a previous period" would be
       // the same situation mirrored; ketum is the P-OLD of the NEW period here)
@@ -73,7 +75,7 @@ test.describe("MD-07, MD-20, F7: period switch changes access by itself; old ass
       await ketum.page.reload();
       await expect(ketum.page.getByText("Tidak punya akses", { exact: true })).toBeVisible();
       await expect(ketum.page.getByRole("table")).toHaveCount(0);
-      expect(await drawerItems(ketum.page)).toEqual(["Dashboard"]);
+      expect(await drawerItems(ketum.page)).toEqual(["Dashboard", INVENTORY_ITEM]);
       await ketum.page.getByRole("button", { name: "Buka menu" }).click();
       await expect(ketum.page.getByRole("dialog").getByText("Masuk sebagai Test Ketua Umum.")).toBeVisible();
       await expect(ketum.page.getByRole("dialog").getByText("Periode 2025/2026")).toBeVisible();
@@ -88,7 +90,7 @@ test.describe("MD-07, MD-20, F7: period switch changes access by itself; old ass
       await regular.page.goto(LIST_PATH);
       await expect(main(regular.page).getByRole("heading", { level: 1, name: "Data Anggota" })).toBeVisible();
       await expect(regular.page.getByText("Periode 2025/2026").first()).toBeVisible();
-      expect(await drawerItems(regular.page)).toEqual(["Dashboard", "Data Anggota"]);
+      expect(await drawerItems(regular.page)).toEqual(["Dashboard", "Data Anggota", INVENTORY_ITEM]);
       await expect(exportButton(regular.page)).toHaveCount(0);
       await expectTotal(regular.page, active); // the member list itself does not depend on the period
       // MD-20: history never leaks. Only the previous-period officer shows a unit; everybody else (including ketum, Bulk 11) shows "-"
@@ -123,7 +125,7 @@ test.describe("MD-07, MD-20, F7: period switch changes access by itself; old ass
       await expect(main(ketum.page).getByRole("heading", { level: 1, name: "Data Anggota" })).toBeVisible();
       await expect(tableRows(ketum.page)).toHaveCount(rowsOnPage(active, 1));
       await expect(exportButton(ketum.page)).toBeVisible();
-      expect(await drawerItems(ketum.page)).toEqual(["Dashboard", "Data Anggota"]);
+      expect(await drawerItems(ketum.page)).toEqual(["Dashboard", "Data Anggota", INVENTORY_ITEM]);
       await regular.page.goto(LIST_PATH);
       await expect(regular.page.getByText("Tidak punya akses", { exact: true })).toBeVisible();
       await ketum.page.goto(`${LIST_PATH}?q=Test+Ketua`);
@@ -149,7 +151,7 @@ test.describe("MD-07, MD-20, F7: period switch changes access by itself; old ass
         await expect(page.getByText("Tidak punya akses", { exact: true })).toBeVisible();
         await expect(page.getByText("Belum ada periode aktif.").first()).toBeVisible();
         await expect(page.getByRole("table")).toHaveCount(0);
-        expect(await drawerItems(page)).toEqual(["Dashboard"]);
+        expect(await drawerItems(page)).toEqual(["Dashboard", INVENTORY_ITEM]);
       }
       const res = await ketum.context.request.post("/api/member-data/export", { form: { format: "csv" }, headers: { origin: "http://localhost:3100" } });
       expect(res.status()).toBe(403);

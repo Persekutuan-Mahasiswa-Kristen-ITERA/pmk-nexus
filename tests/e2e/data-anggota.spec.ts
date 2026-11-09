@@ -38,6 +38,8 @@ async function openDrawer(page: Page) {
   await page.getByRole("button", { name: "Buka menu" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
 }
+// The inventory module is open to every active member once a period is active (D-021, baseline key inventory.view).
+const INVENTORY_ITEM = "Manajemen & Inventaris";
 const drawerLinks = (page: Page) => page.getByRole("dialog").getByRole("navigation", { name: "Menu utama" }).getByRole("link");
 
 // ---------------------------------------------------------------------------------------------
@@ -54,7 +56,7 @@ test.describe("MD-01, MD-02, MD-04: personas that may view (drawer item, list, e
       try {
         await page.goto("/");
         await openDrawer(page);
-        await expect(drawerLinks(page)).toHaveText(["Dashboard", "Data Anggota"]);
+        await expect(drawerLinks(page)).toHaveText(["Dashboard", "Data Anggota", INVENTORY_ITEM]);
         await page.getByRole("dialog").getByRole("link", { name: "Data Anggota" }).click();
         await expect(page).toHaveURL(/\/data-anggota$/);
         await expect(page.getByRole("dialog")).toHaveCount(0); // the drawer closes after navigating
@@ -89,7 +91,7 @@ test.describe("MD-03, MD-05: personas without Member Data view: no drawer item, 
       try {
         await page.goto("/");
         await openDrawer(page);
-        await expect(drawerLinks(page)).toHaveText(["Dashboard"]); // absent, not greyed out (D-021)
+        await expect(drawerLinks(page)).toHaveText(["Dashboard", INVENTORY_ITEM]); // absent, not greyed out (D-021)
         await expect(page.getByRole("dialog").getByText("Data Anggota")).toHaveCount(0);
         await page.keyboard.press("Escape");
 
@@ -835,7 +837,7 @@ test.describe("Drawer accessibility (D-021): focus trap, Escape, focus return, a
         await page.keyboard.press("Tab");
         seen.add(await page.evaluate(() => document.activeElement?.getAttribute("aria-label") ?? document.activeElement?.textContent?.trim() ?? ""));
       }
-      expect([...seen].sort()).toEqual(["Dashboard", "Data Anggota", "Keluar", "Tutup menu"]);
+      expect([...seen].sort()).toEqual(["Dashboard", "Data Anggota", INVENTORY_ITEM, "Keluar", "Tutup menu"].sort());
 
       await page.keyboard.press("Escape");
       await expect(dialog).toHaveCount(0);
