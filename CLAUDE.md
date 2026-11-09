@@ -102,7 +102,7 @@ Work **module by module**, in this order:
 3. Access mapping and RLS.
 4. Modules one by one (suggested: Member Data, Inventory and Borrowing, Letters, Meeting Minutes, Finance, Dashboard last, since it reads from the others).
 
-For **each module**, deliver in this order, and get the owner's OK between steps:
+For **each module**, deliver in this order. **Fast mode (owner, 2026-11-09, D-026):** the owner approves ONE package per module (spec + design, including copy); after that, database, logic, UI, tests and docs proceed without stopping for approval. Several modules may be in progress at once when their files do not overlap.
 
 1. User flow
 2. Table structure (SQL migration in `supabase/migrations/`, schema `nexus`)
@@ -205,14 +205,16 @@ Sub-agents are helpers defined in `.claude/agents/`. Each runs in its own fresh 
 
 ### Standard workflow per module
 
-1. **Analyst**: write the module spec. -> **Owner approves** the spec.
-2. **UX designer**: only if screens are missing or a design change is proposed. -> **Owner approves** the design.
+1. **Analyst**: write the module spec.
+2. **UX designer**: only if screens are missing from Stitch or a design change is proposed. -> **Owner approves spec + design as one package** (fast mode, D-026).
 3. **Schema inspector**: run once at the start; run again if PI-CORE changes.
-4. **Database engineer**: write migrations and RLS. -> **Owner approves** and runs them.
+4. **Database engineer**: write migrations and RLS, apply to the LOCAL stack only. No separate owner approval in fast mode; the tech lead verifies (pgTAP in a fresh container). The owner still approves before anything is applied to the hosted project.
 5. **Backend engineer**: write the contract (`types.ts`) first. After the contract is fixed, **backend and frontend may work in parallel** because they own different files.
 6. **QA tester**: write and run tests, report bugs. Send bugs to the owning engineer to fix.
 7. **Security reviewer**: review the module. Fix every CRITICAL finding before moving on.
 8. **Analyst / DevOps**: update docs, handover notes, and deployment notes at milestones.
+
+**Fast mode limits (D-026):** minor choices (copy, labels, small UI details) are decided by the tech lead and recorded as [ASSUMPTION] in `docs/OPEN_QUESTIONS.md`; anything that changes an approved rule, money, access rights, or data retention still goes to the owner. Security review, automated tests, and owner approval before hosted changes are never skipped.
 
 ### Rules
 
