@@ -187,6 +187,7 @@ export const STAFF_COPY = {
   photoHint: "Foto diperkecil otomatis sebelum diunggah.", // 13.1
   photoMax: "Maksimal 3 foto.", // 13.3
   photoStillTooLarge: "Foto masih terlalu besar setelah diperkecil. Coba foto lain.", // 13.3
+  photoUnreadable: "Foto ini tidak bisa dibuka. Coba foto lain.", // BUG-IB-02, owner-approved 2026-11-09
 
   // Dashboard card (16)
   dashTitle: "Inventaris Status",

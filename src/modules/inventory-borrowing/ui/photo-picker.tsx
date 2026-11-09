@@ -131,9 +131,11 @@ export function PhotoPicker({
     let blob: Blob;
     try {
       blob = await resizePhoto(file);
-    } catch {
+    } catch (error) {
       setPhotos((prev) => prev.filter((p) => p.key !== key));
-      setPickError(STAFF_COPY.photoStillTooLarge);
+      // Only a decoded photo that stays over the limit is "too large"; anything else (corrupt file, a non-image
+      // renamed to .jpg, no canvas) cannot be read at all (BUG-IB-02).
+      setPickError(error instanceof PhotoTooLargeError ? STAFF_COPY.photoStillTooLarge : STAFF_COPY.photoUnreadable);
       return;
     }
     patch(key, { blob, preview: URL.createObjectURL(blob) });
@@ -334,8 +336,11 @@ async function resizePhoto(file: File): Promise<Blob> {
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
     if (blob && blob.size <= EVIDENCE_MAX_BYTES) return blob;
   }
-  throw new Error("too large");
+  throw new PhotoTooLargeError();
 }
+
+/** The photo decoded fine but no JPEG quality step fits the bucket limit. */
+class PhotoTooLargeError extends Error {}
 
 type Decoded = { source: CanvasImageSource; width: number; height: number; close: () => void };
 
