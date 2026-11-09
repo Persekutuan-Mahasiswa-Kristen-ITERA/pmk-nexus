@@ -1,9 +1,9 @@
 # NEXUS database tests
 
-Three pgTAP files: `nexus_access_control.test.sql` (engine, rules, D-015, D-022 amendment), `nexus_member_data.test.sql` (Member Data module, D-019) and `nexus_inventory_borrowing.test.sql` (Inventory and Borrowing, D-022). All work the same way; `nexus_access_control.test.sql` is described first. **Local / throwaway database only.** It inserts test personas into PI-CORE tables (`auth.users`, `public.members`, `public.periods`, `public.assignments`), switches the active period, and creates a helper schema `nexus_test`, all inside one transaction that ends with `ROLLBACK`. Never run it against the hosted project.
+Four pgTAP files: `nexus_access_control.test.sql` (engine, rules, D-015, D-022 amendment), `nexus_member_data.test.sql` (Member Data module, D-019), `nexus_inventory_borrowing.test.sql` (Inventory and Borrowing, D-022) and `nexus_letters.test.sql` (Letters, D-024/D-025). All work the same way; `nexus_access_control.test.sql` is described first. **Local / throwaway database only.** It inserts test personas into PI-CORE tables (`auth.users`, `public.members`, `public.periods`, `public.assignments`), switches the active period, and creates a helper schema `nexus_test`, all inside one transaction that ends with `ROLLBACK`. Never run it against the hosted project.
 
 ## Safety guards (W1, M1, L5)
-All three files: (1) the setting below, (2) a data guard that stops if any email is not a fake test address, (3) a dev-stack guard that stops if the NEXUS dev stack's seed accounts (`@nexus.test`) exist, because the files need a FRESH database. All three run before anything is written.
+All four files: (1) the setting below, (2) a data guard that stops if any email is not a fake test address, (3) a dev-stack guard that stops if the NEXUS dev stack's seed accounts (`@nexus.test`) exist, because the files need a FRESH database. All three run before anything is written. The letters file adds (4) a fresh-install guard: it stops if any letter, request or counter row exists (it checks exact numbers; counters are table rows and are rolled back, so it can run repeatedly in the same container).
 
 ### W1
 The file refuses to run unless the session sets `nexus.allow_destructive_tests = 'yes'`. The guard sits right after `BEGIN`, and the file starts with `\set ON_ERROR_STOP on`, so a run without the setting stops at the guard and writes nothing (even a runner that ignored `ON_ERROR_STOP` would only meet an aborted transaction). The guard cannot test itself; check it by hand once: run the file WITHOUT the setting and confirm it stops with "local throwaway database only".
@@ -29,10 +29,15 @@ A `-c "set ..."` before `-f` does NOT work: each `-c`/`-f` item is separate and 
      psql "postgresql://postgres:postgres@127.0.0.1:54399/postgres" -f supabase/tests/nexus_member_data.test.sql
    PGOPTIONS='-c nexus.allow_destructive_tests=yes' \
      psql "postgresql://postgres:postgres@127.0.0.1:54399/postgres" -X -At -f supabase/tests/nexus_inventory_borrowing.test.sql
+   PGOPTIONS='-c nexus.allow_destructive_tests=yes' \
+     psql "postgresql://postgres:postgres@127.0.0.1:54399/postgres" -X -At -f supabase/tests/nexus_letters.test.sql
    ```
+   Run the files with `-f <path>` (not through stdin): the inventory file includes `support/storage_stub.sql` with `\ir`, relative to its own location. If the host has no `psql`, copy the folder into the container (`docker cp supabase/tests <container>:/tmp/tests`) and run `docker exec -e PGOPTIONS=... <container> psql -U postgres -h localhost -d postgres -X -At -f /tmp/tests/<file>`.
    Any line starting with `not ok` is a failure. (`pg_prove` also works with the same `PGOPTIONS`.)
 
 Assumes a fresh NEXUS install (exactly the 36 default rules D01-D36 with D30 retired, 36 seed log rows + 1 retirement row, empty export logs, an empty catalog, and no members other than the test personas). Sequences (INV-/PJM- numbers) are not rolled back by Postgres; the inventory file therefore checks code format and order, never fixed numbers, and can run repeatedly in the same container.
+
+**Status 2026-11-10 (Letters, migrations 20261110100000_nexus_letters and 20261110100100_nexus_letters_storage, steps 10d/10e in `../README.md`):** `nexus_access_control.test.sql` **247/247**, `nexus_member_data.test.sql` **204/204**, `nexus_inventory_borrowing.test.sql` **549/549** (all unchanged: no key, rule or existing object changed) and the new `nexus_letters.test.sql` **456/456** (451 + 5 after the owner's approval with "year mandatory": named CHECK present, hand update refused, `year_required` for false, null and false-with-other-changes) in a FRESH throwaway `supabase/postgres:17.11.0.003` container WITH the Storage stub, after PI-CORE's 5 migrations and the 11 NEXUS migrations. WITHOUT the stub: the same 247/204/549/456, of which 26 Storage checks report `# SKIP` in the inventory file and 26 in the letters file. Idempotence: both letter files applied a second time; `pg_dump -n nexus` (DDL + data) plus all `nexus`/`storage` policies and buckets identical (only pg_dump's random `\restrict` token differs). Fault check: `nexus._lt_require_not_own` replaced by a no-op -> exactly the 4 L6 checks fail (LT-11 x3, LT-33); restored -> 451/451 (run before the year change). The local dev stack, after re-applying the edited M10 and the seed, has a `nexus` schema identical to a fresh install (`pg_dump --schema-only -n nexus`, no diff). Two-session check (outside pgTAP, committed fixtures in the throwaway container): two secretaries registering an outgoing letter at the same moment got `.../001` and `.../002`, the second session waited about 3.2 s on the counter row lock; two secretaries pressing "Ambil nomor" on one request at the same moment: the first got the number, the second waited and was refused with `state_changed`; one letter for the request, counter 3, 3 letters with 3 distinct numbers.
 
 **Status 2026-11-09 (migration 20261109100000_nexus_export_totals_and_evidence_window, step 10c in `../README.md`):** `nexus_access_control.test.sql` **247/247**, `nexus_member_data.test.sql` **204/204** (198 + 6: export columns end with `total_count`, one version of the export, `total_count` = rows returned for the default and a filtered export and on more than one page, empty export = no rows, still one log row per export), `nexus_inventory_borrowing.test.sql` **549/549** (522 + 27: section 14 "Fix 1" = the upload cap counts only unattached files of the last 24 hours: 11 files aged 25 h no longer block (function and Storage policy), 10 recent files still block (function and policy), a 23 h old file still counts; section 16 = both export column lists end with `total_count bigint`, one version each, SECURITY DEFINER / VOLATILE / empty `search_path` / EXECUTE for `authenticated` only kept, `total_count` = rows returned for several filters and callers, empty export = no rows, one log row per export with the right `row_count`, a failing log insert still returns no data, refusals for P-PLAIN, P-STAFF-PUB and anon unchanged) in a FRESH throwaway `supabase/postgres:17.11.0.003` container WITH the Storage stub after PI-CORE's 5 migrations and the 9 NEXUS migrations. WITHOUT the stub: the same 247/204/549, of which 26 Storage checks report `# SKIP`. Fault check: the updated files against the 8 migrations WITHOUT 20261109100000: the member-data file fails MD-10 (column list) and then stops at the first `total_count` reference; the inventory file fails the two Fix 1 "no longer block" checks and the three column checks of section 16, then stops at the first `total_count` reference. Before this migration the counts were 247/198/522.
 
@@ -47,6 +52,7 @@ Earlier status: `nexus_access_control.test.sql` **244/244** and `nexus_member_da
 Earlier status of the engine file: **244/244 passed on 2026-11-06** (adds 19 D-015 tests: 6 structural in section 1, 13 persona tests in section 7) in a throwaway `supabase/postgres:17.11.0.003` container after PI-CORE's 5 migrations and the 3 NEXUS migrations. Expected total: 244 (the file uses `no_plan()`; update this number when adding tests). The W1 guard was checked by hand the same day: without the setting the run stops at line 37 with "local throwaway database only" and writes nothing. After the run: 0 test members left, 31 rules, 31 log rows, no `nexus_test` schema, no decoy function left (rollback confirmed). Earlier versions: 225/225 on 2026-11-06 (before D-015), 178/178 on 2026-11-05.
 
 ## Persona map (spec section 9, with forced deviations)
+Letters file: personas 1-18 as in the engine file (P-OLD = 14 is Sekretaris Jenderal of the OLD period only) plus P-SEKUM1 (19, Sekretaris Umum 1: the second BPH secretary) and P-PLAIN2 (20, a second plain member). P-OPS-BPH (13) is Sekretaris Umum 2 + Staff Logistik (the R10 / LT-33 case). During the period-switch section P-SEKDEP (6) becomes Sekretaris Jenderal of the NEW period.
 Inventory file adds P-KADIV-LOG (19, Kepala Divisi in Logistik), P-KADIV-AKO (20, Kepala Divisi in Akomodasi) and P-SEKDEP-OPS (21, Sekretaris Departemen in Departemen Operasional); P-OLD (14) also holds Staff in Logistik in the OLD period. During the period-switch section, P-SEKDEP (6) becomes Kepala Departemen Operasional and P-STAFF-PUB (10) Staff in Logistik of the NEW period.
 
 Member-data file adds P-KABIRO (19, Kepala Biro in Biro Kewirausahaan) and P-MULTI (20, Sekretaris Departemen in Departemen CMIT + Staff in Musik: the MD-16 case, because Departemen Internal's secretary seat is held by P-SEKDEP, and the "filter matches a non-primary assignment" case). PI-CORE allows one holder per unique position, unit, and period, so: P-BEND = Bendahara Umum 1; P-BEND-SEK = Bendahara Umum 2 + Sekretaris Departemen of Departemen **Talenta**; P-ADMIN-BEND = P-BEND promoted to `admin` mid-test; P-SEKDEP2 = secretary of Pelayanan Khusus + Biro Kewirausahaan. P-TEMPPW (auth-login spec) = P-PLAIN with `must_change_password = true` (section 7). PI-CORE's column default is `true`, so section 7 first sets every persona to `false`.
@@ -163,6 +169,48 @@ Fixes 2026-11-09 (section 16, migration 20261109100000): `inventory_export` and 
 | Borrowing period filter with an unknown period id; without `borrowing.view_all` | `invalid_period`; `permission_required` | section 15 |
 | Restore a lost unit without `inventory.manage`, or of an archived item | `permission_required`, `item_archived` | section 3 |
 
+### Letters tables (D-025). Every table: RLS on, SELECT-only policy, no client INSERT/UPDATE/DELETE grant, no delete or truncate (trigger), writes only through the SECURITY DEFINER functions
+| Table (policy) | Who reads | Who must get nothing | Writes | Test |
+|---|---|---|---|---|
+| `letters` (`letters_select`: `letters.view`) | BPH (D06), secretaries | members, department secretaries (A-LT14), P-ADMIN (B18), P-OLD, requesters (L9: never the register), P-INACTIVE, P-UNLINKED | `letters.manage` (register, edit, file, void) or `letter_requests.process` (take number, issue, reject) via functions; number, type, year, period, origin immutable; voided = read-only (trigger) | sections 4, 6, 7, 16, 17 |
+| `letter_history` (parent letter visible) | as `letters` | as `letters` | append-only | sections 6, 7, 17 |
+| `letter_requests` (`..._select`: requester or `letter_requests.view_all`) | the requester (L9), BPH (D08), secretaries | other members, P-SEKDEP, P-ADMIN, P-INACTIVE | state machine functions only; L6 for process/take number/issue/reject; fields immutable, status moves checked by trigger | sections 10-13, 16, 17 |
+| `letter_request_history` (parent request visible) | as the request | as the request | append-only | sections 10, 16 |
+| `letter_files` (parent visible; withdrawn letter files only for `letters.manage`) | as the parent | viewers for withdrawn files; members for letter files | functions only; only the withdraw columns change, once | sections 5, 16, 17 |
+| `letter_numbering_settings`, `letter_number_counters`, `letter_numbering_changes` (System Admin or `letters.manage`) | System Admin, secretaries | BPH without manage, members, P-INACTIVE | System Admin via functions (settings, next number); the year can never be switched off (CHECK, `year_required`); counters by assignments; counters only go up; changes append-only | sections 1, 3, 9, 16 |
+| `letter_export_logs` (NO policy, NO client grant) | nobody through the API | every client role | `letter_export()` only (writer check), append-only | section 15 |
+
+### Letters functions (default rules D06-D08, D15-D23)
+| Persona | Register read | Register write, void | Own requests (L9) | All requests | Process, Ambil nomor, Terbitkan, Tolak | Export | Numbering settings | Test |
+|---|---|---|---|---|---|---|---|---|
+| P-SEKJEN, P-SEKUM1, P-OPS-BPH | yes | yes | yes | yes | yes, never own (L6, also with an extra rule) | yes | read | LT-01, LT-11, LT-33 |
+| P-KETUM, P-BEND, P-BEND-SEK | yes | no | yes | view only | no | yes | no | LT-02 |
+| P-SEKDEP, P-SEKDEP2, P-PLAIN, P-STAFF-PUB, P-LECT, P-ADMIN, P-OLD | no | no | yes | no | no | no | P-ADMIN: read and change (L3) | LT-03, LT-04, LT-41 |
+| P-INACTIVE, P-UNLINKED, no subject, anon | no | no | no | no | no | no | no | LT-04 |
+
+### Storage bucket `nexus-letter-files` (private; policies on `storage.objects`)
+| Action | Allowed | Must be refused | Test |
+|---|---|---|---|
+| Upload (INSERT policy) | any active member, into `<own members.id>/<uuid>.<pdf|jpg|jpeg|png>`, while a period is active | another member's folder, bad names/types, other buckets, anon, no active period, P-INACTIVE | section 18 |
+| Read / signed URL (SELECT policy) | request attachments: requester and `view_all`; letter files: `letters.view`; letter made from a request: also `view_all`, and the requester while Diterbitkan and Aktif; withdrawn: `letters.manage` only | other members; the requester after a void (G5); viewers for withdrawn files; unattached uploads (everyone, also the uploader); anon | sections 11, 18 |
+| Update / delete | nobody (no policy) | every client | section 18 |
+| Upload cap | refused once 10 unattached files of the last 24 hours wait in the member's folder (A-LT13) | older uploads do not count; a 23 h old one does | section 18 |
+| Migration guard (M11) | creates the bucket only if missing; identical bucket = no-op; same types in another order accepted | public bucket, other size, other types (`bucket_conflict`); any unscoped policy (`storage_policy_unscoped`) | section 18 |
+
+### Letters limits and refusals (spec L10, A-LT18, R2-R5, L7)
+| Rule | Refused with | Test |
+|---|---|---|
+| More than 5 open (Diajukan or Diproses) requests per member; more than 10 new per Jakarta day | `too_many_open_requests`, `daily_request_limit` | section 13 |
+| Field limits (Perihal 200, counterpart 150, sender number 60, notes 500, Keperluan 1000, Atas nama 120, Nomor lama 60) | `text_too_long` (detail = field) | sections 4, 8, 10 |
+| A date in the future (letter, received), before 2000, a needed-by date before today | `date_in_future`, `invalid_dates`, `date_in_past` | sections 4, 10 |
+| A 4th visible file, a foreign upload, a wrong type or size, a file attached twice | `file_count`, `invalid_file`, `file_too_large`, `file_already_attached`, `file_missing` | section 5 |
+| A typed number that exists for the type (any case) | `duplicate_number` | section 8 |
+| Next number not higher than the last used, another year, no reason | `sequence_not_higher`, `year_not_current`, `reason_required` | section 9 |
+| A format whose next number already exists; bad characters, equal codes, digits, separator | `format_collision`, `invalid_number_format` | section 9 |
+| Edit, file or void of a voided letter, of a previous period's letter, or while the request is Diproses | `letter_voided`, `closed_period`, `request_open` | sections 7, 11, 19 |
+| Terbitkan without "Ambil nomor"; a second "Ambil nomor" | `number_not_taken`, `state_changed` | section 11 |
+| Withdrawing the only file of an issued request letter | `last_issued_file` | section 11 |
+
 ### Functions
 | Check | Test |
 |---|---|
@@ -194,7 +242,9 @@ Fixes 2026-11-09 (section 16, migration 20261109100000): `inventory_export` and 
 
 **Inventory and Borrowing (`nexus_inventory_borrowing.test.sql`):** IB-01 to IB-30, IB-32 to IB-41 (DB side), IB-42, IB-43 (rows; not file formats), IB-44, IB-45 (DB side), IB-46 (DB side), IB-48; AC-22, AC-24, AC-27, AC-30, AC-36, AC-42, AC-43, AC-57, AC-64, AC-72 to AC-77 for borrowing; L6, L7, L9, R3-R6, R8-R11, R18-R20, A-IB5, A-IB6, A-IB8, A-IB14, A-IB15, A-IB26..A-IB31, A-IB34, A-IB45, A-IB46, P2, P6. App/manual: IB-31 and IB-46 screens, IB-47 (layout), IB-29 browser resize, IB-43 file contents, signed-URL expiry.
 
-**Still need module tables (later migrations):** AC-15, 41, 58 (finance/minutes closed-period edits, L7), letter-request parts of AC-27/30, 37 (assignment removal: same engine, add when convenient), 48 (signed URLs for minutes/letters), 51 (no delete on later module tables).
+**Letters (`nexus_letters.test.sql`):** LT-01 to LT-41 (DB side; LT-15 also by the two-session check above), LT-43 to LT-45, LT-47, LT-48, LT-50 to LT-52; letter-request parts of AC-27/30, AC-57, AC-64 (single holder); L6, L7, L9, R2-R8, R10, R11, R13, R15, R17, R19, R20; A-LT1, A-LT6..A-LT14, A-LT18..A-LT21, A-LT23, A-LT24; G3-G6, G9, G11, G12, P15. App/manual: LT-42, LT-46, LT-49 (screens), LT-38 file contents and WIB header (A-LT16), signed-URL expiry, the browser image resize and the magic-byte check before upload.
+
+**Still need module tables (later migrations):** AC-15, 41, 58 (finance/minutes closed-period edits, L7), 37 (assignment removal: same engine, add when convenient), 48 (signed URLs for minutes), 51 (no delete on later module tables).
 
 **Manual / app level:** AUTH-19/20/21 screens and the fail-closed "gangguan" state when the pending check errors (AR10), AC-31 (Dashboard cards), AC-34 (no session redirect; anon is already denied in DB), AC-63 (UI warning text), AC-08/AC-56 export file contents, UI parts of AC-19 and AC-61, the W1 guard (see above).
 
@@ -209,3 +259,4 @@ Fixes 2026-11-09 (section 16, migration 20261109100000): `inventory_export` and 
 8. After M5-M7: `select count(*) from nexus.permissions;` = 22; `select default_code, is_enabled from nexus.access_rules where default_code in ('D30','D34','D35','D36') order by 1;` = D30 false, D34-D36 true; with a regular member token `.schema('nexus').rpc('inventory_item_list')` returns `[]` (the catalog starts empty) and `.rpc('inventory_category_add', {p_name: 'x'})` fails with hint `permission_required`; with a Staff Operasional token `.rpc('my_permissions')` contains `borrowing.handle` but not `borrowing.approve`.
 9. Storage (M7): Dashboard > Storage shows `nexus-borrowing-evidence` as private; an anonymous (no session) download of any file in it fails.
 10. Dashboard > Project Settings > Data API (or the PostgREST config): the transaction-end setting (`db-tx-end`) is the default `commit`, never `rollback-allowed` (otherwise a client could receive export rows while the export-log row is rolled back; see `../README.md` section 6). Read only; do not change it.
+11. After M10/M11: `select count(*) from nexus.letter_numbering_settings;` = 1; with a regular member token `.schema('nexus').rpc('letter_list', {p_type: 'incoming'})` fails with hint `permission_required` and `.rpc('letter_my_requests')` returns `[]`; with a BPH secretary token `.rpc('letter_numbering_settings')` returns the format `PMK/NEX`; Dashboard > Storage shows `nexus-letter-files` as private.

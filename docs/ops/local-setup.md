@@ -58,14 +58,17 @@ All accounts use the same dev password: **`NexusLocal2026`**. Emails end in `@ne
 | `pembina@nexus.test` | Lecturer (`member_type = 'lecturer'`), no assignment | Listed with the "Pembina" marker; limited access. |
 | `kadiv.logistik@nexus.test` | Kepala Divisi Logistik (Operations head) | Can approve borrowing requests (rule D35), also handles and manages inventory. Cannot approve their own request. |
 | `staff.ops@nexus.test` | Staff Akomodasi (Operations staff) | Can record handover and return (`borrowing.handle`, rule D36) and manage inventory, but cannot approve (Staff is not a head). |
+| `sekjen@nexus.test` | BPH Sekretaris Jenderal | Letters: manages the register and processes letter requests (D15-D16). Cannot process their own request. |
+| `sekum1@nexus.test` | BPH Sekretaris Umum 1 | Same letter rights as Sekjen; the second processor, so one secretary's own request can be processed by the other. |
+| `sekdep@nexus.test` | Sekretaris Departemen, Departemen Internal | No register rights; only "Permohonan Saya" (may request letters, B17). |
 
-The seed is re-run by every `pnpm db:migrate` (and `scripts/dev-db.sh migrate`), so the accounts and the bulk members below are restored if they are missing. It is safe to run more than once. Not seeded yet (so you cannot test these by logging in): a System Admin who is also BPH, a Sekretaris Departemen, and a student with a login but no assignment. (Operations staff and an Operations head now have logins: `staff.ops@nexus.test` and `kadiv.logistik@nexus.test`.)
+The seed is re-run by every `pnpm db:migrate` (and `scripts/dev-db.sh migrate`), so the accounts and the bulk members below are restored if they are missing. It is safe to run more than once. Not seeded yet (so you cannot test these by logging in): a System Admin who is also BPH, and a student with a login but no assignment. (A Sekretaris Departemen now has a login: `sekdep@nexus.test`.) (Operations staff and an Operations head now have logins: `staff.ops@nexus.test` and `kadiv.logistik@nexus.test`.)
 
 Also seeded for Inventory and Borrowing (fake, local only): categories "Kategori Uji A" and "Kategori Uji B", locations "Lokasi Uji 1" and "Lokasi Uji 2", and five items: "Barang Uji 01" to "Barang Uji 03" (quantity-based) and "Barang Uji 04" and "Barang Uji 05" (individually tracked, with units). Use them to try the catalog, requests, approval, handover and return once the screens exist. The real category, location and item lists start empty on hosted (IB10).
 
 **Storage is off on the local stack** (`supabase/config.toml`, see section 5). The bucket `nexus-borrowing-evidence` is created by migration `20261107100200_nexus_inventory_storage.sql`, which does nothing where Storage is not installed (the local stack), so **photo uploads for damaged or lost returns cannot be tried locally**. To try them you must set `enabled = true` in the `[storage]` section of `supabase/config.toml` and restart the stack (this uses more RAM). Until then, test the photo rules with the database tests only.
 
-Also seeded: 40 login-less members `Bulk Anggota 01`-`40` (`bulkNN@nexus.test`, no password, cannot sign in): 10 Staff (Bulk 11 holds Staff Musik + Staff Logistik and shows Musik, the tie-break case), 3 inactive (05, 21, 37), 2 lecturers (13, 29). With the default Aktif filter, Data Anggota shows 45 members on 3 pages.
+Also seeded: 40 login-less members `Bulk Anggota 01`-`40` (`bulkNN@nexus.test`, no password, cannot sign in): 10 Staff (Bulk 11 holds Staff Musik + Staff Logistik and shows Musik, the tie-break case), 3 inactive (05, 21, 37), 2 lecturers (13, 29). With the default Aktif filter, Data Anggota showed 45 members on 3 pages before the letter accounts were added (2026-11-09); the e2e tests read the real count from the database.
 
 Never use these emails or the password anywhere except this local stack. The seed file refuses to run unless `nexus.allow_local_seed=yes` is set, which only the local script does.
 

@@ -11,7 +11,8 @@
 -- Safe to run more than once: rows that already exist are skipped, nothing is deleted.
 -- Every account has the same dev password (documented in docs/ops/local-setup.md), emails end in
 -- @nexus.test so they can never be real people. Section 6 adds 40 "Bulk Anggota NN" member rows with
--- NO login (for Member Data pagination/filter tests). Section 7 adds a small FAKE inventory ("Barang Uji
+-- NO login (for Member Data pagination/filter tests). Personas 13-15 (2026-11-10) are for Letters: two BPH
+-- secretaries and a department secretary. Section 7 adds a small FAKE inventory ("Barang Uji
 -- NN", "Kategori Uji X", "Lokasi Uji N") through the real nexus functions, if the Inventory and
 -- Borrowing migration is applied. PI-CORE triggers stay ON; this file works with them:
 --   * assignments are refused for inactive members, so the deactivated member is deactivated AFTER
@@ -92,7 +93,14 @@ insert into _persona values
   -- (Kepala Divisi Logistik, approves via D35) so a head's own request can be approved by another
   -- head, and an Operations staff member (handles via D36, does not approve).
   (11, 'kadiv.logistik@nexus.test', 'Test Kepala Divisi Logistik', '123450011', 'member', false, true, 'Logistik',  'division', 'Kepala Divisi', false),
-  (12, 'staff.ops@nexus.test',      'Test Staff Operasional',     '123450012', 'member', false, true, 'Akomodasi', 'division', 'Staff',         false);
+  (12, 'staff.ops@nexus.test',      'Test Staff Operasional',     '123450012', 'member', false, true, 'Akomodasi', 'division', 'Staff',         false),
+  -- Letters (docs/modules/letters.md section 2, D-025): two BPH secretaries (letters.manage +
+  -- letter_requests.process via D15/D16 and D18/D19), so one secretary's own request (L6) can be
+  -- processed by the other, and a department secretary (role sekretaris: no letter key, B17) who only
+  -- has "Permohonan Saya".
+  (13, 'sekjen@nexus.test',         'Test Sekretaris Jenderal',   '123450013', 'member', false, true, 'BPH PMK ITERA',       'bph',        'Sekretaris Jenderal',   false),
+  (14, 'sekum1@nexus.test',         'Test Sekretaris Umum 1',     '123450014', 'member', false, true, 'BPH PMK ITERA',       'bph',        'Sekretaris Umum 1',     false),
+  (15, 'sekdep@nexus.test',         'Test Sekretaris Departemen', '123450015', 'member', false, true, 'Departemen Internal', 'department', 'Sekretaris Departemen', false);
 -- Lecturer: listed with the "Pembina" marker, no NIM, no assignment (separate insert: different row width).
 insert into _persona values
   (10, 'pembina@nexus.test',        'Test Dosen Pembina',        null,        'member', false, true,  null,            null,       null,               false, 'lecturer');
