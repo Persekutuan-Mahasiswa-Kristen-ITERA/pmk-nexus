@@ -4,6 +4,9 @@ import { getAccessState } from "@/lib/auth/session";
 import { SignOutAction } from "@/components/auth/sign-out-action";
 import { AlertMessage } from "@/components/ui/alert-message";
 import { PageHeaderCard } from "@/components/ui/page-header-card";
+import { getFinanceSummary } from "@/modules/finance/server/reads";
+import { financeCapabilities } from "@/modules/finance/types";
+import { FinanceCard, FinanceCardSkeleton } from "@/modules/finance/ui/dashboard-card";
 import { getQueueCounts } from "@/modules/inventory-borrowing/server/borrowing";
 import { getInventoryStatusCounts } from "@/modules/inventory-borrowing/server/catalog";
 import { inventoryCapabilities } from "@/modules/inventory-borrowing/types";
@@ -14,6 +17,9 @@ import { LettersCard, LettersCardSkeleton } from "@/modules/letters/ui/dashboard
 import { getActiveMemberCount } from "@/modules/member-data/server/queries";
 import { memberDataCapabilities } from "@/modules/member-data/types";
 import { MemberCountCard, MemberCountSkeleton } from "@/modules/member-data/ui/dashboard-card";
+import { getMinuteDashboardCounts } from "@/modules/minutes/server/minutes";
+import { minuteCapabilities } from "@/modules/minutes/types";
+import { MinutesCard, MinutesCardSkeleton } from "@/modules/minutes/ui/dashboard-card";
 
 // The (app) layout may show a status screen instead of this page; the tab title follows it (QA NOTE-1).
 const STATUS_TITLES = {
@@ -32,7 +38,7 @@ export async function generateMetadata(): Promise<Metadata> {
 /**
  * Dashboard (D-023 pilot). Real data only: the header card with the period and a greeting by first name
  * (the h1; the tab title stays "Dashboard"), then one card per BUILT module the person may open
- * (Inventaris, Data Anggota, Surat Menyurat). Notulensi and Keuangan get no card until they exist
+ * (Inventaris, Data Anggota, Notulensi Rapat, Surat Menyurat). Keuangan gets no card until it exists
  * (R-24, R-38).
  * The Dashboard module itself is built last.
  */
@@ -46,7 +52,13 @@ export default async function DashboardPage() {
   const members = memberDataCapabilities(state);
   // Surat Menyurat (letters design 15): letters.view only, and absent without an active period (R7).
   const showLetters = letterCapabilities(state).canViewRegister && activePeriodLabel !== null;
-  const cardCount = (inventory.canViewCatalog ? 1 : 0) + (members.canView ? 1 : 0) + (showLetters ? 1 : 0);
+  // Notulensi Rapat (spec 7 screen 8, N5 a): minutes.view in any unit scope, counts only, absent without
+  // an active period.
+  const showMinutes = minuteCapabilities(state).canView && activePeriodLabel !== null;
+  // Finance (spec 7 screen 9, A-FN20): finance.view only, active period only, saldo and totals, no percentage.
+  const showFinance = financeCapabilities(state).canView && activePeriodLabel !== null;
+  const cardCount =
+    (inventory.canViewCatalog ? 1 : 0) + (members.canView ? 1 : 0) + (showFinance ? 1 : 0) + (showMinutes ? 1 : 0) + (showLetters ? 1 : 0);
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-5 md:max-w-3xl md:gap-6">
@@ -79,6 +91,16 @@ export default async function DashboardPage() {
           {members.canView ? (
             <Suspense fallback={<MemberCountSkeleton />}>
               <MemberCount />
+            </Suspense>
+          ) : null}
+          {showFinance ? (
+            <Suspense fallback={<FinanceCardSkeleton slot={2} />}>
+              <FinanceTotals />
+            </Suspense>
+          ) : null}
+          {showMinutes ? (
+            <Suspense fallback={<MinutesCardSkeleton slot={2} />}>
+              <MinutesCount />
             </Suspense>
           ) : null}
           {showLetters ? (
@@ -117,6 +139,21 @@ async function InventoryStatus({ canApprove }: { canApprove: boolean }) {
 async function MemberCount() {
   const count = await getActiveMemberCount();
   return <MemberCountCard result={count.ok ? { kind: "ok", count: count.data } : { kind: "error" }} />;
+}
+
+/** finance.view, checked again by getFinanceSummary and the database (FN-33). Totals of the active period only. */
+async function FinanceTotals() {
+  const summary = await getFinanceSummary();
+  // No active period: the card is absent (R11). Any other failure stays inside the card, never a stale balance.
+  if (!summary.ok && summary.error.code === "no_active_period") return null;
+  return <FinanceCard slot={2} result={summary.ok ? { kind: "ok", summary: summary.data } : { kind: "error" }} />;
+}
+
+/** minutes.view, checked again by getMinuteDashboardCounts and the database (MN-28). Counts only. */
+async function MinutesCount() {
+  const counts = await getMinuteDashboardCounts();
+  if (counts.ok && counts.data.periodId === null) return null; // no active period: the card is absent
+  return <MinutesCard slot={2} result={counts.ok ? { kind: "ok", counts: counts.data } : { kind: "error" }} />;
 }
 
 /** letters.view, checked again by getLetterDashboardCounts and the database (L11). Counts only. */

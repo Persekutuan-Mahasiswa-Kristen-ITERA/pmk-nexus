@@ -7,45 +7,147 @@ import { buildNavData, isActiveHref } from "@/components/shell/nav";
 import { cn } from "@/lib/utils";
 
 type MemberState = Extract<AccessState, { kind: "member" }>;
-const grant = (key: string, scope: "all" | "units" = "all"): PermissionGrant => ({ key, scope, unitIds: scope === "units" ? ["u1"] : [], isSensitive: true });
-const state = (keys: PermissionGrant[], opts: { name?: string; label?: string | null; admin?: boolean } = {}): MemberState => ({
+const grant = (
+  key: string,
+  scope: "all" | "units" = "all",
+): PermissionGrant => ({
+  key,
+  scope,
+  unitIds: scope === "units" ? ["u1"] : [],
+  isSensitive: true,
+});
+const state = (
+  keys: PermissionGrant[],
+  opts: { name?: string; label?: string | null; admin?: boolean } = {},
+): MemberState => ({
   kind: "member",
-  member: { memberId: "m", fullName: opts.name ?? "Tester", memberType: "student", isSystemAdmin: opts.admin ?? false, activePeriodId: opts.label === null ? null : "p", activePeriodLabel: opts.label === undefined ? "2026/2027" : opts.label },
+  member: {
+    memberId: "m",
+    fullName: opts.name ?? "Tester",
+    memberType: "student",
+    isSystemAdmin: opts.admin ?? false,
+    activePeriodId: opts.label === null ? null : "p",
+    activePeriodLabel: opts.label === undefined ? "2026/2027" : opts.label,
+  },
   permissions: keys,
 });
 
 const DASHBOARD = { href: "/", label: "Dashboard", icon: "dashboard" };
 const DATA = { href: "/data-anggota", label: "Data Anggota", icon: "group" };
+// Surat Menyurat is shown to EVERY active member (letters spec section 2 "Drawer", D-025 exception to D-021): anyone may
+// file a request, and "Permohonan Saya" is a fixed right. The register tabs behind it keep their own keys.
+const SURAT = { href: "/surat", label: "Surat Menyurat", icon: "letters" };
+// Finance shows only to finance.view holders (spec 2, FN-03): the Treasurers and the six BPH positions.
+const FINANCE = { href: "/finance", label: "Finance", icon: "finance" };
 
 describe("buildNavData (D-021): only built modules the person may open", () => {
-  it("BPH (view + export + log): Dashboard, Data Anggota", () => {
-    expect(buildNavData(state([grant("member_data.view"), grant("member_data.export"), grant("member_data.view_export_log")])).items).toEqual([DASHBOARD, DATA]);
+  it("BPH (view + export + log): Dashboard, Data Anggota, Surat Menyurat", () => {
+    expect(
+      buildNavData(
+        state([
+          grant("member_data.view"),
+          grant("member_data.export"),
+          grant("member_data.view_export_log"),
+        ]),
+      ).items,
+    ).toEqual([DASHBOARD, DATA, SURAT]);
   });
-  it("Kepala Departemen / Biro (view only): Dashboard, Data Anggota", () => {
-    expect(buildNavData(state([grant("member_data.view")])).items).toEqual([DASHBOARD, DATA]);
+  it("Kepala Departemen / Biro (view only): Dashboard, Data Anggota, Surat Menyurat", () => {
+    expect(buildNavData(state([grant("member_data.view")])).items).toEqual([
+      DASHBOARD,
+      DATA,
+      SURAT,
+    ]);
   });
-  it("System Admin without a position: Dashboard only (admin is not a business-data user)", () => {
-    expect(buildNavData(state([], { admin: true })).items).toEqual([DASHBOARD]);
+  it("System Admin without a position: Dashboard + Surat Menyurat (own requests), no business-data item", () => {
+    expect(buildNavData(state([], { admin: true })).items).toEqual([
+      DASHBOARD,
+      SURAT,
+    ]);
   });
-  it("regular member, lecturer, staff, previous-period officer, secretary-level (no member_data key): Dashboard only", () => {
-    for (const keys of [[], [grant("finance.view")], [grant("letters.manage"), grant("inventory.manage")]]) {
-      expect(buildNavData(state(keys)).items).toEqual([DASHBOARD]);
+  it("regular member, lecturer, staff, previous-period officer, secretary-level (no member_data key): Dashboard + Surat Menyurat", () => {
+    for (const keys of [
+      [],
+      [grant("letters.manage"), grant("inventory.manage")],
+    ]) {
+      expect(buildNavData(state(keys)).items).toEqual([DASHBOARD, SURAT]);
     }
   });
+  it("finance.view (BPH, Treasurer) unlocks Finance, placed before Surat Menyurat; a units grant or the export key alone does not", () => {
+    expect(buildNavData(state([grant("finance.view")])).items).toEqual([DASHBOARD, FINANCE, SURAT]);
+    expect(buildNavData(state([grant("finance.view"), grant("finance.manage")])).items).toContainEqual(FINANCE);
+    // Finance keys accept scope "all" only: a units grant is ignored (access control L12).
+    expect(buildNavData(state([grant("finance.view", "units")])).items).toEqual([DASHBOARD, SURAT]);
+    // Export without view opens nothing (R15); System Admin alone sees no Finance (B18).
+    expect(buildNavData(state([grant("finance.export")])).items).toEqual([DASHBOARD, SURAT]);
+    expect(buildNavData(state([], { admin: true })).items).not.toContainEqual(FINANCE);
+  });
   it("a Member Data key limited to units, or only the export key, does not unlock the item", () => {
-    expect(buildNavData(state([grant("member_data.view", "units")])).items).toEqual([DASHBOARD]);
-    expect(buildNavData(state([grant("member_data.export")])).items).toEqual([DASHBOARD]);
-    expect(buildNavData(state([grant("member_data.view_export_log")])).items).toEqual([DASHBOARD]);
+    expect(
+      buildNavData(state([grant("member_data.view", "units")])).items,
+    ).toEqual([DASHBOARD, SURAT]);
+    expect(buildNavData(state([grant("member_data.export")])).items).toEqual([
+      DASHBOARD,
+      SURAT,
+    ]);
+    expect(
+      buildNavData(state([grant("member_data.view_export_log")])).items,
+    ).toEqual([DASHBOARD, SURAT]);
   });
   it("Dashboard is first and always present; unbuilt modules never appear (no 'Segera hadir' items)", () => {
-    const everything = buildNavData(state(["member_data.view", "finance.view", "letters.view", "inventory.view", "minutes.view"].map((k) => grant(k))));
+    const everything = buildNavData(
+      state(
+        [
+          "member_data.view",
+          "finance.view",
+          "letters.view",
+          "inventory.view",
+          "minutes.view",
+        ].map((k) => grant(k)),
+      ),
+    );
     expect(everything.items[0]).toEqual(DASHBOARD);
-    expect(everything.items.map((i) => i.label)).toEqual(["Dashboard", "Data Anggota", "Manajemen & Inventaris"]);
+    expect(everything.items.map((i) => i.label)).toEqual([
+      "Dashboard",
+      "Data Anggota",
+      "Finance",
+      "Notulensi Rapat",
+      "Surat Menyurat",
+      "Manajemen & Inventaris",
+    ]);
     // Without inventory.view (e.g. an admin rule removed the baseline), the item is absent, not greyed out
-    expect(buildNavData(state([grant("member_data.view")])).items.map((i) => i.label)).toEqual(["Dashboard", "Data Anggota"]);
+    expect(
+      buildNavData(state([grant("member_data.view")])).items.map(
+        (i) => i.label,
+      ),
+    ).toEqual(["Dashboard", "Data Anggota", "Surat Menyurat"]);
+  });
+  it("Surat Menyurat needs no key and no active period: the own-requests area stays reachable (letters spec R7, LT-31, LT-46)", () => {
+    expect(buildNavData(state([])).items).toContainEqual(SURAT);
+    expect(buildNavData(state([], { label: null })).items).toContainEqual(
+      SURAT,
+    );
+    expect(
+      buildNavData(state([grant("letters.view")])).items.filter(
+        (i) => i.href === "/surat",
+      ),
+    ).toEqual([SURAT]); // exactly once
+  });
+  it("Surat Menyurat sits after Data Anggota and before the inventory item (Stitch order)", () => {
+    const labels = buildNavData(
+      state(["member_data.view", "inventory.view"].map((k) => grant(k))),
+    ).items.map((i) => i.label);
+    expect(labels.indexOf("Data Anggota")).toBeLessThan(
+      labels.indexOf("Surat Menyurat"),
+    );
+    expect(labels.indexOf("Surat Menyurat")).toBeLessThan(
+      labels.indexOf("Manajemen & Inventaris"),
+    );
   });
   it("carries the member name and period label for the drawer footer; no period -> null", () => {
-    expect(buildNavData(state([], { name: "Budi", label: "2026/2027" }))).toMatchObject({ memberName: "Budi", periodLabel: "2026/2027" });
+    expect(
+      buildNavData(state([], { name: "Budi", label: "2026/2027" })),
+    ).toMatchObject({ memberName: "Budi", periodLabel: "2026/2027" });
     expect(buildNavData(state([], { label: null })).periodLabel).toBeNull();
   });
   it("contains plain values only (it is passed to a client component)", () => {
@@ -63,23 +165,51 @@ describe("isActiveHref (aria-current)", () => {
     expect(isActiveHref("/data-anggota-lama", "/data-anggota")).toBe(false);
     expect(isActiveHref("/", "/data-anggota")).toBe(false);
   });
+  it("/surat stays highlighted on its sub-pages, but not on look-alikes", () => {
+    expect(isActiveHref("/surat/permohonan/abc/terbitkan", "/surat")).toBe(
+      true,
+    );
+    expect(isActiveHref("/surat", "/surat")).toBe(true);
+    expect(isActiveHref("/suratku", "/surat")).toBe(false);
+    expect(isActiveHref("/pengaturan/penomoran-surat", "/surat")).toBe(false);
+  });
 });
 
 describe("cn(): Stitch text sizes survive a following colour class (regression)", () => {
   // Read the real tokens, so a new `--text-*` token added to globals.css without updating utils.ts fails here.
   const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
-  const tokens = [...new Set([...css.matchAll(/^\s*--text-([a-z0-9-]+):/gm)].map((m) => m[1]).filter((t) => !t.includes("--")))];
+  const tokens = [
+    ...new Set(
+      [...css.matchAll(/^\s*--text-([a-z0-9-]+):/gm)]
+        .map((m) => m[1])
+        .filter((t) => !t.includes("--")),
+    ),
+  ];
 
   it("finds the Stitch scale in globals.css (guards against the parser silently matching nothing)", () => {
-    expect(tokens).toEqual(expect.arrayContaining(["display-lg", "headline-lg", "body-md", "label-lg", "label-sm", "numeric-metric", "field"]));
+    expect(tokens).toEqual(
+      expect.arrayContaining([
+        "display-lg",
+        "headline-lg",
+        "body-md",
+        "label-lg",
+        "label-sm",
+        "numeric-metric",
+        "field",
+      ]),
+    );
   });
   it("the exact bug: cn('text-label-lg text-walnut') keeps both", () => {
     expect(cn("text-label-lg text-walnut")).toBe("text-label-lg text-walnut");
   });
   for (const token of tokens) {
     it(`text-${token} keeps its size when a colour follows, and when a colour precedes`, () => {
-      expect(cn(`text-${token} text-walnut`).split(" ").sort()).toEqual([`text-${token}`, "text-walnut"].sort());
-      expect(cn(`text-walnut text-${token}`).split(" ").sort()).toEqual([`text-${token}`, "text-walnut"].sort());
+      expect(cn(`text-${token} text-walnut`).split(" ").sort()).toEqual(
+        [`text-${token}`, "text-walnut"].sort(),
+      );
+      expect(cn(`text-walnut text-${token}`).split(" ").sort()).toEqual(
+        [`text-${token}`, "text-walnut"].sort(),
+      );
     });
   }
   it("a real conflict is still resolved: later colour wins, later size wins", () => {
@@ -89,10 +219,15 @@ describe("cn(): Stitch text sizes survive a following colour class (regression)"
     expect(cn("text-label-lg text-sm")).toBe("text-sm");
   });
   it("a colour whose name starts with a size token is still a colour (text-field-line, text-field vs text-ink)", () => {
-    expect(cn("text-field text-field-line").split(" ").sort()).toEqual(["text-field", "text-field-line"]);
+    expect(cn("text-field text-field-line").split(" ").sort()).toEqual([
+      "text-field",
+      "text-field-line",
+    ]);
     expect(cn("text-field-line text-ink")).toBe("text-ink");
   });
   it("ordinary merging is unharmed", () => {
-    expect(cn("p-2 p-4", "px-1", false && "hidden", null, undefined, "font-bold")).toBe("p-4 px-1 font-bold");
+    expect(
+      cn("p-2 p-4", "px-1", false && "hidden", null, undefined, "font-bold"),
+    ).toBe("p-4 px-1 font-bold");
   });
 });
