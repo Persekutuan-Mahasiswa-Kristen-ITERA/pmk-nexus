@@ -17,15 +17,20 @@ export type XlsxTable = {
   rows: readonly (readonly XlsxValue[])[];
   /** Column widths in characters, one per header column. */
   columnWidths: readonly number[];
+  /**
+   * Optional Excel number format per column (e.g. "#,##0"), applied to NUMBER cells only; text cells and
+   * columns without a format are unchanged. Finance uses it for integer rupiah cells (spec 8).
+   */
+  columnFormats?: readonly (string | undefined)[];
 };
 
 function textCell(value: string, bold = false): Cell {
   return bold ? { value, type: String, fontWeight: "bold" } : { value, type: String };
 }
 
-function valueCell(value: XlsxValue): Cell {
+function valueCell(value: XlsxValue, format?: string): Cell {
   if (value === null) return null;
-  if (typeof value === "number") return { value, type: Number };
+  if (typeof value === "number") return format === undefined ? { value, type: Number } : { value, type: Number, format };
   return textCell(value);
 }
 
@@ -35,7 +40,7 @@ export async function writeXlsxTable(table: XlsxTable): Promise<Uint8Array> {
   table.metaLines.forEach((line, index) => data.push([textCell(line, index === 0)]));
   if (table.metaLines.length > 0) data.push([null]);
   data.push(table.header.map((label) => textCell(label, true)));
-  for (const row of table.rows) data.push(row.map(valueCell) as Row);
+  for (const row of table.rows) data.push(row.map((value, column) => valueCell(value, table.columnFormats?.[column])) as Row);
 
   const buffer = await writeXlsxFile(data, {
     sheet: table.sheetName,

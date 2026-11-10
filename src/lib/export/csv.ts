@@ -39,3 +39,16 @@ export function toCsv(header: readonly string[], rows: readonly (readonly CsvVal
 export function toCsvBytes(header: readonly string[], rows: readonly (readonly CsvValue[])[]): Uint8Array {
   return new TextEncoder().encode(toCsv(header, rows));
 }
+
+/**
+ * Like toCsv(), but `preamble` rows come BEFORE the header (a summary block, e.g. Finance spec F7.2). Same
+ * quoting and formula neutralisation for every cell; numbers stay numbers (a negative total is not a formula).
+ */
+export function toCsvWithPreamble(
+  preamble: readonly (readonly CsvValue[])[],
+  header: readonly string[],
+  rows: readonly (readonly CsvValue[])[],
+): Uint8Array {
+  const lines = [...preamble, header, ...rows].map((row) => row.map(csvField).join(","));
+  return new TextEncoder().encode(`${BOM}${lines.join("\r\n")}\r\n`);
+}

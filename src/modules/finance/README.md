@@ -4,7 +4,7 @@ Cash book per period: Pemasukan, Pengeluaran and one Saldo awal per period, tota
 Spec: `docs/modules/finance.md` (approved 2026-11-09, K1-K6 a; amended 2026-11-10: Saldo awal may be Rp 0). Decision: D-028.
 Database: `supabase/migrations/20261111200000_nexus_finance.sql` (9 public `nexus.finance_*` functions + 2 storage checks) and `20261111200100_nexus_finance_storage.sql` (bucket `nexus-finance-proofs`). Reference: `supabase/README.md` section 3.4.
 
-Status (2026-11-10): **contract round 1** (`types.ts`). Server layer and screens not built yet.
+Status (2026-11-11): contract, server layer and screens are built and tested locally (`tests/unit/finance-server.test.ts`, `finance-types.test.ts`); security review, a real-browser click-through and the pgTAP run against the hosted project are NOT done. Nothing applied to hosted.
 
 ## Money rules in code
 
@@ -15,7 +15,7 @@ Status (2026-11-10): **contract round 1** (`types.ts`). Server layer and screens
 - Database answers (bigint as JSON numbers) are checked to be safe integers and turned into text by the section 8 schemas. `rupiahToSafeInteger` exists only for CSV numbers and Excel integer cells. Never pass money TEXT to the CSV writer: `-250000` would be read as a formula start and prefixed with an apostrophe.
 - Submit key: one new uuid each time the check sheet opens ("Lanjut"); retries and double taps resend the same key and values (the database replays the first entry, `replayed = true`).
 
-## Layout (planned)
+## Layout
 
 | Path | Runs on | What |
 |---|---|---|
@@ -24,7 +24,8 @@ Status (2026-11-10): **contract round 1** (`types.ts`). Server layer and screens
 | `server/actions.ts` | server | Server Actions: `recordFinanceEntry`, `voidFinanceEntry`, `addFinanceProof`, `withdrawFinanceProof`, `getFinanceProofLink` |
 | `server/proofs.ts` | server | Upload handler for `POST /api/finance/proofs` (magic bytes, own folder, cap) |
 | `server/export.ts` | server | `POST /api/finance/export` (xlsx / csv / pdf, `total_count` cut check, summary block) |
-| `ui/` | both | Screens (frontend engineer) |
+| `ui/` | both | Screens: `list-screen`, `finance-header`, `entry-list`, `list-filters`, `record-form` (+ `amount-field`, `proof-picker`), `detail-screen` (+ `detail-actions`, `proof-list`), `dashboard-card`, `finance-export` |
+| `src/app/(app)/finance/**` | both | Pages `/finance`, `/finance/catat`, `/finance/saldo-awal`, `/finance/[id]` and `actions.ts` (thin `"use server"` wrappers that call `getAccessState()` first) |
 
 RPC wrappers and every Storage call go in `src/lib/picore/finance.ts` (the functions read PI-CORE names and periods; CLAUDE.md 4).
 
