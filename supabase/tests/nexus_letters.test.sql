@@ -1713,5 +1713,23 @@ reset role; select nexus_test.login_as(11);
 select ok((select (d -> 'letter') = 'null'::jsonb and (d ->> 'number_text') is not null from nexus.letter_request_detail(nexus_test.id('r6')) d),
   'the requester gets the number but not the register row''s internal values');
 
+-- =============================================================================================
+-- 21. Derived booleans are never null (fix 2026-11-10: an open request without a needed-by date
+--     returned is_past_due = null in the queue and the detail)
+-- =============================================================================================
+reset role; select nexus_test.login_as(20);
+select ok(nexus_test.req('r7', 'Surat tanpa tanggal kebutuhan') is not null, 'r7: an open request without a needed-by date');
+reset role; select nexus_test.login_as(6);
+select ok((select is_past_due is false and days_past_due = 0 and number_voided is false
+           from nexus.letter_request_queue('submitted', 'tanpa tanggal kebutuhan') where request_id = nexus_test.id('r7')),
+  'queue: an open request without a needed-by date has is_past_due = false (not null), days_past_due 0, number_voided false');
+select ok((select (d -> 'is_past_due') = 'false'::jsonb and (d -> 'days_past_due') = '0'::jsonb and (d -> 'number_voided') = 'false'::jsonb
+           from nexus.letter_request_detail(nexus_test.id('r7')) d),
+  'detail: is_past_due false, days_past_due 0, number_voided false (never null)');
+reset role; select nexus_test.login_as(20);
+select ok((select number_voided is false and has_issued_file is false from nexus.letter_my_requests() where request_id = nexus_test.id('r7')),
+  'own list: number_voided and has_issued_file are false (not null) for an open request');
+reset role;
+
 select * from finish();
 rollback;

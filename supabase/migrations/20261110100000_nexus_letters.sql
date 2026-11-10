@@ -1143,11 +1143,13 @@ as $$
          r.letter_id, l.number_text, l.status, r.number_taken_at, tm.full_name,
          r.decided_at, dm.full_name,
          (select count(*)::int from nexus.letter_files f where f.request_id = r.id),
-         r.status = 'issued' and l.status = 'active'
-           and exists (select 1 from nexus.letter_files f where f.letter_id = l.id and not f.is_withdrawn),
+         -- coalesce: a comparison with a null (no letter, no needed-by date) must give false, never
+         -- null (fixed 2026-11-10: an open request without "Dibutuhkan paling lambat" returned null).
+         coalesce(r.status = 'issued' and l.status = 'active'
+                  and exists (select 1 from nexus.letter_files f where f.letter_id = l.id and not f.is_withdrawn), false),
          n.note, nm.full_name, n.occurred_at,
-         r.status in ('submitted', 'processing') and r.needed_by < (select d from today),
-         case when r.status in ('submitted', 'processing') and r.needed_by < (select d from today)
+         coalesce(r.status in ('submitted', 'processing') and r.needed_by < (select d from today), false),
+         case when coalesce(r.status in ('submitted', 'processing') and r.needed_by < (select d from today), false)
               then (select d from today) - r.needed_by else 0 end
   from req r
   left join public.periods p on p.id = r.period_id
@@ -1742,7 +1744,7 @@ begin
   select o.rn, o.request_id, o.status, o.version, o.period_label, o.subject, o.addressee, o.on_behalf_of,
          o.needed_by, o.created_at, o.processed_by_name,
          case when o.status in ('processing', 'issued') then o.number_text end,
-         o.status = 'issued' and o.letter_status = 'voided',
+         coalesce(o.status = 'issued' and o.letter_status = 'voided', false),
          o.has_issued_file, o.attachment_count, o.note, o.note_by_name, o.note_at,
          t.n, pg.pno, p_page_size
   from o cross join t cross join pg
@@ -1822,7 +1824,7 @@ begin
          q.requester_member_id, q.requester_name, q.requester_is_active, q.requester_member_id = v_me,
          q.subject, q.addressee, q.on_behalf_of, q.needed_by, q.is_past_due, q.days_past_due,
          q.attachment_count, q.number_text, q.number_taken_at, q.number_taken_by_name,
-         q.letter_status, q.status = 'issued' and q.letter_status = 'voided',
+         q.letter_status, coalesce(q.status = 'issued' and q.letter_status = 'voided', false),
          q.processed_by_name, q.created_at, q.updated_at, q.per_period, t.n, pg.pno, p_page_size
   from q cross join t cross join pg
   where q.ordinal > (pg.pno - 1)::bigint * p_page_size and q.ordinal <= pg.pno::bigint * p_page_size
@@ -1923,7 +1925,7 @@ begin
     'processed_at', v_req.processed_at, 'processed_by_name', v_row.processed_by_name,
     'number_text', case when v_req.status in ('processing', 'issued') then v_row.number_text end,
     'number_taken_at', v_req.number_taken_at, 'number_taken_by_name', v_row.number_taken_by_name,
-    'number_voided', v_req.status = 'issued' and v_row.letter_status = 'voided',
+    'number_voided', coalesce(v_req.status = 'issued' and v_row.letter_status = 'voided', false),
     'letter_id', case when v_view_all then v_req.letter_id end,
     'decided_at', v_req.decided_at, 'decided_by_name', v_row.decided_by_name,
     'note', v_row.note, 'note_by_name', v_row.note_by_name, 'note_at', v_row.note_at,
