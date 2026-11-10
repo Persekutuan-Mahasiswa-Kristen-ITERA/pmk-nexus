@@ -167,10 +167,11 @@ Full spec: `docs/modules/member-data.md` (section 12 lists where the code lives)
 - Access: view = role `bph` and role `kepala_departemen` (Kepala Departemen and Kepala Biro); export (Excel, CSV, PDF through one "Ekspor" button) = BPH only. Every export is logged in an append-only table (who, when, format, filters; no PII).
 - Never shown: email, phone, NIM, NIP.
 
-### 5.3 Finance [DECIDED 2026-11-09, D-028] [NOT BUILT YET]
+### 5.3 Finance [DECIDED 2026-11-09, D-028] [DATABASE DONE 2026-11-10, app layer next]
+Status 2026-11-10: tables, RLS, functions and bucket are written and tested on the local stack only (pgTAP 328 assertions); server layer and screens are not built; nothing applied to hosted.
 Full spec: `docs/modules/finance.md` (approved 2026-11-09, owner accepted all recommendations K1-K6). All amounts, bank accounts, badges and notes in Stitch are filler. Owner approval (after a backup) and a closed security review are required before anything touches the hosted project.
 - **Totals per period:** Total Income (Total Pemasukan), Total Expenses (Total Pengeluaran), Total Balance (Total Saldo). Computed by the database from the entries, never stored or typed. Voided entries count in nothing.
-- **Transactions:** Pemasukan, Pengeluaran and one "Saldo awal" per period; whole rupiah (integer, never floating point); fields Jenis, Tanggal, Jumlah, Keterangan, optional Catatan; automatic number `KAS-0001`; each entry tied to the active period. Table: Date (Tanggal), Description (Keterangan), Amount (Jumlah), plus type, number and a paperclip.
+- **Transactions:** Pemasukan, Pengeluaran and one "Saldo awal" per period; whole rupiah (integer, never floating point, never negative); Pemasukan and Pengeluaran are Rp 1 to 9.999.999.999, **Saldo awal may be Rp 0** [DECIDED 2026-11-10, owner, A-FN1; debt is not recorded as a negative opening]; fields Jenis, Tanggal, Jumlah, Keterangan, optional Catatan; automatic number `KAS-0001`; each entry tied to the active period. Table: Date (Tanggal), Description (Keterangan), Amount (Jumlah), plus type, number and a paperclip.
 - **Corrections (K2 a):** a saved entry is never edited. A mistake in the active period is voided with a reason and re-recorded ("Catat ulang"); a mistake in an old period is corrected by a new linked entry in the active period ("Koreksi atas {nomor}"). Old periods are read-only (L7).
 - **Carry-over (K3 a):** the Treasurer types "Saldo awal" once per period after counting the real cash and bank money; the screen shows the previous closing balance as a hint ("Pakai angka ini"), never as a silent prefill. This also covers go-live (history before NEXUS stays outside it).
 - **One cash pool (K4 a):** no account field; bank or cash detail goes into Keterangan.
@@ -179,7 +180,8 @@ Full spec: `docs/modules/finance.md` (approved 2026-11-09, owner accepted all re
 - **Access:** read and export = all six BPH (K1 a); record, void and proof = the two Bendahara Umum (`finance.manage`). The System Admin without a BPH or Treasurer position sees nothing (B18). Export (Excel, CSV, PDF, logged, formula-safe).
 - **Known risk (B37):** a PI-CORE position-derived admin can self-assign as Treasurer and NEXUS then grants Finance; to be raised with the PI-CORE maintainer before go-live.
 
-### 5.4 Meeting Minutes (Notulensi Rapat) [DECIDED 2026-11-09, D-027] [NOT BUILT YET]
+### 5.4 Meeting Minutes (Notulensi Rapat) [DECIDED 2026-11-09, D-027] [DATABASE DONE 2026-11-10, app layer next]
+Status 2026-11-10: tables, RLS, functions and bucket are written and tested on the local stack only (pgTAP 255 assertions); server layer and screens are not built; nothing applied to hosted.
 Full spec: `docs/modules/meeting-minutes.md` (approved 2026-11-09, owner accepted all recommendations N1-N7). Stitch sample values, "Simpan Draft" and the schedule statuses are filler.
 - **Form fields:** Date, Meeting Title, Topic, Minutes Content, Decision (optional), attachments, **plus the owning Unit** (added because D-008 scopes minutes by unit; the Stitch form had none). Every minute belongs to exactly one unit, fixed after saving, and to the active period.
 - **Unit list (N2 c):** BPH PMK ITERA, the departments, the bureau, and "Seluruh organisasi" for plenary meetings (readable by BPH only). Divisions are not offered; their meetings are recorded under the department.
@@ -188,7 +190,8 @@ Full spec: `docs/modules/meeting-minutes.md` (approved 2026-11-09, owner accepte
 - **Access:** record, edit, void = BPH secretaries (all units) and department/bureau secretaries (own unit); read = BPH (all), secretaries (own unit) and, new default rule D37, Kepala Departemen and Kepala Biro (own unit, read only) (N1 b); export = BPH and secretaries (own unit), logged.
 - **Storage (N7 a):** shares the free-tier 1 GB with letters, finance proofs and borrowing evidence; real usage is checked at every period handover and the owner is warned at 70%.
 
-### 5.5 Letters (Surat Menyurat) [DECIDED 2026-11-09, D-025] [NOT BUILT YET]
+### 5.5 Letters (Surat Menyurat) [DECIDED 2026-11-09, D-025] [BUILT 2026-11-10, QA in progress, local stack only]
+Status 2026-11-10: database, server layer and screens are built; QA record in `docs/qa/letters.md`; the security review found no CRITICAL or HIGH finding (`DECISIONS.md` D-025, `OPEN_QUESTIONS.md` F11); nothing applied to hosted.
 Full spec: `docs/modules/letters.md` (approved); design: `docs/design/letters.md` (approved 2026-11-09, one revision pending for "Ambil nomor"). The sample values in Stitch (Direktorat Jenderal Pajak, statuses like Verifikasi or Disposisi) are filler.
 - **Register:** tabs Incoming Letters (Surat Masuk) and Outgoing Letters (Surat Keluar). Each item shows the letter number, counterpart party, subject (Perihal), dates, files, and status Aktif or Dibatalkan (void). No other workflow status (L5). NEXUS only registers and archives finished letters: it does not generate documents and does not handle signing (L1); sample official formats (A4) are not needed in Phase 1.
 - **Numbering [DECIDED, provisional, D-024]:** incoming `PMK/NEX/SM/{year}/{seq}`, outgoing `PMK/NEX/SK/{year}/{seq}`, seq three digits; the format is a setting, not code. [ASSUMPTION, A2/C6] assigned by the system, restarts every calendar year, one sequence per type, never reused. At go-live the System Admin sets the next sequence once; old letters are registered with their original number marked "Nomor lama" (L7).

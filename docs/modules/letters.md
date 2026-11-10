@@ -392,6 +392,15 @@ The owner accepted all proposals P1-P15 and the gap recommendations G2-G17 of th
 
 ---
 
+## 10c. Build status and security review (2026-11-10)
+
+- **Built (local stack only):** database (migrations `20261110100000` and `20261110100100`), server layer and screens. Commits: 93295a1 (derived flags return false, never null), dacf327 (server layer and screens), 5f5874a (file-name fix). QA record: `docs/qa/letters.md` (in progress). Nothing is applied to the hosted project.
+- **Security review (read-only reviewer): no CRITICAL, no HIGH finding.**
+  - **MEDIUM, open (owner undecided):** files uploaded to `nexus-letter-files` but never attached to a letter or request are never deleted. Any active member may upload 10 files of 5 MB per rolling 24 hours (about 50 MB a day per member), which could fill the 1 GB free tier. Tracked as `OPEN_QUESTIONS.md` F11, now for all modules with uploads, [PLANNED] before go-live, P1. Options: (a) scheduled server-side cleanup of objects older than 48 h with no row in the file table (recommended; never touches attached files), (b) lower caps such as 5 per 24 h, (c) a monthly manual cleanup query in the ops guide.
+  - **LOW, fixed (5f5874a):** file names also drop bidi-override and zero-width characters (U+200B-200F, U+202A-202E, U+2066-2069).
+  - **LOW, accepted for now (A-LT28):** exports have no per-member rate limit (same as Inventory); the PDF check is magic bytes "%PDF-" only, files are served from the storage origin with 300-second signed links (no script on the app origin); the login `next` parameter is already guarded by `safeRedirectPath` in `src/lib/auth/redirect.ts` (verified).
+- Recorded in `docs/DECISIONS.md` (D-025 build status and review).
+
 ## 11. Acceptance criteria
 
 Personas: `docs/modules/access-control.md` section 9. Defaults D06-D08 and D15-D23 apply unless stated. Every criterion is tested through the UI AND by a direct call with that persona's token. They assume the recommended answers of section 10; the owner's real answers adjust them.
