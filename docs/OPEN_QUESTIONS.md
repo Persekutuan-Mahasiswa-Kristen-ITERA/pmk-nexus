@@ -291,7 +291,7 @@ Spec: `docs/modules/meeting-minutes.md` (approved 2026-11-09, D-027; the owner a
 
 ## K. Finance questions and assumptions (2026-11-09)
 
-Spec: `docs/modules/finance.md` (approved 2026-11-09, D-028; the owner accepted every recommendation). K1-K6 are answered; the options stay in the spec, section 10. Related older items: B3 (Treasurer, still [ASSUMPTION]), B6 (answered for Finance by K1), B18 (admin sees no Finance), B37 (position-derived admins can self-assign as Treasurer: to be raised with the PI-CORE maintainer before go-live). Database layer done on the local stack 2026-11-10 (ae679ea and 09330b2, pgTAP 328); server layer and screens not built yet. Finance needs the strictest security review and the owner's approval (after a backup) before anything touches the hosted project.
+Spec: `docs/modules/finance.md` (approved 2026-11-09, D-028; the owner accepted every recommendation). K1-K6 are answered; the options stay in the spec, section 10. Related older items: B3 (Treasurer, still [ASSUMPTION]), B6 (answered for Finance by K1), B18 (admin sees no Finance), B37 (position-derived admins can self-assign as Treasurer: to be raised with the PI-CORE maintainer before go-live). Database layer done on the local stack 2026-11-10 (ae679ea and 09330b2, pgTAP 328, rerun 328/328 on 2026-11-11); server layer and screens built and unit-tested 2026-11-11 (c499dc0, d0c7ff7); code security review found no CRITICAL or HIGH, but no browser click-through or e2e yet (`docs/qa/finance.md`). Finance needs the strictest security review and the owner's approval (after a backup) before anything touches the hosted project.
 
 | # | Question | Status | Priority | Recommendation |
 |---|---|---|---|---|
@@ -325,4 +325,7 @@ Spec: `docs/modules/finance.md` (approved 2026-11-09, D-028; the owner accepted 
 | A-FN19 | The System Admin without a Finance rule sees nothing (B18); a self-benefit rule is logged (D-012). | [ASSUMPTION] | P2 |
 | A-FN20 | Dashboard card: Saldo, Pemasukan, Pengeluaran of the active period for `finance.view` holders; no percentages. | [ASSUMPTION] | P2 |
 | A-FN21 | At most one Aktif Saldo awal per period; a wrong one is voided and re-recorded. | [ASSUMPTION] | P1 |
+| A-FN22 | Screen texts the contract (`FINANCE_COPY`) does not hold are written in `src/modules/finance/ui/copy.ts` and in the detail page, copying the wording Letters and Meeting Minutes use for the same moment: network failure, "Menyimpan...", "Muat ulang", search label, loading captions, file-picker states, accessible names, the "Rp" prefix, "(aktif)" in the period select, table column headers, "Bukti: {n} berkas", the negative-previous-balance note, the two form subtitles, and "Transaksi ini tidak ditemukan." Full list: `docs/qa/finance.md` section 8. | [ASSUMPTION] (2026-11-11) | P2 |
+| A-FN23 | Export routes (`/api/finance/export`) and proof upload (`/api/finance/proofs`) accept POST only: an export writes a log row, so a GET (prefetch, crawler) must never run it. The export route also reads a plain form post (no-JavaScript fallback). | [ASSUMPTION] (2026-11-11) | P2 |
+| A-FN24 | "Ekspor" on a detail screen exports the period of that entry filtered to its number, with voided entries included. | [ASSUMPTION] (2026-11-11) | P2 |
 
