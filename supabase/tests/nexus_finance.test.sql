@@ -190,9 +190,9 @@ as $$ select nexus_test.put(p_name, (select entry_id from nexus.finance_entry_re
 -- Totals "opening/income/expense/balance" of a period as the caller sees them (null = active period).
 create function nexus_test.tot(p_period uuid default null) returns text language sql stable
 as $$ select opening_amount || '/' || income_total || '/' || expense_total || '/' || balance from nexus.finance_summary(p_period) $$;
-create function nexus_test.amount_hint(p_amount text) returns text language sql volatile
+create function nexus_test.amount_hint(p_amount text, p_type text default 'income') returns text language sql volatile
 as $$ select nexus_test.hint_of(format('select * from nexus.finance_entry_record(gen_random_uuid(), %L, nexus_test.d(0), %L, %L)',
-                                       'income', p_amount, 'x')) $$;
+                                       p_type, p_amount, 'x')) $$;
 -- Rows of every finance table the caller can see (RLS), summed.
 create function nexus_test.rls_total() returns int language sql stable
 as $$ select (select count(*)::int from nexus.finance_entries) + (select count(*)::int from nexus.finance_entry_files)
@@ -391,6 +391,13 @@ select is((select string_agg(default_code || ':' || role_key || ':' || permissio
           'D02:bph:finance.view:all,D03:bph:finance.export:all,D24:bendahara:finance.manage:all,D25:bendahara:finance.export:all',
   'K1 a: the finance rules are exactly D02, D03, D24, D25 (unchanged)');
 select ok((select count(*) = 1 and bool_and(last_value = 0) from nexus.finance_counter), 'A-FN2: one counter row, starting at 0');
+select is((select pg_get_constraintdef(c.oid) from pg_constraint c
+           where c.conrelid = 'nexus.finance_entries'::regclass and c.conname = 'finance_entries_amount_range'),
+          'CHECK ((((amount >= 0) AND (amount <= ''9999999999''::bigint)) AND ((amount >= 1) OR (entry_type = ''opening''::text))))',
+  'owner 2026-11-10: the named CHECK finance_entries_amount_range = 0..9.999.999.999, Rp 0 only for the opening balance');
+select is((select count(*)::int from pg_constraint c
+           where c.conrelid = 'nexus.finance_entries'::regclass and c.contype = 'c' and pg_get_constraintdef(c.oid) ~ 'amount'), 1,
+  '... it is the ONLY amount check (the old unnamed finance_entries_amount_check is gone)');
 
 -- =============================================================================================
 -- 2. Period 1 (2090/2091): P-OLD keeps the books. FN-10 example totals.
@@ -508,6 +515,11 @@ select is((select array_agg(distinct nexus_test.amount_hint(a))
                              E'١٢', '1_000', 'Rp 1000']) a),
           array['invalid_amount'], 'FN-08: "12.5", "1e3", "-5", "+5", "0", "007", blanks, letters, separators and non-ASCII digits are refused');
 select is(nexus_test.amount_hint(null), 'invalid_amount', 'FN-08: an empty amount is refused');
+select is(nexus_test.amount_hint('0', 'expense'), 'invalid_amount', 'owner 2026-11-10: Rp 0 is refused for Pengeluaran (same hint as before)');
+select is((select array_agg(distinct nexus_test.amount_hint(a, t))
+           from unnest(array['-5', '-0', '-1', '00', '000', '0.0', '+0']) a, unnest(array['income', 'expense', 'opening']) t),
+          array['invalid_amount'], 'owner 2026-11-10: negatives, "-0", "00", "0.0" and "+0" are refused for every type, also Saldo awal');
+select is(nexus_test.amount_hint('10000000000', 'opening'), 'amount_too_large', 'Saldo awal has the same upper limit');
 select is(nexus_test.amount_hint('10000000000'), 'amount_too_large', 'FN-08/A-FN1: 10.000.000.000 is too large');
 select is(nexus_test.amount_hint('99999999999999999999999999'), 'amount_too_large', '... a huge number is refused cleanly (no overflow error)');
 select is(nexus_test.counter(), 4::bigint, 'refused saves use no number');
@@ -706,7 +718,16 @@ select is(nexus_test.hint_of(format('update nexus.finance_entry_files set origin
   'immutable_column', 'a stored proof is never renamed or replaced');
 select throws_ok(format($$insert into nexus.finance_entries (entry_no, number_text, entry_type, amount, entry_date, description, period_id, idempotency_key, created_by)
                          values (90001, 'KAS-90001', 'income', 0, current_date, 'x', %L, gen_random_uuid(), gen_random_uuid())$$, nexus_test.period(2)),
-  '23514', null, 'FN-08: the database refuses an amount of 0');
+  '23514', null, 'FN-08: the database refuses an income of 0');
+select throws_ok(format($$insert into nexus.finance_entries (entry_no, number_text, entry_type, amount, entry_date, description, period_id, idempotency_key, created_by)
+                         values (90005, 'KAS-90005', 'expense', 0, current_date, 'x', %L, gen_random_uuid(), gen_random_uuid())$$, nexus_test.period(2)),
+  '23514', null, 'owner 2026-11-10: ... an expense of 0');
+select throws_ok(format($$insert into nexus.finance_entries (entry_no, number_text, entry_type, amount, entry_date, description, period_id, idempotency_key, created_by)
+                         values (90006, 'KAS-90006', 'opening', -1, current_date, 'x', %L, gen_random_uuid(), gen_random_uuid())$$, nexus_test.period(3)),
+  '23514', null, 'owner 2026-11-10: ... a negative Saldo awal');
+select is(nexus_test.hint_of(format($$insert into nexus.finance_entries (entry_no, number_text, entry_type, amount, entry_date, description, period_id, idempotency_key, created_by)
+                                      values (90007, 'KAS-90007', 'opening', 0, current_date, 'x', %L, gen_random_uuid(), gen_random_uuid())$$, nexus_test.period(3))),
+  'no_error', 'owner 2026-11-10: the database accepts a Saldo awal of 0 (undone right away by the helper)');
 select throws_ok(format($$insert into nexus.finance_entries (entry_no, number_text, entry_type, amount, entry_date, description, period_id, idempotency_key, created_by)
                          values (90002, 'KAS-90002', 'expense', -5, current_date, 'x', %L, gen_random_uuid(), gen_random_uuid())$$, nexus_test.period(2)),
   '23514', null, 'FN-08: ... a negative amount');
@@ -1120,6 +1141,16 @@ select nexus_test.rec('n_exp', 'expense', '50000', 'Transport');
 select ok((select number_text = 'KAS-0012' and period_id = nexus_test.period(3) from nexus.finance_entries where id = nexus_test.id('n_exp')),
   'FN-23: recorded in the new period; the number continues');
 select is(nexus_test.tot(), '0/0/50000/-50000', 'FN-11/A-FN9: a negative Total Saldo is allowed (Saldo awal not yet recorded)');
+-- Owner 2026-11-10: the cash box was empty at handover -> Saldo awal Rp 0 is recorded and clears the hint.
+select ok((select replayed is false and number_text = 'KAS-0013'
+           from nexus.finance_entry_record(gen_random_uuid(), 'opening', nexus_test.d(0), '0', 'Saldo awal periode 2092/2093 (kas kosong)')),
+  'owner 2026-11-10: a Saldo awal of Rp 0 is accepted');
+select ok((select has_opening and opening_amount = 0 and opening_entry_id is not null and entry_count = 2 from nexus.finance_summary()),
+  '... it counts as the period''s Saldo awal ("Saldo awal belum dicatat" disappears)');
+select is(nexus_test.tot(), '0/0/50000/-50000', '... and changes no total');
+select is((select amount from nexus.finance_entry_list(p_type => 'opening')), 0::bigint, '... the list shows it as Rp 0');
+select is(nexus_test.hint_of($$select * from nexus.finance_entry_record(gen_random_uuid(), 'opening', nexus_test.d(0), '0', 'lagi')$$), 'opening_exists',
+  '... and a second Saldo awal (also 0) is refused');
 select is(nexus_test.hint_of(format('select * from nexus.finance_entry_void(%L, %L)', nexus_test.id('e_inc1'), 'x')), 'closed_period',
   'FN-23/AC-41: last period''s entries are read-only now');
 select is(nexus_test.hint_of(format('select * from nexus.finance_entry_add_proof(%L, %L)', nexus_test.id('e_inc1'), nexus_test.files(11, 1))), 'closed_period',

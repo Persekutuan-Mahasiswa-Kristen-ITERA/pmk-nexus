@@ -19,11 +19,14 @@
 --   history kind  recorded, file_added, file_withdrawn ("Tarik berkas"), voided
 --
 -- Money rules (spec 4.2, A-FN1, A-FN3; FN-08..FN-11):
---   * Amounts are whole rupiah in a BIGINT column, always positive, CHECK 1 .. 9 999 999 999. No
---     floating-point or numeric column anywhere in this module. The API takes the amount as TEXT of
---     digits only ("1250000") and parses it strictly: "12.5", "1e3", "-5", "+5", "0", "007", blanks and
---     letters are refused (invalid_amount); more than 10 digits = amount_too_large. So no client-side
---     float can ever round into the ledger.
+--   * Amounts are whole rupiah in a BIGINT column, never negative: named CHECK finance_entries_amount_range
+--     = 1 .. 9 999 999 999 for income and expense, 0 .. 9 999 999 999 for the opening balance only
+--     (owner decision 2026-11-10: a period may honestly start with Rp 0 in the cash box; without this
+--     the "Saldo awal belum dicatat" hint could never be cleared). No floating-point or numeric column
+--     anywhere in this module. The API takes the amount as TEXT of digits only ("1250000") and parses it
+--     strictly: "12.5", "1e3", "-5", "+5", "007", "00", blanks and letters are refused (invalid_amount);
+--     "0" is refused with the same hint unless the type is opening; more than 10 digits =
+--     amount_too_large. So no client-side float can ever round into the ledger.
 --   * The type gives the sign. NO stored balance: totals are computed from the entries on every read:
 --     Saldo awal = the Aktif opening entry of the period (0 if none); Total Pemasukan / Pengeluaran =
 --     sums of Aktif income / expense entries; Total Saldo = Saldo awal + Pemasukan - Pengeluaran.
@@ -120,7 +123,7 @@ create table if not exists nexus.finance_entries (
   entry_no          bigint not null unique check (entry_no >= 1),
   number_text       text not null unique check (number_text ~ '^KAS-[0-9]{4,}$'),
   entry_type        text not null check (entry_type in ('income', 'expense', 'opening')),
-  amount            bigint not null check (amount between 1 and 9999999999),
+  amount            bigint not null,
   entry_date        date not null check (entry_date >= date '2000-01-01' and isfinite(entry_date)),
   description       text not null check (description = btrim(description) and char_length(description) between 1 and 200),
   notes             text check (notes is null or (char_length(notes) between 1 and 500 and notes !~ '^\s' and notes !~ '\s$')),
@@ -136,8 +139,23 @@ create table if not exists nexus.finance_entries (
   constraint finance_entries_void check ((status = 'voided') = (void_reason is not null and voided_by is not null and voided_at is not null)),
   constraint finance_entries_not_self check (corrects_entry_id is distinct from id),
   constraint finance_entries_opening_no_link check (entry_type <> 'opening' or corrects_entry_id is null),
-  constraint finance_entries_idempotency unique (created_by, idempotency_key)
+  constraint finance_entries_idempotency unique (created_by, idempotency_key),
+  -- A-FN1 + owner 2026-11-10: never negative; Rp 0 only for the opening balance.
+  constraint finance_entries_amount_range check (amount between 0 and 9999999999 and (amount >= 1 or entry_type = 'opening'))
 );
+-- Upgrade path (the local dev stack got the first version of this file): the first version had an
+-- unnamed column CHECK "amount between 1 and 9999999999" (finance_entries_amount_check). Replace it by the
+-- named rule above, so a fresh install and an upgraded install end identical. Re-running changes nothing.
+alter table nexus.finance_entries drop constraint if exists finance_entries_amount_check;
+do $$
+begin
+  if not exists (select 1 from pg_constraint c
+                 where c.conrelid = 'nexus.finance_entries'::regclass and c.conname = 'finance_entries_amount_range') then
+    alter table nexus.finance_entries
+      add constraint finance_entries_amount_range check (amount between 0 and 9999999999 and (amount >= 1 or entry_type = 'opening'));
+  end if;
+end
+$$;
 -- K3 a / A-FN21: at most one Aktif opening entry per period.
 create unique index if not exists finance_entries_one_opening on nexus.finance_entries (period_id)
   where entry_type = 'opening' and status = 'active';
@@ -405,7 +423,9 @@ begin
 end
 $$;
 
--- A-FN1 / FN-08: whole rupiah from a digits-only text. 1 .. 9 999 999 999 (10 digits). Never a float.
+-- A-FN1 / FN-08: whole rupiah from a digits-only text. 0 .. 9 999 999 999 (10 digits). Never a float.
+-- "0" is accepted HERE only so the caller can allow it for an opening balance; finance_entry_record
+-- refuses 0 for income and expense with the same hint (owner 2026-11-10). No leading zeros ("007", "00").
 create or replace function nexus._fn_parse_amount(p_amount text)
 returns bigint
 language plpgsql immutable set search_path = ''
@@ -413,8 +433,8 @@ as $$
 declare
   v text := btrim(coalesce(p_amount, ''));
 begin
-  if v !~ '^[1-9][0-9]*$' then
-    raise exception 'The amount must be a whole number of rupiah, at least 1' using errcode = '22023', hint = 'invalid_amount', detail = 'amount';
+  if v !~ '^(0|[1-9][0-9]*)$' then
+    raise exception 'The amount must be a whole number of rupiah' using errcode = '22023', hint = 'invalid_amount', detail = 'amount';
   end if;
   if char_length(v) > 10 then
     raise exception 'The amount is too large (max 9999999999)' using errcode = '22023', hint = 'amount_too_large', detail = 'amount';
@@ -980,7 +1000,8 @@ $$;
 --    transaction. There is NO edit function (K2 a).
 -- =============================================================================================
 
--- 6.1 Record (F2, F3, F5). p_entry_type income / expense / opening; p_amount = digits only (F1);
+-- 6.1 Record (F2, F3, F5). p_entry_type income / expense / opening; p_amount = digits only (F1),
+-- "1".."9999999999", or "0" for an opening balance only;
 -- p_idempotency_key = one uuid per form submit (A-FN10); p_corrects_entry_id = "Koreksi atas" (F2 in the
 -- header); files 0..3. Returns the entry, its number, and replayed = true when the key was seen before.
 create or replace function nexus.finance_entry_record(
@@ -1022,6 +1043,10 @@ begin
   v_type := nexus._fn_type(p_entry_type, false);
   v_date := nexus._fn_check_entry_date(p_entry_date);
   v_amount := nexus._fn_parse_amount(p_amount);
+  -- Owner 2026-11-10: Rp 0 only for the opening balance; income and expense start at Rp 1.
+  if v_amount = 0 and v_type <> 'opening' then
+    raise exception 'The amount must be at least 1 rupiah' using errcode = '22023', hint = 'invalid_amount', detail = 'amount';
+  end if;
   v_desc := nexus._fn_required(nexus._fn_text(p_description, 200, 'description'), 'description', 'text_required');
   v_notes := nexus._fn_long_text(p_notes, 500, 'notes');
   if p_corrects_entry_id is not null then
