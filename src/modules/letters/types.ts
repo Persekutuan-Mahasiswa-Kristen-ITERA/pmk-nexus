@@ -346,7 +346,14 @@ export function sniffLetterFileType(bytes: Uint8Array): LetterFileMimeType | nul
 
 function isControlChar(ch: string): boolean {
   const code = ch.codePointAt(0) ?? 0;
-  return code < 0x20 || (code >= 0x7f && code <= 0x9f);
+  // Also drop invisible and bidi-override characters, so a name cannot display as "scan_fdp.exe".
+  return (
+    code < 0x20 ||
+    (code >= 0x7f && code <= 0x9f) ||
+    (code >= 0x200b && code <= 0x200f) ||
+    (code >= 0x202a && code <= 0x202e) ||
+    (code >= 0x2066 && code <= 0x2069)
+  );
 }
 
 /**
