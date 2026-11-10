@@ -4,7 +4,7 @@ Letter register (Surat Masuk, Surat Keluar) with system numbering, letter files,
 Spec: `docs/modules/letters.md` (incl. the "Ambil nomor" amendment). Design: `docs/design/letters.md`. Decisions: D-024, D-025.
 Database: `supabase/migrations/20261110100000_nexus_letters.sql` (27 public functions `nexus.letter_*`) and `20261110100100_nexus_letters_storage.sql` (bucket `nexus-letter-files`). Reference: `supabase/README.md` section 3.2.
 
-Status (2026-11-10): **contract round 2** (`types.ts`): owner approved the choices and the gap copy (2026-11-09); adapted to the database fix 7e510bd (`p_letter_version` on Terbitkan, `letter_my_request_caps`, new queue columns). No server code, no PI-CORE wrapper, no UI yet.
+Status (2026-11-10): **contract round 2** (`types.ts`): owner approved the choices and the gap copy (2026-11-09); adapted to the database fix 7e510bd (`p_letter_version` on Terbitkan, `letter_my_request_caps`, new queue columns). Server layer built (`server/**`, `src/lib/picore/letters.ts`, routes `/api/letters/files` and `/api/letters/export`); UI in progress.
 
 ## Layout (planned)
 
@@ -21,6 +21,7 @@ Status (2026-11-10): **contract round 2** (`types.ts`): owner approved the choic
 | `server/files.ts` | server | Upload handler for `POST /api/letters/files` (magic bytes, own folder, cap) |
 | `server/export.ts`, `server/export-file.ts` | server | `POST /api/letters/export` (xlsx / csv / pdf, `total_count` cut check) |
 | `ui/` | both | Screens and components (frontend engineer) |
+| `src/app/(app)/surat/actions.ts` | server | The Server Actions the screens import (through `ui/server-actions.ts`): thin `"use server"` wrappers with the contract names above, each calls `getAccessState()` first (OPEN_QUESTIONS F2), then the module action. Also `loadLetterYears`, `loadMyRequestCaps`, `loadLetterQueueCounts`, `loadNumberingHistory` for Client Component reads |
 
 The RPC wrappers and every Storage call go in `src/lib/picore/letters.ts`: the functions read PI-CORE names, periods and assignments, so they belong to the single PI-CORE access layer (CLAUDE.md 4).
 

@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Dialog } from "radix-ui";
-import { LayoutDashboard, Menu, Package, Users, X, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Mail, Menu, Package, Users, X, type LucideIcon } from "lucide-react";
 import { SignOutAction } from "@/components/auth/sign-out-action";
 import { cn } from "@/lib/utils";
 import { isActiveHref, type NavData, type NavIcon } from "./nav";
@@ -13,6 +13,7 @@ import { isActiveHref, type NavData, type NavIcon } from "./nav";
 const ICONS: Record<NavIcon, LucideIcon> = {
   dashboard: LayoutDashboard,
   group: Users,
+  letters: Mail, // an envelope: the drawer item for letters (letters design 4.1)
   inventory: Package, // a box: the drawer item for items and loans (design 4.1)
 };
 

@@ -8,6 +8,9 @@ import { getQueueCounts } from "@/modules/inventory-borrowing/server/borrowing";
 import { getInventoryStatusCounts } from "@/modules/inventory-borrowing/server/catalog";
 import { inventoryCapabilities } from "@/modules/inventory-borrowing/types";
 import { InventoryStatusCard, InventoryStatusSkeleton } from "@/modules/inventory-borrowing/ui/dashboard-card";
+import { getLetterDashboardCounts } from "@/modules/letters/server/register";
+import { letterCapabilities } from "@/modules/letters/types";
+import { LettersCard, LettersCardSkeleton } from "@/modules/letters/ui/dashboard-card";
 import { getActiveMemberCount } from "@/modules/member-data/server/queries";
 import { memberDataCapabilities } from "@/modules/member-data/types";
 import { MemberCountCard, MemberCountSkeleton } from "@/modules/member-data/ui/dashboard-card";
@@ -29,7 +32,8 @@ export async function generateMetadata(): Promise<Metadata> {
 /**
  * Dashboard (D-023 pilot). Real data only: the header card with the period and a greeting by first name
  * (the h1; the tab title stays "Dashboard"), then one card per BUILT module the person may open
- * (Inventaris, Data Anggota). Surat, Notulensi and Keuangan get no card until they exist (R-24, R-38).
+ * (Inventaris, Data Anggota, Surat Menyurat). Notulensi and Keuangan get no card until they exist
+ * (R-24, R-38).
  * The Dashboard module itself is built last.
  */
 export default async function DashboardPage() {
@@ -40,7 +44,9 @@ export default async function DashboardPage() {
   const { fullName, activePeriodLabel } = state.member;
   const inventory = inventoryCapabilities(state);
   const members = memberDataCapabilities(state);
-  const cardCount = (inventory.canViewCatalog ? 1 : 0) + (members.canView ? 1 : 0);
+  // Surat Menyurat (letters design 15): letters.view only, and absent without an active period (R7).
+  const showLetters = letterCapabilities(state).canViewRegister && activePeriodLabel !== null;
+  const cardCount = (inventory.canViewCatalog ? 1 : 0) + (members.canView ? 1 : 0) + (showLetters ? 1 : 0);
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-5 md:max-w-3xl md:gap-6">
@@ -75,6 +81,11 @@ export default async function DashboardPage() {
               <MemberCount />
             </Suspense>
           ) : null}
+          {showLetters ? (
+            <Suspense fallback={<LettersCardSkeleton slot={2} />}>
+              <LettersCount />
+            </Suspense>
+          ) : null}
         </div>
       ) : null}
 
@@ -106,4 +117,11 @@ async function InventoryStatus({ canApprove }: { canApprove: boolean }) {
 async function MemberCount() {
   const count = await getActiveMemberCount();
   return <MemberCountCard result={count.ok ? { kind: "ok", count: count.data } : { kind: "error" }} />;
+}
+
+/** letters.view, checked again by getLetterDashboardCounts and the database (L11). Counts only. */
+async function LettersCount() {
+  const counts = await getLetterDashboardCounts();
+  if (counts.ok && counts.data.periodId === null) return null; // no active period: the card is absent (15.2)
+  return <LettersCard slot={2} result={counts.ok ? { kind: "ok", counts: counts.data } : { kind: "error" }} />;
 }

@@ -53,16 +53,19 @@ export function HeaderStat({
   value,
   note,
   warn = false,
+  twoLineLabel = false,
 }: {
   label: string;
   value: number;
   note?: string;
   /** A count that needs attention (not zero): the figure turns warning brown, the label says why. */
   warn?: boolean;
+  /** Reserve two label lines on a phone so the figures of a row line up when one label wraps. */
+  twoLineLabel?: boolean;
 }) {
   return (
     <div className="flex min-w-0 flex-col rounded-lg border border-gold-tint-line bg-surface px-3 pt-2.5 pb-3 md:px-4">
-      <dt className="text-body-sm text-ink-meta">{label}</dt>
+      <dt className={`text-body-sm text-ink-meta ${twoLineLabel ? "min-h-9 md:min-h-0" : ""}`}>{label}</dt>
       <dd className={`nx-figure-md mt-1 ${warn ? "text-warn" : "text-ink"}`}>
         <CountUp value={value} />
       </dd>

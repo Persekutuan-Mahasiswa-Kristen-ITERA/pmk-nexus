@@ -6,7 +6,7 @@ import { memberDataCapabilities } from "@/modules/member-data/types";
  * Side drawer items (D-021): only modules that are built AND that the person may open.
  * Stitch order and icons. Hiding an item is convenience only; every page checks access itself.
  */
-export type NavIcon = "dashboard" | "group" | "inventory";
+export type NavIcon = "dashboard" | "group" | "letters" | "inventory";
 
 export type NavItem = {
   href: string;
@@ -26,7 +26,10 @@ export function buildNavData(state: Extract<AccessState, { kind: "member" }>): N
   if (memberDataCapabilities(state).canView) {
     items.push({ href: "/data-anggota", label: "Data Anggota", icon: "group" });
   }
-  // Finance, Notulensi Rapat and Surat Menyurat join here (before Inventaris, Stitch order) when they ship.
+  // Finance and Notulensi Rapat join here (before Surat Menyurat, Stitch order) when they ship.
+  // Surat Menyurat shows for EVERY active member (D-025, exception to D-021): anyone may request a letter
+  // ("Permohonan Saya" is a fixed right); the register segments inside keep their own keys.
+  items.push({ href: "/surat", label: "Surat Menyurat", icon: "letters" });
   if (inventoryCapabilities(state).canViewCatalog) {
     // inventory.view is baseline for every active member (D01), so almost everyone sees it.
     items.push({ href: "/inventaris", label: "Manajemen & Inventaris", icon: "inventory" });

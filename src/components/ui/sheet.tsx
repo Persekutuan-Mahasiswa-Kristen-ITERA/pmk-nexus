@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode, RefObject } from "react";
+import { useEffect, useRef, type ReactNode, type RefObject } from "react";
 import { Dialog } from "radix-ui";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,10 @@ import { cn } from "@/lib/utils";
  *
  * Header: Playfair title plus a 44 px "Tutup". Body scrolls; header and footer stay. While `busy`,
  * closing is refused (Escape, veil, Tutup) so a running save is never cut off.
+ *
+ * Sheets opened from a plain button (not a Radix Trigger) would drop focus on <body> when they close;
+ * the element that had focus when the sheet opened gets it back instead (R-32), unless the caller
+ * decides where focus goes (`onCloseAutoFocus`).
  */
 export function Sheet({
   open,
@@ -38,6 +42,13 @@ export function Sheet({
   /** Where focus goes on close; call event.preventDefault() and focus something else (e.g. a new line). */
   onCloseAutoFocus?: (event: Event) => void;
 }) {
+  const opener = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (open && document.activeElement instanceof HTMLElement && document.activeElement !== document.body) {
+      opener.current = document.activeElement;
+    }
+  }, [open]);
+
   return (
     <Dialog.Root
       open={open}
@@ -58,7 +69,17 @@ export function Sheet({
               initialFocusRef.current.focus();
             }
           }}
-          onCloseAutoFocus={onCloseAutoFocus}
+          onCloseAutoFocus={(event) => {
+            if (onCloseAutoFocus) {
+              onCloseAutoFocus(event);
+              return;
+            }
+            const target = opener.current;
+            if (target && target.isConnected) {
+              event.preventDefault();
+              target.focus();
+            }
+          }}
           className={cn(
             // Phone: sheet on the bottom edge, top corners 12 px, at most 90 % of the visible height.
             "fixed inset-x-0 bottom-0 z-50 flex max-h-[90dvh] flex-col rounded-t-xl border border-b-0 border-hairline bg-surface shadow-elevation-2",

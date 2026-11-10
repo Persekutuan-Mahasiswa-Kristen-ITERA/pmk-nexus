@@ -78,10 +78,13 @@ function saveBlob(blob: Blob, fileName: string) {
 export function ExportMenu({
   intro = "Unduh semua hasil filter sebagai:",
   formats = ["xlsx", "csv", "pdf"],
+  note,
   onExport,
 }: {
   intro?: string;
   formats?: ExportFormat[];
+  /** Plain line under the formats (Letters 14.1: "Surat yang dibatalkan ikut diunduh ..."). */
+  note?: string;
   onExport: (format: ExportFormat) => Promise<ExportOutcome>;
 }) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
@@ -173,6 +176,7 @@ export function ExportMenu({
               </li>
             ))}
           </ul>
+          {note ? <p className="px-3 pt-1 pb-2 text-body-sm text-ink-body">{note}</p> : null}
         </div>
       </details>
 
