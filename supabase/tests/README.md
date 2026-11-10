@@ -1,9 +1,9 @@
 # NEXUS database tests
 
-Four pgTAP files: `nexus_access_control.test.sql` (engine, rules, D-015, D-022 amendment), `nexus_member_data.test.sql` (Member Data module, D-019), `nexus_inventory_borrowing.test.sql` (Inventory and Borrowing, D-022) and `nexus_letters.test.sql` (Letters, D-024/D-025). All work the same way; `nexus_access_control.test.sql` is described first. **Local / throwaway database only.** It inserts test personas into PI-CORE tables (`auth.users`, `public.members`, `public.periods`, `public.assignments`), switches the active period, and creates a helper schema `nexus_test`, all inside one transaction that ends with `ROLLBACK`. Never run it against the hosted project.
+Six pgTAP files: `nexus_access_control.test.sql` (engine, rules, D-015, D-022 amendment), `nexus_member_data.test.sql` (Member Data module, D-019), `nexus_inventory_borrowing.test.sql` (Inventory and Borrowing, D-022), `nexus_letters.test.sql` (Letters, D-024/D-025), `nexus_minutes.test.sql` (Meeting Minutes, D-027) and `nexus_finance.test.sql` (Finance, D-028). All work the same way; `nexus_access_control.test.sql` is described first. **Local / throwaway database only.** It inserts test personas into PI-CORE tables (`auth.users`, `public.members`, `public.periods`, `public.assignments`), switches the active period, and creates a helper schema `nexus_test`, all inside one transaction that ends with `ROLLBACK`. Never run it against the hosted project.
 
 ## Safety guards (W1, M1, L5)
-All four files: (1) the setting below, (2) a data guard that stops if any email is not a fake test address, (3) a dev-stack guard that stops if the NEXUS dev stack's seed accounts (`@nexus.test`) exist, because the files need a FRESH database. All three run before anything is written. The letters file adds (4) a fresh-install guard: it stops if any letter, request or counter row exists (it checks exact numbers; counters are table rows and are rolled back, so it can run repeatedly in the same container).
+All six files: (1) the setting below, (2) a data guard that stops if any email is not a fake test address, (3) a dev-stack guard that stops if the NEXUS dev stack's seed accounts (`@nexus.test`) exist, because the files need a FRESH database. All three run before anything is written. The letters file adds (4) a fresh-install guard: it stops if any letter, request or counter row exists (it checks exact numbers; counters are table rows and are rolled back, so it can run repeatedly in the same container). The minutes file stops if any minute or minute export-log row exists; the finance file stops if any entry or finance export-log row exists or the KAS counter is not 0 (the counter is a table row, rolled back, so both files can also run repeatedly in the same container).
 
 ### W1
 The file refuses to run unless the session sets `nexus.allow_destructive_tests = 'yes'`. The guard sits right after `BEGIN`, and the file starts with `\set ON_ERROR_STOP on`, so a run without the setting stops at the guard and writes nothing (even a runner that ignored `ON_ERROR_STOP` would only meet an aborted transaction). The guard cannot test itself; check it by hand once: run the file WITHOUT the setting and confirm it stops with "local throwaway database only".
@@ -31,11 +31,17 @@ A `-c "set ..."` before `-f` does NOT work: each `-c`/`-f` item is separate and 
      psql "postgresql://postgres:postgres@127.0.0.1:54399/postgres" -X -At -f supabase/tests/nexus_inventory_borrowing.test.sql
    PGOPTIONS='-c nexus.allow_destructive_tests=yes' \
      psql "postgresql://postgres:postgres@127.0.0.1:54399/postgres" -X -At -f supabase/tests/nexus_letters.test.sql
+   PGOPTIONS='-c nexus.allow_destructive_tests=yes' \
+     psql "postgresql://postgres:postgres@127.0.0.1:54399/postgres" -X -At -f supabase/tests/nexus_minutes.test.sql
+   PGOPTIONS='-c nexus.allow_destructive_tests=yes' \
+     psql "postgresql://postgres:postgres@127.0.0.1:54399/postgres" -X -At -f supabase/tests/nexus_finance.test.sql
    ```
    Run the files with `-f <path>` (not through stdin): the inventory file includes `support/storage_stub.sql` with `\ir`, relative to its own location. If the host has no `psql`, copy the folder into the container (`docker cp supabase/tests <container>:/tmp/tests`) and run `docker exec -e PGOPTIONS=... <container> psql -U postgres -h localhost -d postgres -X -At -f /tmp/tests/<file>`.
    Any line starting with `not ok` is a failure. (`pg_prove` also works with the same `PGOPTIONS`.)
 
 Assumes a fresh NEXUS install (exactly the 36 default rules D01-D36 with D30 retired, 36 seed log rows + 1 retirement row, empty export logs, an empty catalog, and no members other than the test personas). Sequences (INV-/PJM- numbers) are not rolled back by Postgres; the inventory file therefore checks code format and order, never fixed numbers, and can run repeatedly in the same container.
+
+**Status 2026-11-10 (Meeting Minutes and Finance, migrations 20261111100000 .. 20261111200100 = M12-M16, steps 10f-10j in `../README.md`):** `nexus_access_control.test.sql` **247/247** and `nexus_member_data.test.sql` **204/204** (both updated for D37: 37 default rules, 36 enabled, 38 seed/retire log rows; same totals as before), `nexus_inventory_borrowing.test.sql` **549/549**, `nexus_letters.test.sql` **485/485** (unchanged), the new `nexus_minutes.test.sql` **255/255** and the new `nexus_finance.test.sql` **315/315**, in a FRESH throwaway `supabase/postgres:17.11.0.003` container WITH the Storage stub, after PI-CORE's 5 migrations and the 16 NEXUS migrations. WITHOUT the stub: the same 247/204/549/485/255/315, of which 26 (inventory), 26 (letters), 14 (minutes) and 18 (finance) Storage checks report `# SKIP`. (Count with the plan line `1..N` plus `grep -c '^not ok'` = 0: one letters `ok` line is prefixed by a psql notice, so `grep -c '^ok'` shows 484; the inventory output keeps its one expected `ERROR` line from the stub refusing a `@nexus.test` member.) The first draft of the minutes file stopped at its old line 454 with `null value in column "id" of relation "ids"`: a TEST bug, not a migration bug (a sub-select in the SAME statement as `minute_record()` cannot see the row the function inserted; split into two statements). Idempotence: M12-M16 applied a second time on the same database; `pg_dump -n nexus` (DDL + data, 16,465 lines) plus all `nexus`/`storage` policies, buckets, rule and log counts identical (only pg_dump's random `\restrict` token differs); the minutes, finance and engine files still pass on that database. Fault checks: `nexus._fn_guard` replaced by a no-op -> exactly the 5 immutability checks of finance section 8 fail; `nexus._mn_is_recordable_unit` accepting any unit -> exactly the 3 unit checks (division, unknown, inactive) of minutes section 4 fail. Guards checked by hand for both new files: without the setting they stop at the W1 guard; with an `@nexus.test` account present they stop at the dev-stack guard; nothing written either time. Two-session check (outside pgTAP, committed fixtures in a throwaway container): two `finance_entry_record` calls by the same Treasurer with the same submit key at the same moment -> the second waited about 3 s on the counter lock and returned the FIRST entry (`replayed = true`); the other Treasurer saving at the same moment got `KAS-0002`; 2 entries, counter 2 (FN-17, FN-18). The local dev stack got M12-M16 with `pnpm db:migrate` (Storage off: M14 and M16 skipped themselves); no seed change was needed.
 
 **Status 2026-11-10 (Letters, migrations 20261110100000_nexus_letters and 20261110100100_nexus_letters_storage, steps 10d/10e in `../README.md`):** `nexus_access_control.test.sql` **247/247**, `nexus_member_data.test.sql` **204/204**, `nexus_inventory_borrowing.test.sql` **549/549** (all unchanged: no key, rule or existing object changed) and the new `nexus_letters.test.sql` **481/481** (451 + 5 after the owner's approval with "year mandatory": named CHECK present, hand update refused, `year_required` for false, null and false-with-other-changes; + 25 on 2026-11-10 for the backend-contract gaps: request detail returns the register row's current values, Terbitkan refuses a stale `p_letter_version` and keeps a register edit, `letter_my_request_caps()`, queue `letter_status` / `number_voided` / `period_total_count`, one version of the changed functions) in a FRESH throwaway `supabase/postgres:17.11.0.003` container WITH the Storage stub, after PI-CORE's 5 migrations and the 11 NEXUS migrations. WITHOUT the stub: the same 247/204/549/481, of which 26 Storage checks report `# SKIP` in the inventory file and 26 in the letters file. Idempotence: both letter files applied a second time; `pg_dump -n nexus` (DDL + data) plus all `nexus`/`storage` policies and buckets identical (only pg_dump's random `\restrict` token differs). Fault check: `nexus._lt_require_not_own` replaced by a no-op -> exactly the 4 L6 checks fail (LT-11 x3, LT-33); restored -> 451/451 (run before the year change). The local dev stack, after re-applying the edited M10 and the seed, has a `nexus` schema identical to a fresh install (`pg_dump --schema-only -n nexus`, no diff). Two-session check (outside pgTAP, committed fixtures in the throwaway container): two secretaries registering an outgoing letter at the same moment got `.../001` and `.../002`, the second session waited about 3.2 s on the counter row lock; two secretaries pressing "Ambil nomor" on one request at the same moment: the first got the number, the second waited and was refused with `state_changed`; one letter for the request, counter 3, 3 letters with 3 distinct numbers.
 
@@ -56,6 +62,9 @@ Letters file: personas 1-18 as in the engine file (P-OLD = 14 is Sekretaris Jend
 Inventory file adds P-KADIV-LOG (19, Kepala Divisi in Logistik), P-KADIV-AKO (20, Kepala Divisi in Akomodasi) and P-SEKDEP-OPS (21, Sekretaris Departemen in Departemen Operasional); P-OLD (14) also holds Staff in Logistik in the OLD period. During the period-switch section, P-SEKDEP (6) becomes Kepala Departemen Operasional and P-STAFF-PUB (10) Staff in Logistik of the NEW period.
 
 Member-data file adds P-KABIRO (19, Kepala Biro in Biro Kewirausahaan) and P-MULTI (20, Sekretaris Departemen in Departemen CMIT + Staff in Musik: the MD-16 case, because Departemen Internal's secretary seat is held by P-SEKDEP, and the "filter matches a non-primary assignment" case). PI-CORE allows one holder per unique position, unit, and period, so: P-BEND = Bendahara Umum 1; P-BEND-SEK = Bendahara Umum 2 + Sekretaris Departemen of Departemen **Talenta**; P-ADMIN-BEND = P-BEND promoted to `admin` mid-test; P-SEKDEP2 = secretary of Pelayanan Khusus + Biro Kewirausahaan. P-TEMPPW (auth-login spec) = P-PLAIN with `must_change_password = true` (section 7). PI-CORE's column default is `true`, so section 7 first sets every persona to `false`.
+
+Minutes file: personas as in the engine file plus P-SEKUM1 (19), P-KADEP-INT (21, Kepala Departemen of Departemen Internal: same unit as P-SEKDEP, D37), P-KABIRO (22, Kepala Biro Kewirausahaan, D37) and P-KADIV (23, Kepala Divisi Logistik: nothing). P-KADEP-OPS (7) also reads Departemen Operasional through D37; P-INACTIVE (15) is Kepala Departemen Eksternal, deactivated. During the period switch P-PLAIN (11) becomes Sekretaris Departemen Internal and P-SEKDEP (6) Sekretaris Departemen Eksternal of the NEW period (MN-08, MN-23).
+Finance file: personas as in the engine file plus P-SEKUM1 (19) and P-KADIV (20). P-OLD (14) is Bendahara Umum 1 of the OLD period 2090/2091, which is active first so he keeps its books (the FN-10 example: 1.000.000 + 500.000 - 200.000 = 1.300.000); P-INACTIVE (15) is Sekretaris Umum 2, deactivated. During the period switch P-PLAIN (11) becomes Bendahara Umum 1 of the NEW period (AC-39).
 
 ## Checklist per table / policy
 
@@ -211,6 +220,70 @@ Fixes 2026-11-09 (section 16, migration 20261109100000): `inventory_export` and 
 | Terbitkan without "Ambil nomor"; a second "Ambil nomor" | `number_not_taken`, `state_changed` | section 11 |
 | Withdrawing the only file of an issued request letter | `last_issued_file` | section 11 |
 
+### Meeting Minutes tables (D-027). Every table: RLS on, SELECT-only policy, no client INSERT/UPDATE/DELETE grant, no delete or truncate (trigger), writes only through the SECURITY DEFINER functions
+| Table (policy) | Who reads | Who must get nothing | Writes | Test |
+|---|---|---|---|---|
+| `minutes` (`minutes_select`: `minutes.view` scope all, or the row's unit in the caller's view units) | BPH all (D04), BPH secretaries all, department/bureau secretaries own unit (D26), Kepala Departemen / Kepala Biro own unit (D37); "Seluruh organisasi" minutes: scope all only (N2 c) | other units' secretaries and heads, Kepala Divisi, staff, members, P-ADMIN (B18), P-OLD, P-INACTIVE, P-UNLINKED, anon | `minutes.manage` in the unit's scope via functions; unit, period, creator immutable; voided = read-only, never restored (trigger) | sections 4, 5, 6, 8, 11, 14 |
+| `minute_files` (parent visible; withdrawn files only for `minutes.manage` of that unit) | as `minutes` | readers (heads, BPH viewers) for withdrawn files | functions only; only the withdraw columns change, once | sections 7, 11, 12 |
+| `minute_history` (parent visible; `file_withdrawn` rows only for managers of the unit) | as `minutes` | as `minutes`; readers for withdraw rows | append-only | sections 6-8, 11, 12 |
+| `minute_export_logs` (NO policy, NO client grant) | nobody through the API | every client role | `minute_export()` only (writer check), append-only, no PII | section 10 |
+
+### Meeting Minutes functions (default rules D04, D05, D17, D20, D23, D26, D27, D37)
+| Persona | Read | Record, edit, void, files | Export | Test |
+|---|---|---|---|---|
+| P-SEKJEN, P-SEKUM1 | all units | all recordable units (root, BPH, departments, bureau; never a division, inactive or unknown unit) | all | MN-01 |
+| P-KETUM, P-BEND | all | no | all | MN-04 |
+| P-BEND-SEK (BPH + Sekretaris Departemen Talenta) | all | Talenta only | all | R7 |
+| P-SEKDEP, P-SEKDEP2 | own unit(s) | own unit(s) | own unit(s) | MN-02, MN-03, MN-07 |
+| Kepala Departemen, Kepala Biro (D37) | own unit; nothing with D37 disabled | no | no | MN-05 |
+| P-ADMIN, P-SUPER, P-PLAIN, P-STAFF-*, P-LECT, Kepala Divisi, P-OLD, P-INACTIVE, P-UNLINKED, no subject, anon | no | no | no | MN-06 |
+| Anyone, after a period switch | old minutes read-only (`closed_period`); a new secretary of the unit reads its earlier minutes; a moved secretary loses the old unit | | | MN-08, MN-12, MN-23 |
+
+### Storage bucket `nexus-minute-files` (private; policies on `storage.objects`)
+| Action | Allowed | Must be refused | Test |
+|---|---|---|---|
+| Upload (INSERT policy) | a `minutes.manage` holder (any scope), into `<own members.id>/<uuid>.<pdf|jpg|jpeg|png>`, while a period is active | readers (heads, BPH viewers), members, another member's folder, bad names/types, no active period, anon | section 13 |
+| Read / signed URL (SELECT policy) | whoever may read the parent minute; withdrawn files only managers of that unit | other units, members, unattached uploads, anon | section 13 |
+| Update / delete | nobody (no policy) | every client | section 13 |
+| Upload cap / migration guard | 10 unattached per 24 h; identical bucket = no-op | an 11th upload; a public bucket (`bucket_conflict`) | section 13 |
+
+### Finance tables (D-028; SENSITIVE). Every table: RLS on, SELECT-only policy, no client INSERT/UPDATE/DELETE grant, no delete or truncate (trigger), writes only through the SECURITY DEFINER functions
+| Table (policy) | Who reads | Who must get nothing (zero rows, tested per persona) | Writes | Test |
+|---|---|---|---|---|
+| `finance_entries` (`finance_entries_select`: `finance.view`) | all six BPH positions (D02), Treasurers (D24 includes view); every period (L8) | P-ADMIN, P-SUPER (B18), P-SEKDEP, P-KADEP-OPS, Kepala Divisi, staff, members, P-LECT, P-OLD (also his own old period), P-INACTIVE, P-UNLINKED, no subject, anon, everyone while no period is active | `finance.manage` via functions; NOTHING changes after saving except the void columns, once (trigger, also for the owner); amount CHECK 1..9 999 999 999 bigint; one Aktif Saldo awal per period (unique index) | sections 2, 5-8, 13, 15 |
+| `finance_entry_files` (`finance.view`; withdrawn proofs only `finance.manage`) | as entries | as entries; viewers for withdrawn proofs | functions only; only the withdraw columns change, once | sections 9, 13 |
+| `finance_entry_history` (`finance.view`; `file_withdrawn` rows only `finance.manage`) | as entries | as entries; viewers for withdraw rows | append-only | sections 5, 6, 9, 13 |
+| `finance_counter` (`finance.manage` only) | Treasurers | viewers (BPH), everyone else | inside `finance_entry_record` under a row lock; never goes back, never deleted (trigger) | sections 8, 13 |
+| `finance_export_logs` (NO policy, NO client grant) | nobody through the API (not even the Treasurer, A-FN15) | every client role | `finance_export()` only (writer check), append-only, no PII, no amounts, no search text | section 11 |
+
+### Finance functions (default rules D02, D03, D24, D25; no unit scope)
+| Persona | Read, summary, Dashboard card | Record, void, proof | Export | Test |
+|---|---|---|---|---|
+| P-BEND, P-BEND-SEK (Bendahara Umum 1/2) | yes | yes, active period only; either may void the other's entry (K6 a) | yes | FN-01 |
+| P-KETUM, P-SEKJEN, P-SEKUM1 | yes | no (direct calls refused) | yes | FN-02 |
+| P-ADMIN-BEND (P-BEND promoted to admin) | yes (through the position) | yes | yes | FN-06, AC-68 |
+| Everyone else, incl. P-ADMIN, P-SUPER, P-OLD, P-INACTIVE, P-UNLINKED | no | no | no | FN-03, FN-04 |
+| D24 disabled / D02 disabled | Treasurer keeps view through D02 / BPH loses view AND export (R15) | refused at once | | FN-06 |
+
+### Finance money and ledger rules
+| Rule | Refused with | Test |
+|---|---|---|
+| Amount not digits-only 1..9 999 999 999 ("12.5", "1e3", "-5", "+5", "0", "007", blanks, separators, letters, non-ASCII digits); more than 10 digits | `invalid_amount`, `amount_too_large` (function); CHECK 23514 (direct insert of 0, negative, too large) | sections 5, 8 |
+| No float/numeric/money column or function argument/result anywhere in the module; 10,000 x Rp 1 = Rp 10.000 and 1000 x Rp 9.999.999.999 exact | structure | sections 1, 12 |
+| Any change of a saved entry, un-void, a second void reason, counter going back, a renamed proof | `immutable_column` | section 8 |
+| Second Aktif Saldo awal; correction link to a voided/unknown entry or on an opening | `opening_exists` (and unique index 23505 by hand), `invalid_correction` | sections 5, 7, 8 |
+| Same submit key with other values; a repeat with the same values returns the first entry | `idempotency_conflict`; `replayed = true` | section 5 |
+| Void, proof or withdraw on an old-period entry; proof on a voided entry; second void | `closed_period`, `entry_voided`, `state_changed` | sections 6, 7, 15 |
+| Export over 1000 rows (before any log row) | `too_many_rows` | section 11 |
+
+### Storage bucket `nexus-finance-proofs` (private; policies on `storage.objects`)
+| Action | Allowed | Must be refused | Test |
+|---|---|---|---|
+| Upload (INSERT policy) | a `finance.manage` holder, into `<own members.id>/<uuid>.<pdf|jpg|jpeg|png>`, while a period is active | BPH viewers, members, another member's folder, bad names/types, no active period, anon | section 14 |
+| Read / signed URL (SELECT policy) | `finance.view`; withdrawn proofs only `finance.manage` | members, P-SEKDEP, P-OLD, P-INACTIVE, unattached uploads (also the uploader), anon | section 14 |
+| Update / delete | nobody (no policy) | every client | section 14 |
+| Upload cap / migration guard | 10 unattached per 24 h; identical bucket = no-op | an 11th upload; a public bucket (`bucket_conflict`) | section 14 |
+
 ### Functions
 | Check | Test |
 |---|---|
@@ -244,12 +317,16 @@ Fixes 2026-11-09 (section 16, migration 20261109100000): `inventory_export` and 
 
 **Letters (`nexus_letters.test.sql`):** LT-01 to LT-41 (DB side; LT-15 also by the two-session check above), LT-43 to LT-45, LT-47, LT-48, LT-50 to LT-52; letter-request parts of AC-27/30, AC-57, AC-64 (single holder); L6, L7, L9, R2-R8, R10, R11, R13, R15, R17, R19, R20; A-LT1, A-LT6..A-LT14, A-LT18..A-LT21, A-LT23, A-LT24; G3-G6, G9, G11, G12, P15. App/manual: LT-42, LT-46, LT-49 (screens), LT-38 file contents and WIB header (A-LT16), signed-URL expiry, the browser image resize and the magic-byte check before upload.
 
-**Still need module tables (later migrations):** AC-15, 41, 58 (finance/minutes closed-period edits, L7), 37 (assignment removal: same engine, add when convenient), 48 (signed URLs for minutes), 51 (no delete on later module tables).
+**Meeting Minutes (`nexus_minutes.test.sql`):** MN-01 to MN-15, MN-16 (DB side: stored verbatim), MN-17 to MN-20 (DB side; the magic-byte check and resize are app-level), MN-21 to MN-28, MN-30; N1 b (D37), N2 c (incl. "Seluruh organisasi" readable by scope all only), N3 a, A-MN2..A-MN8, A-MN13, A-MN15, A-MN18; L5, L7, L8, R11, R15, E9. App/manual: MN-29 (layout, leave prompt), MN-16 screen and export escaping, export file contents and WIB header, signed-URL expiry.
+
+**Finance (`nexus_finance.test.sql`):** FN-01 to FN-11, FN-12 (DB side: Jakarta date), FN-13 to FN-20, FN-21 (the hint is returned, never prefilled), FN-22, FN-23, FN-25 to FN-27 (DB side), FN-28, FN-29 (rows and summary; not file formats), FN-31, FN-32, FN-33 (data side), FN-34 (structural + detail JSON), FN-35, FN-37 (DB side: stored verbatim), FN-38, FN-39 (structural); K1 a to K6 a; AC-03, AC-14, AC-15, AC-39 to AC-41, AC-44, AC-45, AC-58, AC-68 for Finance; L1, L5, L7, L8, L12, R15. App/manual: FN-24 (soft date warning), FN-30 (CSV/Excel formula neutralising), FN-36 (layout), FN-40 (security review), file contents, signed-URL expiry.
+
+**Still open:** AC-37 (assignment removal: same engine, add when convenient).
 
 **Manual / app level:** AUTH-19/20/21 screens and the fail-closed "gangguan" state when the pending check errors (AR10), AC-31 (Dashboard cards), AC-34 (no session redirect; anon is already denied in DB), AC-63 (UI warning text), AC-08/AC-56 export file contents, UI parts of AC-19 and AC-61, the W1 guard (see above).
 
 ## Manual check on the hosted project after applying (read-only)
-1. As the owner in the SQL editor: `select count(*) from nexus.access_rules;` = 36 and `select count(*) from nexus.access_rule_log where action = 'seed';` = 36 (33 before 20261107100000, 31 before 20261106200000).
+1. As the owner in the SQL editor: `select count(*) from nexus.access_rules;` = 37 and `select count(*) from nexus.access_rule_log where action = 'seed';` = 37 (36 before 20261111100000, 33 before 20261107100000, 31 before 20261106200000).
 2. `select key from nexus.permissions where allow_baseline order by key;` = inventory.export, inventory.view, letters.export, letters.view, minutes.export, minutes.view.
 3. From the app with a regular member token: `.schema('nexus').rpc('my_permissions')` returns only `inventory.view`.
 4. With a regular member token: `.schema('nexus').from('access_rules').select()` returns `[]`.
@@ -260,3 +337,5 @@ Fixes 2026-11-09 (section 16, migration 20261109100000): `inventory_export` and 
 9. Storage (M7): Dashboard > Storage shows `nexus-borrowing-evidence` as private; an anonymous (no session) download of any file in it fails.
 10. Dashboard > Project Settings > Data API (or the PostgREST config): the transaction-end setting (`db-tx-end`) is the default `commit`, never `rollback-allowed` (otherwise a client could receive export rows while the export-log row is rolled back; see `../README.md` section 6). Read only; do not change it.
 11. After M10/M11: `select count(*) from nexus.letter_numbering_settings;` = 1; with a regular member token `.schema('nexus').rpc('letter_list', {p_type: 'incoming'})` fails with hint `permission_required` and `.rpc('letter_my_requests')` returns `[]`; with a BPH secretary token `.rpc('letter_numbering_settings')` returns the format `PMK/NEX`; Dashboard > Storage shows `nexus-letter-files` as private.
+12. After M12-M14: with a regular member token `.schema('nexus').rpc('minute_list')` fails with hint `permission_required`; with the `sekdep@`-like token of a department secretary `.rpc('minute_unit_options')` returns exactly her unit with `can_record = true`; with a Kepala Departemen token it returns his unit with `can_record = false`; Dashboard > Storage shows `nexus-minute-files` as private.
+13. After M15/M16 (Finance; sensitive): `select id, last_value from nexus.finance_counter;` = `t | 0` before go-live; with a regular member token AND with the System Admin's token (no BPH position) `.schema('nexus').rpc('finance_summary')` fails with hint `permission_required` and `.from('finance_entries').select()` returns `[]`; with a BPH (non-Treasurer) token `.rpc('finance_entry_record', {...})` fails with `permission_required`; Dashboard > Storage shows `nexus-finance-proofs` as private.

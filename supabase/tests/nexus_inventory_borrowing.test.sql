@@ -372,8 +372,9 @@ select is((select count(*)::int from information_schema.columns c
            where c.table_schema = 'nexus' and c.column_name ~* '(email|phone|nim|nip|whatsapp)'), 0,
   'IB-42/IB-46: no nexus table has a contact or identity-number column');
 select is((select count(*)::int from information_schema.columns c
-           where c.table_schema = 'nexus' and c.column_name ~* '(deposit|fine|payment|price|amount)'), 0,
-  'IB-31: no deposit, fine or payment column exists');
+           where c.table_schema = 'nexus' and (c.table_name like 'inventory%' or c.table_name like 'borrowing%')
+             and c.column_name ~* '(deposit|fine|payment|price|amount)'), 0,
+  'IB-31: no deposit, fine or payment column exists in Inventory and Borrowing (Finance has its own amount, D-028)');
 select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
            where n.nspname = 'nexus' and (p.proname like 'inventory\_%' or p.proname like 'borrowing\_%')
              and p.oid <> 'nexus.borrowing_request_detail_by_ref(text)'::regprocedure
@@ -410,12 +411,12 @@ select throws_ok($$insert into nexus.permissions (key, module, label, descriptio
 select ok((select not r.is_enabled from nexus.access_rules r where r.default_code = 'D30')
           and exists (select 1 from nexus.retired_default_rules x where x.default_code = 'D30'),
   'D-022: D30 is retired (disabled and listed), not deleted');
-select is((select count(*)::int from nexus.access_rules where default_code is not null), 36,
-  'AC-77: 36 default rules exist (D01-D36)');
-select is((select count(*)::int from nexus.access_rules where default_code is not null and is_enabled), 35,
-  'AC-77: 35 of them are enabled');
-select is((select count(*)::int from nexus.access_rule_log where action = 'seed' and actor_member_id is null), 36,
-  'seed: 36 seed log rows');
+select is((select count(*)::int from nexus.access_rules where default_code is not null), 37,
+  'AC-77: 37 default rules exist (D01-D37; D37 = minutes, D-027)');
+select is((select count(*)::int from nexus.access_rules where default_code is not null and is_enabled), 36,
+  'AC-77: 36 of them are enabled');
+select is((select count(*)::int from nexus.access_rule_log where action = 'seed' and actor_member_id is null), 37,
+  'seed: 37 seed log rows');
 select is((select count(*)::int from nexus.access_rule_log l join nexus.access_rules r on r.id = l.rule_id
            where r.default_code = 'D30' and l.action = 'disable' and l.actor_member_id is null), 1,
   'the retirement of D30 is logged once (actor = migration)');

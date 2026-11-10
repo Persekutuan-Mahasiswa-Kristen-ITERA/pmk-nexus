@@ -283,13 +283,13 @@ select throws_ok($$insert into nexus.permissions (key, module, label, descriptio
   'L12: the catalog constraint refuses a baseline-safe *.approve key');
 select is((select count(*)::int from nexus.permission_scopes where scope <> 'all'), 6,
   'only minutes.* (3 keys x 2 unit scopes) accept unit scopes');
-select is((select count(*)::int from nexus.access_rules where default_code is not null and is_enabled), 35,
-  'seed: 35 enabled default rules (D01-D36 without the retired D30, D-022)');
+select is((select count(*)::int from nexus.access_rules where default_code is not null and is_enabled), 36,
+  'seed: 36 enabled default rules (D01-D37 without the retired D30; D-022, D37 = D-027)');
 select ok((select not is_enabled from nexus.access_rules where default_code = 'D30')
           and exists (select 1 from nexus.retired_default_rules where default_code = 'D30'),
   'D-022: D30 is retired (disabled, kept, listed in retired_default_rules)');
-select is((select count(*)::int from nexus.access_rule_log where action = 'seed' and actor_member_id is null), 36,
-  'seed: 36 seed log rows without an actor');
+select is((select count(*)::int from nexus.access_rule_log where action = 'seed' and actor_member_id is null), 37,
+  'seed: 37 seed log rows without an actor (D37 added by 20261111100000)');
 select is((select position_id from nexus.access_rules where default_code = 'D15'),
           nexus_test.pos('bph', 'Sekretaris Jenderal'), 'seed: D15 stores the Sekretaris Jenderal position id');
 select ok((select org_unit_id = nexus_test.unit('Departemen Operasional') and include_child_units
@@ -360,9 +360,9 @@ select ok(not nexus.has_permission('letters.view'), 'AC-03: P-ADMIN cannot view 
 select ok(not nexus.has_permission('member_data.view'), 'AC-03: P-ADMIN cannot view Member Data');
 select is((select array_agg(permission_key order by permission_key) from nexus.my_permissions()),
           array['inventory.view'], 'AC-68: being admin alone adds no business rights');
-select is((select count(*)::int from nexus.list_access_rules()), 36, 'AC-02: P-ADMIN lists all 36 rules (incl. the retired D30)');
-select is((select count(*)::int from nexus.access_rules), 36, 'P-ADMIN can read the rules table');
-select is((select count(*)::int from nexus.access_rule_log), 37, 'L3: P-ADMIN can read the log (36 seed rows + the D30 retirement)');
+select is((select count(*)::int from nexus.list_access_rules()), 37, 'AC-02: P-ADMIN lists all 37 rules (incl. the retired D30)');
+select is((select count(*)::int from nexus.access_rules), 37, 'P-ADMIN can read the rules table');
+select is((select count(*)::int from nexus.access_rule_log), 38, 'L3: P-ADMIN can read the log (37 seed rows + the D30 retirement)');
 select is((select count(*)::int from nexus.list_access_rules() where stale_reason is not null), 0,
   'no default rule is stale on a fresh database');
 
@@ -389,7 +389,7 @@ select ok(not nexus.has_permission('minutes.manage'), 'AC-07: P-KETUM cannot man
 select ok(not nexus.has_permission('letters.manage'), 'AC-07: P-KETUM cannot manage letters');
 select ok(not nexus.has_permission('inventory.manage'), 'AC-07: P-KETUM cannot manage inventory');
 select ok(not nexus.has_permission('borrowing.approve'), 'AC-07: P-KETUM cannot approve borrowing');
-select is((select count(*)::int from nexus.access_rule_log), 37, 'AC-60: P-KETUM (BPH) reads the log');
+select is((select count(*)::int from nexus.access_rule_log), 38, 'AC-60: P-KETUM (BPH) reads the log');
 select is((select count(*)::int from nexus.access_rules), 0, 'AC-01: P-KETUM reads no rows of the rules table');
 select throws_ok($$select * from nexus.list_access_rules()$$, '42501', null, 'AC-01: P-KETUM cannot open the rules list');
 select throws_ok($$select nexus.disable_access_rule((select rule_id from nexus.access_rule_log limit 1))$$, '42501', null,
@@ -823,13 +823,13 @@ select is(nexus_test.hint_of($$select nexus.restore_default_access_rules(null, t
   'L12: restore re-granting sensitive/power defaults needs a note');
 select is(nexus_test.hint_of($$select nexus.restore_default_access_rules('   ', true)$$), 'note_required',
   'L12: ... a blank note is not enough');
-select is(nexus.restore_default_access_rules('test restore', true), 35, 'B28: restore re-enables the 35 active defaults');
+select is(nexus.restore_default_access_rules('test restore', true), 36, 'B28: restore re-enables the 36 active defaults (incl. D37)');
 select ok((select not is_enabled from nexus.access_rules where default_code = 'D30'),
   'B28/D-022: restore never brings the retired D30 back');
 select is((select count(*)::int from nexus.access_rules where default_code is null and is_enabled), 0,
   'B28: restore never touches custom rules');
 select is((select count(*)::int from nexus.access_rule_log where action = 'restore_default'
-           and actor_member_id = nexus_test.mid(2) and note = 'test restore'), 35,
+           and actor_member_id = nexus_test.mid(2) and note = 'test restore'), 36,
   'B28: each restored rule is logged with actor and note');
 select ok(nexus.has_permission('inventory.view'), 'restored baseline works again');
 
