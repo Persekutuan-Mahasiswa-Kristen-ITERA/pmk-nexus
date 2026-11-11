@@ -20,6 +20,22 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: { default: "PMK-NEXUS", template: "%s | PMK-NEXUS" },
   description: "Sistem administrasi dan operasional PMK ITERA",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "PMK-NEXUS",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: [{ url: "/brand/pmk-logo-96.png", type: "image/png", sizes: "96x96" }],
+    apple: [{ url: "/brand/pmk-logo-192.png", type: "image/png", sizes: "192x192" }],
+  },
+};
+
+export const viewport = {
+  themeColor: "#5C3A21",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
