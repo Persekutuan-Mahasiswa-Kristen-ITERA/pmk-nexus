@@ -86,21 +86,21 @@ test.describe("LT-26: the real upload route checks the real file type, size and 
     }
   });
 
-  test("over 5 MB: 413 file_too_large with the limit in MB, also for a real PDF and for a body far above the cap", async ({ browser }) => {
-    for (const size of [5 * MIB + 1, 6 * MIB, 12 * MIB]) {
+  test("over 4 MiB: 413 file_too_large with the limit in MB, also for a real PDF and for a body far above the cap", async ({ browser }) => {
+    for (const size of [4 * MIB + 1, 5 * MIB, 12 * MIB]) {
       const r = await upload("regular", [{ name: "besar.pdf", mimeType: "application/pdf", buffer: PDF_BYTES(size - PDF_BYTES().length) }], {}, browser);
       expect(r.status, `${size} bytes`).toBe(413);
-      expect(r.body.error).toMatchObject({ code: "file_too_large", maxMb: 5 });
+      expect(r.body.error).toMatchObject({ code: "file_too_large", maxMb: 4 });
     }
   });
 
-  test("valid PDF, JPEG, PNG and exactly 5 MiB pass every check of the route; only the Storage call is left (503 here, 200 with Storage)", async ({ browser }) => {
+  test("valid PDF, JPEG, PNG and exactly 4 MiB pass every check of the route; only the Storage call is left (503 here, 200 with Storage)", async ({ browser }) => {
     const folder = q("select id from public.members where email = 'member.regular@nexus.test'");
     for (const file of [
       { name: "surat.pdf", mimeType: "application/pdf", buffer: PDF_BYTES() },
       { name: "foto.jpg", mimeType: "image/jpeg", buffer: JPEG_BYTES },
       { name: "foto.png", mimeType: "image/png", buffer: PNG_BYTES },
-      { name: "persis-5mb.pdf", mimeType: "application/pdf", buffer: PDF_BYTES(5 * MIB - PDF_BYTES().length) },
+      { name: "persis-4mib.pdf", mimeType: "application/pdf", buffer: PDF_BYTES(4 * MIB - PDF_BYTES().length) },
     ]) {
       const r = await upload("regular", [file], {}, browser);
       expect([400, 413], `${file.name} must not be refused by type or size: ${JSON.stringify(r.body)}`).not.toContain(r.status);
@@ -205,7 +205,7 @@ test.describe("the picker in the browser: messages for a wrong, a too big and to
       await input.setInputFiles({ name: "catatan.pdf", mimeType: "application/pdf", buffer: Buffer.from("hanya teks") });
       await expect(page.getByRole("alert").filter({ hasText: "Format tidak didukung. Pakai PDF, JPG, atau PNG." })).toBeVisible();
       await input.setInputFiles({ name: "besar.pdf", mimeType: "application/pdf", buffer: PDF_BYTES(6 * 1024 * 1024) });
-      await expect(page.getByRole("alert").filter({ hasText: "Berkas terlalu besar. Batasnya 5 MB." })).toBeVisible();
+      await expect(page.getByRole("alert").filter({ hasText: "Berkas terlalu besar. Batasnya 4 MB." })).toBeVisible();
       await expect(page.getByRole("group", { name: "Berkas 1" })).toHaveCount(0);
 
       await stubLetterUpload(page, "regular");

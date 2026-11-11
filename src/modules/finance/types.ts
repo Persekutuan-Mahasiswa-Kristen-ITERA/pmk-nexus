@@ -44,8 +44,8 @@ export const FINANCE_LIMITS = {
   fileName: 200,
   /** Visible (not withdrawn) proofs per entry (K5 a, A-FN6). */
   filesPerEntry: 3,
-  /** Bucket and database limit per file: 5 MiB. */
-  fileMaxBytes: 5_242_880,
+  /** Bucket and database limit per file: 4 MiB (4194304 bytes), lowered for the Vercel 4.5 MB request cap. */
+  fileMaxBytes: 4_194_304,
   /** Unattached uploads per member in the last 24 hours (finance_proof_can_upload). The 11th is refused. */
   unattachedUploadsPer24h: 10,
   /** Dates before this are refused by the database. */
@@ -379,7 +379,7 @@ export const FINANCE_PROOF_EXTENSION: Record<FinanceProofMimeType, "pdf" | "jpg"
   "image/png": "png",
 };
 export const FINANCE_PROOF_MAX_BYTES = FINANCE_LIMITS.fileMaxBytes;
-export const FINANCE_PROOF_MAX_MB = 5;
+export const FINANCE_PROOF_MAX_MB = 4;
 /** Lifetime of a signed proof link (A-FN6). Made when "Lihat" is pressed. */
 export const FINANCE_PROOF_SIGNED_URL_TTL_SECONDS = 300;
 /** Browser resize of IMAGES before upload (A-FN6): long side about 2000 px. PDF is never resized. */
@@ -1598,7 +1598,7 @@ export const FINANCE_ERROR_COPY: Record<FinanceErrorCode, string | null> = {
   amount_too_large: "Jumlah terlalu besar (maksimal Rp 9.999.999.999).", // 7 screen 3
   invalid_correction: "Transaksi yang dikoreksi sudah dibatalkan. Muat ulang halaman.", // gap
   invalid_file: "Hanya PDF, JPG, atau PNG.", // 7 screen 3 (a bad saved path: generic, variant)
-  file_too_large: "Berkas terlalu besar (maksimal 5 MB).", // 7 screen 3
+  file_too_large: "Berkas terlalu besar (maksimal 4 MB).", // 7 screen 3
   file_required: "Pilih minimal satu berkas.", // gap ("Tambah bukti" with none; same as Minutes)
   file_count: null, // PER COUNT: "Maksimal 3 berkas." (7 screen 3) or the room left (gap)
   file_already_attached: "Berkas ini sudah terpasang. Pilih berkas lain.", // gap: Letters (owner)
@@ -1832,7 +1832,7 @@ export const FINANCE_COPY = {
     notes: "Catatan (boleh kosong)",
     proof: "Bukti (boleh kosong)",
     proofPick: "Ketuk untuk memilih berkas",
-    proofHelp: "Foto nota atau bukti transfer. PDF, JPG, atau PNG, maksimal 5 MB, sampai 3 berkas.",
+    proofHelp: "Foto nota atau bukti transfer. PDF, JPG, atau PNG, maksimal 4 MB, sampai 3 berkas.",
     next: "Lanjut",
     cancel: "Batal",
     /** 7.5: read-only line on a correction. */

@@ -24,7 +24,7 @@ import { goToLogin } from "./action-sheet";
 import { COPY } from "./copy";
 import { formatFileSize } from "./format";
 
-/** JPEG quality steps tried until a resized photo fits 5 MiB (design 3.3, G14). */
+/** JPEG quality steps tried until a resized photo fits 4 MiB (design 3.3, G14). */
 const QUALITY_STEPS = [0.88, 0.8, 0.7, 0.6, 0.5];
 const UPLOAD_TIMEOUT_MS = 90_000;
 
@@ -48,10 +48,10 @@ export type FileSummary = { files: LetterFileRefInput[]; pending: boolean; faile
 export const EMPTY_FILES: FileSummary = { files: [], pending: false, failed: false, count: 0 };
 
 /**
- * FilePicker (design 3.3), the Inventory photo picker adapted to letters: PDF, JPG or PNG, 5 MB, at most
+ * FilePicker (design 3.3), the Inventory photo picker adapted to letters: PDF, JPG or PNG, 4 MB, at most
  * `max` files. "Ambil foto" opens the rear camera on a phone (a photo of a paper letter is the main case
  * there); "Pilih berkas" opens the file chooser. Large photos are made smaller in the browser (long side
- * about 2000 px, JPEG quality lowered until under 5 MB); a PDF is never changed. Each file uploads as
+ * about 2000 px, JPEG quality lowered until under 4 MB); a PDF is never changed. Each file uploads as
  * soon as it is chosen, through POST /api/letters/files, so a weak connection shows while the person
  * still holds the paper. Files never attached to a saved letter or request are not records.
  */
@@ -411,7 +411,7 @@ function useCoarsePointer(): boolean {
 class TooLargeError extends Error {}
 
 /**
- * Keeps a small image as it is. A large one (long side over about 2000 px, or over 5 MB) is drawn at
+ * Keeps a small image as it is. A large one (long side over about 2000 px, or over 4 MB) is drawn at
  * most 2000 px on its long side as JPEG, quality lowered in steps until it fits, so printed text on a
  * photographed letter stays readable.
  */

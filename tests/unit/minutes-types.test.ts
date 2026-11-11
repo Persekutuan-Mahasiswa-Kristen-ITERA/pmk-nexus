@@ -158,13 +158,13 @@ describe("files (N6 a, MN-17, MN-19)", () => {
     expect(firstError(minuteRecordSchema.safeParse({ ...validRecord, files: [file(`x/${PATH}`)] })).code).toBe("invalid_file");
     expect(firstError(minuteRecordSchema.safeParse({ ...validRecord, files: [file(PATH.replace(".pdf", ".docx"))] })).code).toBe("invalid_file");
   });
-  it("upload: PDF, JPG, PNG only, 5 MB max (5242880 bytes)", () => {
-    expect(minuteUploadFileSchema.safeParse({ type: "application/pdf", size: 5_242_880 }).success).toBe(true);
-    expect(firstError(minuteUploadFileSchema.safeParse({ type: "image/png", size: 5_242_881 }))).toEqual({
+  it("upload: PDF, JPG, PNG only, 4 MiB max (4194304 bytes)", () => {
+    expect(minuteUploadFileSchema.safeParse({ type: "application/pdf", size: 4_194_304 }).success).toBe(true);
+    expect(firstError(minuteUploadFileSchema.safeParse({ type: "image/png", size: 4_194_305 }))).toEqual({
       code: "file_too_large",
       field: "request",
       ref: null,
-      maxMb: 5,
+      maxMb: 4,
     });
     expect(firstError(minuteUploadFileSchema.safeParse({ type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", size: 10 })).code).toBe(
       "invalid_file",
@@ -355,7 +355,7 @@ describe("database hints (migration header list) map to the contract codes", () 
     expect(minuteErrorFromDb("invalid_unit", "org_unit_id")).toEqual({ code: "invalid_unit", field: "unitId" });
     expect(minuteErrorFromDb("file_missing", PATH)).toEqual({ code: "file_missing", field: "files", ref: PATH });
     expect(minuteErrorFromDb("invalid_file", "p_files")).toEqual({ code: "invalid_file", field: "files", ref: null });
-    expect(minuteErrorFromDb("file_too_large", PATH)).toEqual({ code: "file_too_large", field: "files", ref: PATH, maxMb: 5 });
+    expect(minuteErrorFromDb("file_too_large", PATH)).toEqual({ code: "file_too_large", field: "files", ref: PATH, maxMb: 4 });
     expect(minuteErrorFromDb("file_count", "2")).toEqual({ code: "file_count", field: "files", count: 2 });
     expect(minuteErrorFromDb("too_many_rows", "1001")).toEqual({ code: "export_too_large", rowCount: 1001 });
     expect(minuteErrorFromDb("invalid_page_size", null)).toEqual({ code: "invalid_input", field: "pageSize" });
@@ -370,7 +370,7 @@ describe("database hints (migration header list) map to the contract codes", () 
     expect(minuteErrorStatus({ code: "unit_not_allowed" })).toBe(403);
     expect(minuteErrorStatus({ code: "not_found", entity: "minute" })).toBe(404);
     expect(minuteErrorStatus({ code: "text_required", field: "title" })).toBe(400);
-    expect(minuteErrorStatus({ code: "file_too_large", field: "file", ref: null, maxMb: 5 })).toBe(413);
+    expect(minuteErrorStatus({ code: "file_too_large", field: "file", ref: null, maxMb: 4 })).toBe(413);
     expect(minuteErrorStatus({ code: "export_too_large", rowCount: null })).toBe(422);
     expect(minuteErrorStatus({ code: "upload_limit", limit: 10 })).toBe(429);
     expect(minuteErrorStatus({ code: "unavailable" })).toBe(503);
@@ -402,7 +402,7 @@ describe("copy (spec section 7)", () => {
     const bad = { code: "invalid_file", field: "files", ref: null } as const;
     expect(minuteErrorMessage(bad, "upload")).toBe("Hanya PDF, JPG, atau PNG.");
     expect(minuteErrorMessage(bad, "record")).toBe("Terjadi gangguan. Coba lagi.");
-    expect(minuteErrorMessage({ code: "file_too_large", field: "file", ref: null, maxMb: 5 }, "upload")).toBe("Berkas terlalu besar (maksimal 5 MB).");
+    expect(minuteErrorMessage({ code: "file_too_large", field: "file", ref: null, maxMb: 4 }, "upload")).toBe("Berkas terlalu besar (maksimal 4 MB).");
     expect(minuteErrorMessage({ code: "file_count", field: "files", count: 3 }, "record")).toBe("Maksimal 3 berkas.");
     expect(minuteErrorMessage({ code: "unavailable" }, "upload")).toBe("Berkas gagal diunggah. Coba lagi.");
     expect(minuteErrorMessage({ code: "not_found", entity: "file" }, "openFile")).toBe("Berkas tidak bisa dibuka. Coba lagi.");

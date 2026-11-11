@@ -548,7 +548,7 @@ describe("POST /api/finance/proofs", () => {
   });
 
   it("a body over the cap is file_too_large (413); a policy refusal is upload_limit (429)", async () => {
-    const big = new Uint8Array(5_242_880 + 20_000);
+    const big = new Uint8Array(4_194_304 + 20_000);
     big.set(PDF);
     let res = await handleFinanceProofUpload(upload([{ name: "file", value: big, filename: "a.pdf", type: "application/pdf" }]), async () => BENDAHARA);
     expect(res.status).toBe(413);

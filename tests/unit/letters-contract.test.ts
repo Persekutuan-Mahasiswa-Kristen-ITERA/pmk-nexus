@@ -197,12 +197,12 @@ describe("files: type by the real bytes, names, paths (A-LT13, L8, LT-26)", () =
     }
   });
 
-  it("declared file: only PDF, JPEG and PNG, between 1 byte and exactly 5 MiB (the limit is 5 MiB = 5242880 bytes)", () => {
-    expect(LETTER_FILE_MAX_BYTES).toBe(5 * 1024 * 1024);
+  it("declared file: only PDF, JPEG and PNG, between 1 byte and exactly 4 MiB (the limit is 4 MiB = 4194304 bytes)", () => {
+    expect(LETTER_FILE_MAX_BYTES).toBe(4 * 1024 * 1024);
     expect(LETTER_FILE_SIGNED_URL_TTL_SECONDS).toBe(300);
     for (const type of ["application/pdf", "image/jpeg", "image/png"]) ok(letterUploadFileSchema, { type, size: 1 });
-    ok(letterUploadFileSchema, { type: "application/pdf", size: 5_242_880 });
-    expect(firstMessage(letterUploadFileSchema, { type: "application/pdf", size: 5_242_881 })).toBe("file_too_large");
+    ok(letterUploadFileSchema, { type: "application/pdf", size: 4_194_304 });
+    expect(firstMessage(letterUploadFileSchema, { type: "application/pdf", size: 4_194_305 })).toBe("file_too_large");
     for (const size of [0, -1, 1.5, Number.NaN, "100", null]) expect(firstMessage(letterUploadFileSchema, { type: "application/pdf", size }), String(size)).toBe("invalid_file");
     for (const type of ["image/gif", "image/svg+xml", "text/plain", "application/zip", "application/msword", "application/octet-stream", "", "APPLICATION/PDF", "application/pdf "]) {
       expect(firstMessage(letterUploadFileSchema, { type, size: 100 }), JSON.stringify(type)).toBe("invalid_file");
@@ -545,7 +545,7 @@ describe("database hints -> contract errors (fail closed) and the Indonesian cop
     expect(mapLetterDbError({ code: "22023", hint: "invalid_file", details: PATH })).toEqual({ code: "invalid_file", field: "files", ref: PATH });
     // a detail that is not a well-formed upload path is never echoed
     expect(mapLetterDbError({ code: "22023", hint: "invalid_file", details: "../../etc/passwd" })).toEqual({ code: "invalid_file", field: "files", ref: null });
-    expect(mapLetterDbError({ code: "22023", hint: "file_too_large", details: PATH })).toEqual({ code: "file_too_large", field: "files", ref: PATH, maxMb: 5 });
+    expect(mapLetterDbError({ code: "22023", hint: "file_too_large", details: PATH })).toEqual({ code: "file_too_large", field: "files", ref: PATH, maxMb: 4 });
   });
   it("an unknown or missing hint, a bug-only hint, a prototype name and an unexpected SQLSTATE are 'unavailable' (never 'no access', never 'no rows')", () => {
     const unavailable = { code: "unavailable" };
@@ -578,7 +578,7 @@ describe("database hints -> contract errors (fail closed) and the Indonesian cop
     expect(msg("duplicate_number", { numberText: "x" })).toBe("Nomor ini sudah ada di register.");
     expect(msg("file_count", { field: "files", count: 3 })).toBe("Maksimal 3 berkas.");
     expect(msg("invalid_file", { field: "file", ref: null })).not.toBe(""); // a saved path that is bad is a bug: generic text
-    expect(msg("file_too_large", { field: "file", ref: null, maxMb: 5 })).toBe("Berkas terlalu besar. Batasnya 5 MB. Perkecil dulu atau pilih berkas lain.");
+    expect(msg("file_too_large", { field: "file", ref: null, maxMb: 4 })).toBe("Berkas terlalu besar. Batasnya 4 MB. Perkecil dulu atau pilih berkas lain.");
     expect(msg("unauthenticated")).toBeNull(); // redirect to login, no text
     // No copy ever contains a raw database word or a stack
     for (const text of Object.values(LETTER_ERROR_COPY)) if (text) expect(text).not.toMatch(/nexus\.|postgres|sql|exception|undefined|\[object/i);

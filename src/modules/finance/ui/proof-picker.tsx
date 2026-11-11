@@ -27,7 +27,7 @@ import { goToLogin } from "./action-sheet";
 import { UI_COPY } from "./copy";
 import { formatFileSize } from "./format";
 
-/** JPEG quality steps tried until a resized photo fits 5 MiB (spec 4.4). */
+/** JPEG quality steps tried until a resized photo fits 4 MiB (spec 4.4). */
 const QUALITY_STEPS = [0.88, 0.8, 0.7, 0.6, 0.5];
 const UPLOAD_TIMEOUT_MS = 90_000;
 
@@ -55,7 +55,7 @@ const UI_REMOVE = "Hapus";
 
 /**
  * The proof picker of the record form and the "Tambah bukti" sheet (spec 4.4, K5 a, screen 3): a dashed area "Ketuk untuk memilih berkas" opens the chooser (on a phone it also offers
- * the camera). PDF, JPG or PNG, 5 MB, at most `max` files. Photos larger than about 2000 px on the long
+ * the camera). PDF, JPG or PNG, 4 MB, at most `max` files. Photos larger than about 2000 px on the long
  * side are made smaller in the browser first; a PDF is never changed. Each file uploads as soon as it is
  * chosen (POST /api/finance/proofs), so a weak connection shows before the save. A picked file shows its
  * name, size and "Hapus" (removes it from the form; files never attached to an entry are not records).
@@ -382,7 +382,7 @@ async function realType(file: File): Promise<FinanceProofMimeType | null> {
 class TooLargeError extends Error {}
 
 /**
- * Keeps a small image as it is. A large one (long side over about 2000 px, or over 5 MB) is drawn at most
+ * Keeps a small image as it is. A large one (long side over about 2000 px, or over 4 MB) is drawn at most
  * 2000 px on its long side as JPEG, quality lowered in steps until it fits, so handwriting on a photographed
  * page stays readable.
  */

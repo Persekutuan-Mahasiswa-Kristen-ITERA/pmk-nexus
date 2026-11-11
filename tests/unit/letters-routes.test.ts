@@ -152,14 +152,14 @@ describe("upload route: the real bytes decide, not the name or the declared type
   });
 });
 
-describe("upload route: size limits (L8: 5 MiB per file)", () => {
-  it("exactly 5 MiB passes; one byte more is 413 file_too_large with maxMb 5", async () => {
-    const exact = await handleLetterFileUpload(upload([{ name: "file", value: bigPdf(5 * MIB), filename: "a.pdf", type: "application/pdf" }]), async () => plainMember);
+describe("upload route: size limits (L8: 4 MiB per file)", () => {
+  it("exactly 4 MiB passes; one byte more is 413 file_too_large with maxMb 4", async () => {
+    const exact = await handleLetterFileUpload(upload([{ name: "file", value: bigPdf(4 * MIB), filename: "a.pdf", type: "application/pdf" }]), async () => plainMember);
     expect(exact.status).toBe(200);
     uploadLetterFile.mockClear();
-    const over = await handleLetterFileUpload(upload([{ name: "file", value: bigPdf(5 * MIB + 1), filename: "a.pdf", type: "application/pdf" }]), async () => plainMember);
+    const over = await handleLetterFileUpload(upload([{ name: "file", value: bigPdf(4 * MIB + 1), filename: "a.pdf", type: "application/pdf" }]), async () => plainMember);
     expect(over.status).toBe(413);
-    expect((await json(over)).error).toMatchObject({ code: "file_too_large", maxMb: 5 });
+    expect((await json(over)).error).toMatchObject({ code: "file_too_large", maxMb: 4 });
     expect(uploadLetterFile).not.toHaveBeenCalled();
   });
   it("a body far above the limit is refused by the cap before it is parsed (Content-Length and streaming)", async () => {

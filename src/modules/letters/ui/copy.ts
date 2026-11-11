@@ -85,7 +85,7 @@ export const COPY = {
   addFilesTitle: "Tambah berkas",
 
   // FilePicker (3.3)
-  fileHint: "PDF, JPG, atau PNG. Paling besar 5 MB.",
+  fileHint: "PDF, JPG, atau PNG. Paling besar 4 MB.",
   fileResizeHint: "Foto diperkecil otomatis sebelum diunggah.",
   fileMax: "Maksimal 3 berkas.",
   fileStillBusy: "Tunggu sampai semua berkas selesai diunggah.",

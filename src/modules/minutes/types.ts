@@ -43,8 +43,8 @@ export const MINUTE_LIMITS = {
   fileName: 200,
   /** Visible (not withdrawn) files per minute (N6 a). Withdrawn files do not count. */
   filesPerMinute: 3,
-  /** Bucket and database limit per file: 5 MiB (5242880 bytes). */
-  fileMaxBytes: 5_242_880,
+  /** Bucket and database limit per file: 4 MiB (4194304 bytes), lowered for the Vercel 4.5 MB request cap. */
+  fileMaxBytes: 4_194_304,
   /** Uploads not yet attached to a saved minute, per member, last 24 hours (A-MN9). The 11th is refused. */
   unattachedUploadsPer24h: 10,
   /** Dates before this are refused by the database. */
@@ -255,9 +255,9 @@ export const MINUTE_FILE_EXTENSION: Record<MinuteFileMimeType, "pdf" | "jpg" | "
   "image/jpeg": "jpg",
   "image/png": "png",
 };
-/** 5 MiB, the bucket and database limit. */
+/** 4 MiB, the bucket and database limit. */
 export const MINUTE_FILE_MAX_BYTES = MINUTE_LIMITS.fileMaxBytes;
-export const MINUTE_FILE_MAX_MB = 5;
+export const MINUTE_FILE_MAX_MB = 4;
 /** Lifetime of a signed file link (spec 4.4: 300 seconds). Made when "Lihat" is pressed. */
 export const MINUTE_FILE_SIGNED_URL_TTL_SECONDS = 300;
 /** Browser resize of IMAGES before upload (spec 4.4): long side about 2000 px. PDF never. Client hint only. */
@@ -1017,7 +1017,7 @@ export const MINUTE_ERROR_COPY: Record<MinuteErrorCode, string | null> = {
   date_in_future: "Tanggal rapat tidak boleh di masa depan.", // spec 7 screen 3
   invalid_dates: "Tanggal rapat tidak valid.", // gap (a date picker prevents it; before 2000)
   invalid_file: "Hanya PDF, JPG, atau PNG.", // spec 7 screen 3 (a bad saved path: generic, variant)
-  file_too_large: "Berkas terlalu besar (maksimal 5 MB).", // spec 7 screen 3
+  file_too_large: "Berkas terlalu besar (maksimal 4 MB).", // spec 7 screen 3
   file_required: "Pilih minimal satu berkas.", // gap ("Tambah lampiran" with none)
   file_count: "Maksimal 3 berkas.", // spec 7 screen 3
   file_already_attached: "Berkas ini sudah terpasang. Pilih berkas lain.", // gap: Letters (owner)
@@ -1251,7 +1251,7 @@ export const MINUTE_COPY = {
     decision: "Keputusan & Tindak Lanjut (boleh kosong)",
     filesCard: "Lampiran",
     filePicker: "Ketuk untuk memilih berkas",
-    fileHelp: "PDF, JPG, atau PNG. Maksimal 5 MB, sampai 3 berkas.",
+    fileHelp: "PDF, JPG, atau PNG. Maksimal 4 MB, sampai 3 berkas.",
     fileRemove: "Hapus",
     submitRecord: "Simpan Notulensi",
     submitEdit: "Simpan Perubahan",
@@ -1538,7 +1538,7 @@ export function minuteCapabilities(state: AccessState): MinuteCapabilities {
  * POST MINUTE_ROUTES.fileUpload = /api/minutes/files   (multipart: MINUTE_FILE_UPLOAD_FIELDS; canUploadFiles)
  *   Same-origin check (else 403); session (401; no_access/error as 403/503); minutes.manage in any scope
  *   (else forbidden 403, database M4); active period (else no_active_period 409); body capped near
- *   MINUTE_FILE_MAX_BYTES (over: file_too_large 413, field "file", ref null, maxMb 5); declared type and
+ *   MINUTE_FILE_MAX_BYTES (over: file_too_large 413, field "file", ref null, maxMb 4); declared type and
  *   size (minuteUploadFileSchema) AND sniffMinuteFileType(first bytes) equal to the declared type (else
  *   invalid_file 400, field "file"); then uploads with the USER's client to MINUTE_FILE_BUCKET at
  *   minuteFilePath(session member id, randomUUID(), type), contentType = the type, no overwrite. A

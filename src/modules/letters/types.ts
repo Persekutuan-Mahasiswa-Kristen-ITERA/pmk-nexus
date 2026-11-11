@@ -53,8 +53,8 @@ export const LETTER_LIMITS = {
   fileName: 200,
   /** Visible (not withdrawn) files per letter, and attachments per request (L8 b, G4). */
   filesPerParent: 3,
-  /** Bucket and database limit per file: 5 MiB (5242880 bytes). */
-  fileMaxBytes: 5_242_880,
+  /** Bucket and database limit per file: 4 MiB (4194304 bytes), lowered for the Vercel 4.5 MB request cap. */
+  fileMaxBytes: 4_194_304,
   /** Uploads not yet attached to a saved letter or request, per member, last 24 hours (A-LT13). The 11th is refused. */
   unattachedUploadsPer24h: 10,
   /** L10 b: open = Diajukan or Diproses; daily = per Jakarta day. */
@@ -295,9 +295,9 @@ export const LETTER_FILE_EXTENSION: Record<LetterFileMimeType, "pdf" | "jpg" | "
   "image/jpeg": "jpg",
   "image/png": "png",
 };
-/** 5 MiB, the bucket and database limit. Over it: "Berkas terlalu besar. Batasnya 5 MB. ..." (design 3.3). */
+/** 4 MiB, the bucket and database limit. Over it: "Berkas terlalu besar. Batasnya 4 MB. ..." (design 3.3). */
 export const LETTER_FILE_MAX_BYTES = LETTER_LIMITS.fileMaxBytes;
-export const LETTER_FILE_MAX_MB = 5;
+export const LETTER_FILE_MAX_MB = 4;
 /** Lifetime of a signed file link (A-LT13, same as A-IB51). Made when "Lihat"/"Unduh" is pressed. */
 export const LETTER_FILE_SIGNED_URL_TTL_SECONDS = 300;
 /**
@@ -1467,7 +1467,7 @@ export const LETTER_ERROR_COPY: Record<LetterErrorCode, string | null> = {
   date_in_past: "Tanggal tidak boleh sebelum hari ini.", // 9.2 (only "Dibutuhkan paling lambat")
   invalid_dates: COPY_RANGE, // owner (queue range "from"/"to"); a malformed single date: generic (gap)
   invalid_file: "Format tidak didukung. Pakai PDF, JPG, atau PNG.", // 3.3 (a bad saved path: generic, variant)
-  file_too_large: "Berkas terlalu besar. Batasnya 5 MB. Perkecil dulu atau pilih berkas lain.", // 3.3
+  file_too_large: "Berkas terlalu besar. Batasnya 4 MB. Perkecil dulu atau pilih berkas lain.", // 3.3
   file_required: "Tambahkan minimal satu berkas surat.", // 12.6 (also used for "Tambah berkas" with none)
   file_count: "Maksimal 3 berkas.", // 3.3
   file_already_attached: "Berkas ini sudah terpasang. Pilih berkas lain.", // owner
@@ -2136,7 +2136,7 @@ export function defaultLetterQueueView(capabilities: LetterCapabilities): Letter
  *
  * POST LETTER_FILE_UPLOAD_ROUTE = /api/letters/files   (multipart: LETTER_FILE_UPLOAD_FIELDS; any active member)
  *   Same-origin check; session (401/403); active period (else no_active_period, 409); body capped near
- *   LETTER_FILE_MAX_BYTES (over: file_too_large 413, field "file", ref null, maxMb 5); declared type and
+ *   LETTER_FILE_MAX_BYTES (over: file_too_large 413, field "file", ref null, maxMb 4); declared type and
  *   size (letterUploadFileSchema) AND sniffLetterFileType(first bytes) equal to the declared type (else
  *   invalid_file 400, field "file"); then uploads with the USER's client to LETTER_FILE_BUCKET at
  *   letterFilePath(session member id, randomUUID(), type), contentType = the type, no overwrite. A Storage
