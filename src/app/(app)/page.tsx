@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getAccessState } from "@/lib/auth/session";
-import { SignOutAction } from "@/components/auth/sign-out-action";
 import { AlertMessage } from "@/components/ui/alert-message";
 import { PageHeaderCard } from "@/components/ui/page-header-card";
 import { getFinanceSummary } from "@/modules/finance/server/reads";
@@ -111,10 +110,6 @@ export default async function DashboardPage() {
         </div>
       ) : null}
 
-      {/* "Keluar" is also in the side drawer (spec F8); this copy stays until the Dashboard module is built. */}
-      <div className="nx-rise nx-delay-3">
-        <SignOutAction variant="text" />
-      </div>
     </div>
   );
 }

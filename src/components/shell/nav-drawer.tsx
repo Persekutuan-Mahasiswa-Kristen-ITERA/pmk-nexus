@@ -106,11 +106,13 @@ export function NavDrawer({ nav }: { nav: NavData }) {
             </ul>
           </nav>
 
-          <div className="border-t border-surface-line px-4 pt-3 pb-4">
-            <p className="text-body-sm text-ink-body">Masuk sebagai {nav.memberName}.</p>
-            {nav.periodLabel ? <p className="text-body-sm text-ink-body">Periode {nav.periodLabel}</p> : null}
+          <div className="border-t border-surface-line px-3 pt-3 pb-4">
+            <div className="px-4">
+              <p className="text-body-sm text-ink-body">Masuk sebagai {nav.memberName}.</p>
+              {nav.periodLabel ? <p className="text-body-sm text-ink-body">Periode {nav.periodLabel}</p> : null}
+            </div>
             <div className="mt-2">
-              <SignOutAction variant="text" />
+              <SignOutAction variant="row" />
             </div>
           </div>
         </Dialog.Content>

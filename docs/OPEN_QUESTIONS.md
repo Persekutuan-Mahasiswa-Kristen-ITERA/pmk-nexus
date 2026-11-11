@@ -161,7 +161,7 @@ Spec: `docs/modules/member-data.md` section 8 (M1-M8 are answered, D-019). These
 | A-MD14 | No screen to read the export log is designed yet; without one, BPH cannot read it. Needs a UX design and owner decision. | [UNKNOWN] | P1 |
 | A-MD15 | UI copy proposals (in `src/modules/member-data/ui/copy.ts`): forbidden screen "Tidak punya akses" / "Kamu tidak punya akses ke halaman ini. Kalau kamu memerlukannya, hubungi admin PMK ITERA." / "Kembali ke Dashboard"; empty list "Belum ada anggota aktif."; search too long, invalid filter, and export-400 messages; export menu "Unduh semua hasil filter sebagai:", busy "Menyiapkan file...", success "Unduhan dimulai: {file}". Uses "kamu" like the rest of the app. | [ASSUMPTION] | P2 |
 | A-MD16 | Pagination buttons keep Stitch's English "Prev" / "Next" (screen readers get "Halaman sebelumnya/berikutnya"). | [ASSUMPTION] | P2 |
-| A-MD17 | "Keluar" appears both on the Dashboard placeholder and in the drawer footer; remove the Dashboard one when the Dashboard module is built. Drawer header subtitle "Institut Teknologi Sumatera" (Stitch), Stitch tagline dropped. | [ASSUMPTION] | P2 |
+| A-MD17 | "Keluar" sits on the right of the app bar (log-out icon; icon only on a phone, icon and word from md up) and as a row in the drawer footer; the Dashboard placeholder copy was removed 2026-11-11 (owner: hard to find at the page bottom). Drawer header subtitle "Institut Teknologi Sumatera" (Stitch), Stitch tagline dropped. | [ASSUMPTION] | P2 |
 | A-MD18 | Export meta line wording "Diekspor YYYY-MM-DD HH:mm WIB" and "Periode {label}" in XLSX/PDF. | [ASSUMPTION] | P2 |
 | A-MD19 | Result box above the table is labelled "Hasil" (follows the filters), not Stitch's "Total". | **[ANSWERED]** 2026-11-07 (owner) | - | |
 
