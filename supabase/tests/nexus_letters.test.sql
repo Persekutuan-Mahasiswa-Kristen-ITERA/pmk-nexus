@@ -527,6 +527,7 @@ select is(nexus_test.hint_of($$select * from nexus.letter_register('incoming', '
   'LT-21: Perihal is required');
 select is(nexus_test.hint_of($$select * from nexus.letter_register('incoming', 'Perihal', '', p_received_date => nexus_test.d(0))$$), 'text_required',
   'LT-21: the sender is required');
+select is(nexus_test.hint_of($$select * from nexus.letter_register('incoming', E'\n\t', 'Pengirim', p_received_date => nexus_test.d(0))$$), 'text_required', 'LT-21, LT-44 (BUG-LT-01): a Perihal of only newline and tab characters is refused');
 select is(nexus_test.hint_of(format('select * from nexus.letter_register(%L, %L, %L, p_received_date => nexus_test.d(0))', 'incoming', repeat('p', 201), 'x')),
   'text_too_long', 'LT-44/A-LT18: Perihal max 200');
 select is(nexus_test.detail_of(format('select * from nexus.letter_register(%L, %L, %L, p_received_date => nexus_test.d(0))', 'incoming', 'x', repeat('c', 151))),

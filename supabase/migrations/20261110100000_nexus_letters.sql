@@ -563,12 +563,14 @@ end
 $$;
 
 -- Trimmed text, blank -> null; over the limit -> text_too_long (detail = field). A-LT18 limits.
+-- btrim() with one argument strips SPACES only, so a value of only newline or tab characters passed as "not blank"
+-- when the Server Action was bypassed (QA BUG-LT-01). Strip the same ASCII whitespace as JavaScript trim().
 create or replace function nexus._lt_text(p_text text, p_max integer, p_field text)
 returns text
 language plpgsql immutable set search_path = ''
 as $$
 declare
-  v text := nullif(btrim(p_text), '');
+  v text := nullif(btrim(p_text, E' \t\r\n\f\v'), '');
 begin
   if char_length(v) > p_max then
     raise exception 'Text for % is too long (max % characters)', p_field, p_max
