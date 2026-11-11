@@ -25,12 +25,12 @@ import {
   type FinanceEntryType,
   type FinanceError,
   type FinanceRecordInput,
-  type FinanceRecordPrefill,
 } from "../types";
 import { goToLogin, useFinanceAction, type ActionError } from "./action-sheet";
 import { AmountField } from "./amount-field";
 import { UI_COPY } from "./copy";
 import { formatDate } from "./format";
+import type { FormValues } from "./form-values";
 import { EMPTY_PROOFS, ProofPicker, type ProofSummary } from "./proof-picker";
 import { entryHref } from "./routes";
 import { recordFinanceEntry } from "./server-actions";
@@ -51,7 +51,7 @@ const fieldId = (key: FieldKey) => `finance-${key}`;
 export type FinancePeriodDates = { label: string | null; startsOn: string | null; endsOn: string | null };
 
 /** What the person typed: the type is only a choice for income and expense. */
-type Values = { entryType: FinanceEntryType; entryDate: string; amount: string; description: string; notes: string };
+type Values = FormValues;
 
 /** Frozen at "Lanjut": the check sheet shows and the save sends exactly these (and the one submit key). */
 type Frozen = { values: Values; amount: string; key: string; files: ProofSummary["files"] };
@@ -576,14 +576,4 @@ function NotesField({
   );
 }
 
-/** The record form's initial values from a prefill ("Buat koreksi", "Catat ulang") or today's blank form. */
-export function initialValues(today: string, entryType: FinanceEntryType, prefill: FinanceRecordPrefill | null, defaultDescription = ""): Values {
-  if (prefill === null) return { entryType, entryDate: today, amount: "", description: defaultDescription, notes: "" };
-  return {
-    entryType: prefill.entryType,
-    entryDate: prefill.entryDate !== null && prefill.entryDate <= today ? prefill.entryDate : today,
-    amount: rupiahInputDisplay(prefill.amount),
-    description: prefill.description,
-    notes: prefill.notes ?? "",
-  };
-}
+/** The record form's initial values live in ./form-values (a plain module the server pages can call). */

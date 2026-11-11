@@ -16,7 +16,8 @@ import {
   type FinanceRecordPrefill,
 } from "@/modules/finance/types";
 import { pageFailure } from "@/modules/finance/ui/page-errors";
-import { initialValues, RecordForm, type FinancePeriodDates } from "@/modules/finance/ui/record-form";
+import { initialValues } from "@/modules/finance/ui/form-values";
+import { RecordForm, type FinancePeriodDates } from "@/modules/finance/ui/record-form";
 import { firstParam, isGuid, type SearchParams } from "@/modules/finance/ui/routes";
 import { MessageCard, NarrowPage, UnavailableNotice } from "@/modules/finance/ui/states";
 import { financePageTitle } from "../page-data";
