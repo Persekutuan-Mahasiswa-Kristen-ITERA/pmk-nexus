@@ -3,7 +3,7 @@
 Spec: `docs/modules/finance.md` (criteria FN-01..FN-40, flows F1-F8, rules R1-R18, owner decisions K1-K6, amendments A-FN1..A-FN21). Decisions: D-026, D-027, D-028. Contract: `src/modules/finance/types.ts`.
 Last updated 2026-11-11. Format follows `docs/qa/letters.md`. Code under test: commits `c499dc0` (server layer and screens) and `d0c7ff7` (drawer, Dashboard card, route allow-list), on top of the contract commit `5259772` and the database migrations `20261111200000` and `20261111200100`.
 
-**Status: NOT cleared for the hosted project.** The database and server layers are tested and the code review found nothing CRITICAL or HIGH (section 5). Three things the spec asks for are still open: a browser click-through at 390 px (FN-36), end-to-end tests for Finance, and the owner's approval with a backup (R13). Section 6 lists what was not run.
+**Status: NOT cleared for the hosted project.** The database and server layers are tested, the code review found nothing CRITICAL or HIGH (section 5), and 51 end-to-end tests pass against the local stack (access, flows, export, period change). Two things the spec asks for are still open: a human click-through at 390 px (FN-36) and the owner's approval with a backup (R13). Section 6 lists what was not run.
 
 ## 1. How to run
 
@@ -34,8 +34,15 @@ Load the Storage stand-in before the NEXUS migrations, otherwise the Storage pol
 | `tests/unit/finance-server.test.ts` | The server layer with a fake database client: error mapping fails closed; the gate runs before the RPC on every read and write; the amount travels as digit text; replayed save is a success; signed link only for a proof the database listed, 300 s; upload route (own folder, random name, magic bytes, mixed-case boundary, cross-site, size cap, extra fields, 405); export route (POST only, CSRF, export AND view, cut answer, form fallback); writers (WIB time, integer cells, formula neutralised). |
 | `tests/unit/static-rules.test.ts` | Route allow-list (now lists the Finance pages and routes); every page, route and Server Action checks the session itself; no service-role key; RPC and table access only inside `src/lib/picore/`. |
 | `tests/unit/nav-and-cn.test.ts` | Drawer: Finance appears for `finance.view` only, before Surat Menyurat; not for a units grant, the export key alone, or System Admin alone. |
+| `tests/e2e/finance-access.spec.ts` | 23 tests, mobile 390 px: persona matrix (drawer, Dashboard card, buttons absent, forbidden pages), database functions with each persona's own token, direct table access, route handlers and Server Actions called directly. |
+| `tests/e2e/finance-flow.spec.ts` | 16 tests: Catat (Lanjut, Cek dulu, Simpan), void, correction, Saldo awal, negative balance, markup as text, proofs (add, withdraw, limit of 3, "Tanpa bukti"). Storage is off locally, so the upload route is stubbed in the browser. |
+| `tests/e2e/finance-helpers.ts` | Persona-token calls, read-only oracles, `sweepQa()` (voids what the run created; the ledger is append-only). |
+| `tests/e2e/finance-export.spec.ts` | 10 tests: Excel, CSV and PDF by BPH against the filtered screen (rows, order, voided marked and reason, summary of the whole period, WIB, integers, no personal data or links, one log row); nine filter combinations against `finance_entry_list`; an older period; empty result; the detail page's "Ekspor"; headers and body types; form and multipart fallback; bad bodies; log write blocked = 503 and no file; direct calls per persona. |
+| `tests/e2e/finance-period.spec.ts` | 2 tests: the switch to 2025/2026 and back with sessions kept open (access, drawer, Dashboard card, period select, banners, soft date warning, "Buat koreksi" into the active period with the link, closed-period refusals, export of another period, closing-balance hint); no active period. |
 
-There is no `tests/e2e/finance-*.spec.ts` yet.
+Run: `pnpm exec playwright test tests/e2e/finance- --project=mobile` against `next start -p 3100` built from the current source. Last run: 51 passed (access 23, flow 16, export 10, period 2). Two things to know before re-running: `finance-period` leaves its 2025/2026 entries behind (that period is closed again and the ledger is append-only; they all start with `QA<tag>`, and the totals the specs compare are always read from the tables), and the PDF check joins the number that the narrow column wraps (`KAS-01` / `44`).
+
+**Bug found by these specs (fixed, not yet committed):** `/finance/catat` and `/finance/saldo-awal` showed "This page couldn't load". The pages called `initialValues()`, exported from the `"use client"` module `ui/record-form.tsx`, and Next refuses a server call into a client module. Typecheck, lint, unit tests and `next build` all passed; only opening the page showed it. Fix: the helper moved to `ui/form-values.ts` (plain module). The code in `c499dc0` has this bug.
 
 ## 3. Criteria map (spec section 11)
 
@@ -64,19 +71,19 @@ There is no `tests/e2e/finance-*.spec.ts` yet.
 | FN-18 Number assigned by the database, never reused, no clash | pgTAP | |
 | FN-19 One history row per action, immutable | pgTAP | |
 | FN-20 One Aktif Saldo awal per period | pgTAP, unit (server: opening is never a correction) | |
-| FN-21 Previous closing balance is a hint, never a prefill | pgTAP | The screen shows it with "Pakai angka ini" only when the digits exist; a negative balance cannot be used. Not clicked. |
-| FN-22 Period is the active one, never input; banner without one | pgTAP, unit (server) | |
-| FN-23 Period switch | pgTAP | Dashboard card and period select after a switch are not clicked. |
-| FN-24 Date outside the period warns, does not block | none | Logic in `isOutsideFinancePeriod` (contract) and the check sheet in `record-form.tsx:417`. No automated test names it. |
+| FN-21 Previous closing balance is a hint, never a prefill | pgTAP, e2e (`finance-period`: the hint shows the closing balance of 2025/2026, the field stays empty, "Pakai angka ini" fills it) | The e2e step runs only while the active period has no Aktif Saldo awal; it is skipped silently otherwise. A negative closing balance (no button) is not run. |
+| FN-22 Period is the active one, never input; banner without one | pgTAP, unit (server), e2e (`finance-period`: a new entry lands in the active period, no period = forbidden screen with the reason, nothing written) | |
+| FN-23 Period switch | pgTAP, e2e (`finance-period`: both directions, sessions kept open, Dashboard card, drawer item, period select, old period read-only) | |
+| FN-24 Date outside the period warns, does not block | e2e (`finance-period`: the check sheet says "Tanggal ini di luar masa periode 2025/2026. Tetap simpan?" and the entry is still saved) | |
 | FN-25 File type, size and count, real type from the first bytes | pgTAP, unit (server: upload route) | |
 | FN-26 Private bucket, signed link 300 s, view holders only | pgTAP, unit (server: link) | |
 | FN-27 Withdrawn proof: record and file stay, managers only, "Tanpa bukti" filter | pgTAP | |
-| FN-28 Export button and call need `finance.export` and view | pgTAP, unit (server: export route) | |
-| FN-29 Export matches the screen; summary, WIB, voided marked, integers | pgTAP, unit (server: writers) | Row count against the screen is not compared end to end. |
-| FN-30 Formula neutralised in CSV and Excel | pgTAP, unit (server: writers) | |
-| FN-31 One log row per successful export, none otherwise, no PII | pgTAP | |
-| FN-32 Row limit | pgTAP, unit (server: cut answer, too_many_rows) | |
-| FN-33 Dashboard card for view holders, error inside the card | pgTAP | Card render is built and compiled; not seen in a browser. |
+| FN-28 Export button and call need `finance.export` and view | pgTAP, unit (server: export route), e2e (`finance-access`, `finance-export`: every persona, cross-site, GET, anonymous) | |
+| FN-29 Export matches the screen; summary, WIB, voided marked, integers | pgTAP, unit (server: writers), e2e (`finance-export`: Excel, CSV and PDF rows and order equal the screen; the summary is the whole period; 9 filter combinations equal `finance_entry_list`) | |
+| FN-30 Formula neutralised in CSV and Excel | pgTAP, unit (server: writers), e2e (`finance-export`: `=HYPERLINK`, `+1+1`, `@SUM`, `-2+3` in a real file; no `<f>` element in the sheet) | |
+| FN-31 One log row per successful export, none otherwise, no PII | pgTAP, e2e (`finance-export`: one row per export, empty result included, no search text or amount in the row, refused calls write none, log write blocked = no file) | |
+| FN-32 Row limit | pgTAP, unit (server: cut answer, too_many_rows) | The 1000-row refusal is not run end to end (it would need 1001 entries in the append-only ledger). |
+| FN-33 Dashboard card for view holders, error inside the card | pgTAP, e2e (`finance-access`: card per persona; `finance-period`: card follows the active period and equals the tables) | The error state inside the card is not provoked. |
 | FN-34 No email, phone, NIM, NIP; names only through PI-CORE | pgTAP | |
 | FN-35 RLS per persona, no direct write grant | pgTAP | |
 | FN-36 390 px, 44 px fields, 16 px text, numeric keypad, tabular numbers | none | **Not tested.** Classes are in the code; nobody has looked at the screens. |
@@ -105,9 +112,9 @@ Method: read the code and the migrations as they are, and ran searches over the 
 
 | # | Severity | Finding | Where | Action |
 |---|---|---|---|---|
-| S1 | LOW | `pnpm audit --prod` reports 2 issues (1 low `deepmerge`, 1 moderate `minimatch`), both through the `shadcn` package. `shadcn` sits under `dependencies` in `package.json` but no file under `src` or `tests` imports it, so the issue does not reach the running app. | `package.json:32` | Move `shadcn` to `devDependencies`. Not a Finance bug; affects the whole app. |
+| S1 | LOW (fixed in `514c0ca`) | `pnpm audit --prod` reported 2 issues (1 low `deepmerge`, 1 moderate `minimatch`), both through the `shadcn` package. `shadcn` sat under `dependencies` but no file under `src` or `tests` imports it, so the issue never reached the running app. | `package.json` | Moved to `devDependencies`; `pnpm audit --prod` now reports no known vulnerabilities. Not a Finance bug; it affected the whole app. |
 | S2 | INFO | `src/modules/finance/server/actions.ts` starts with `"use server"` (like Minutes and Letters). Safe: every action goes through `gate()` and the page wrapper in `src/app/(app)/finance/actions.ts` calls `getAccessState()` first, so the static rule passes. | `server/actions.ts:1` | None. An earlier working note said the line was removed; it was not. |
-| S3 | INFO | Texts that the contract does not hold are in `ui/copy.ts` and are not yet recorded as assumptions. | `ui/copy.ts` | Record them in `docs/OPEN_QUESTIONS.md` (list below). |
+| S3 | INFO (done) | Texts that the contract does not hold are in `ui/copy.ts`. | `ui/copy.ts` | Recorded as A-FN22..A-FN24 in `docs/OPEN_QUESTIONS.md` section K. |
 
 What was checked and found sound:
 
@@ -120,19 +127,19 @@ What was checked and found sound:
 
 ## 6. What was NOT run
 
-- **No browser run of any Finance screen.** FN-36 (390 px, keyboard, numeric keypad), the "Cek dulu" sheet, the upload with progress and image resizing, "Lihat" opening a new tab, the Dashboard card, and the void and withdraw sheets have only been compiled.
-- **No Finance e2e tests** (no `tests/e2e/finance-*.spec.ts`), so the app is not exercised against a real local stack with the persona accounts. Storage is off on the local dev stack, so uploads can only be tested up to the Storage call there.
+- **No human click-through of the Finance screens.** The e2e specs open every screen at 390 px in a real browser and check text, buttons, overflow and the flows, but nobody has judged FN-36 by eye (44 px fields, 16 px text, numeric keypad, tabular numbers), nor the upload with progress and image resizing, nor "Lihat" opening a new tab (Storage is off locally).
+- **Finance e2e covers access, the record/void/proof flows, export and the period change** (51 tests, mobile 390 px). Storage is off on the local dev stack, so uploads can only be tested up to the Storage call there. Not run end to end: the 1000-row export refusal, the Dashboard card's error state, a deactivated Treasurer (Letters has `surat-deactivated`).
 - **No test against the hosted project.** R13 still applies: backup first, the owner's approval.
 - The signed link was tested with a fake Storage client and the pgTAP Storage stand-in, not against real Supabase Storage.
-- FN-24 and FN-39 have no test; FN-36 has none.
+- FN-36 has no test; FN-39 has no test.
 
 ## 7. Open before the hosted project (R13, FN-40)
 
 1. Click through every screen at 390 px as P-BEND, P-KETUM and a persona without a key, and write the results in this file.
-2. Add `tests/e2e/finance-*.spec.ts` on the pattern of `tests/e2e/surat-*.spec.ts` (persona matrix, record, void, correction, export against the screen).
-3. Add a test for FN-24 and FN-39, or record that the contract covers them.
-4. Move `shadcn` to `devDependencies` (S1).
-5. Record the GAP texts as assumptions in `docs/OPEN_QUESTIONS.md` (list below).
+2. ~~Add `tests/e2e/finance-*.spec.ts`.~~ Done: access, flow, export and period specs (51 pass).
+3. ~~Add a test for FN-24~~ Done (`finance-period`). FN-39 (`period_id` on every entry) still has none; `finance-period` reads `period_id` of every entry it makes, which covers it in effect, but no test names it.
+4. ~~Move `shadcn` to `devDependencies` (S1).~~ Done in `514c0ca`.
+5. ~~Record the GAP texts as assumptions in `docs/OPEN_QUESTIONS.md`.~~ Done: A-FN22..A-FN24 (section 8 stays as the list).
 6. Backup, the owner's approval, then apply the two migrations to the hosted project.
 
 ## 8. Texts the screens needed that the contract does not hold (to record as [ASSUMPTION])
