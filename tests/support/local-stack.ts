@@ -25,6 +25,12 @@ export const PERSONAS = {
   // (Operations head: approve + handle + manage); staffOps = Staff in Akomodasi (Operations staff: handle + manage, no approve).
   kadivLogistik: { email: "kadiv.logistik@nexus.test", name: "Test Kepala Divisi Logistik" },
   staffOps: { email: "staff.ops@nexus.test", name: "Test Staff Operasional" },
+  // Letters personas (supabase/local/seed_test_accounts.sql section "letters"). sekjen = Sekretaris Jenderal and sekum1 =
+  // Sekretaris Umum 1 (both BPH secretaries: letters.manage + letter_requests.process, so each can process the other's
+  // request, L6); sekdep = Sekretaris Departemen Internal (department secretary: NO letter keys, only Permohonan Saya).
+  sekjen: { email: "sekjen@nexus.test", name: "Test Sekretaris Jenderal" },
+  sekum1: { email: "sekum1@nexus.test", name: "Test Sekretaris Umum 1" },
+  sekdep: { email: "sekdep@nexus.test", name: "Test Sekretaris Departemen" },
 } as const;
 export type PersonaKey = keyof typeof PERSONAS;
 

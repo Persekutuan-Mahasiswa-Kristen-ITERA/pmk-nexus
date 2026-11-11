@@ -39,14 +39,15 @@ test.describe("active members land on the Dashboard (AUTH-06, AUTH-36, AUTH-37)"
       await loginViaUi(page, persona);
       await expectOnDashboard(page);
       await expect(page.getByText(`Masuk sebagai ${fullName}.`)).toBeVisible();
-      await expect(page.getByText("Periode 2026/2027")).toBeVisible();
+      await expect(page.getByText("Periode 2026/2027", { exact: true }).first()).toBeVisible(); // the chip; module cards repeat the period
       await expect(page.getByText("Belum ada periode aktif.")).toHaveCount(0);
       await expect(page.getByRole("button", { name: "Keluar" })).toBeVisible();
-      // Not a No-access screen and no placeholder numbers or cards yet
+      // Not a No-access screen. Module cards follow the keys: the Finance card (money) is for finance.view (BPH) only, D-028
       await expect(page.getByText("Belum ada akses")).toHaveCount(0);
       expect(await noOverflow(page)).toBe(true);
       const text = await page.locator("body").innerText();
-      expect(text).not.toMatch(/@nexus\.test|nim|telepon|phone|saldo|rp\s?\d/i); // no PII, no money
+      expect(text).not.toMatch(/@nexus\.test|nim|telepon|phone/i); // no PII
+      if (persona === "regular" || persona === "admin") expect(text).not.toMatch(/saldo|rp\s?\d/i); // no money without finance.view
     });
   }
 });

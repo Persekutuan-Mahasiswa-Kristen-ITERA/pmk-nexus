@@ -56,7 +56,9 @@ test.describe("MD-01, MD-02, MD-04: personas that may view (drawer item, list, e
       try {
         await page.goto("/");
         await openDrawer(page);
-        await expect(drawerLinks(page)).toHaveText(["Dashboard", "Data Anggota", INVENTORY_ITEM]);
+        // BPH also sees Finance (finance.view) and Notulensi Rapat; a head sees Notulensi Rapat by rule D37.
+        const bph = persona === "ketum" || persona === "bendahara";
+        await expect(drawerLinks(page)).toHaveText(["Dashboard", "Data Anggota", ...(bph ? ["Finance"] : []), "Notulensi Rapat", "Surat Menyurat", INVENTORY_ITEM]);
         await page.getByRole("dialog").getByRole("link", { name: "Data Anggota" }).click();
         await expect(page).toHaveURL(/\/data-anggota$/);
         await expect(page.getByRole("dialog")).toHaveCount(0); // the drawer closes after navigating
@@ -91,7 +93,7 @@ test.describe("MD-03, MD-05: personas without Member Data view: no drawer item, 
       try {
         await page.goto("/");
         await openDrawer(page);
-        await expect(drawerLinks(page)).toHaveText(["Dashboard", INVENTORY_ITEM]); // absent, not greyed out (D-021)
+        await expect(drawerLinks(page)).toHaveText(["Dashboard", "Surat Menyurat", INVENTORY_ITEM]); // absent, not greyed out (D-021)
         await expect(page.getByRole("dialog").getByText("Data Anggota")).toHaveCount(0);
         await page.keyboard.press("Escape");
 
@@ -831,13 +833,13 @@ test.describe("Drawer accessibility (D-021): focus trap, Escape, focus return, a
         await page.keyboard.press("Shift+Tab");
         expect(await inside(), `Shift+Tab ${i + 1}`).toBe(true);
       }
-      // The focusable controls inside: close, Dashboard, Data Anggota, Keluar (4); the loop wraps
+      // The focusable controls inside: close, the six items of a BPH member, Keluar (8); the loop wraps
       const seen = new Set<string>();
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < 10; i++) {
         await page.keyboard.press("Tab");
         seen.add(await page.evaluate(() => document.activeElement?.getAttribute("aria-label") ?? document.activeElement?.textContent?.trim() ?? ""));
       }
-      expect([...seen].sort()).toEqual(["Dashboard", "Data Anggota", INVENTORY_ITEM, "Keluar", "Tutup menu"].sort());
+      expect([...seen].sort()).toEqual(["Dashboard", "Data Anggota", "Finance", "Notulensi Rapat", "Surat Menyurat", INVENTORY_ITEM, "Keluar", "Tutup menu"].sort());
 
       await page.keyboard.press("Escape");
       await expect(dialog).toHaveCount(0);

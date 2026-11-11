@@ -44,20 +44,23 @@ test.afterAll(async () => {
 
 // What each persona may do, written from spec section 2 (not computed from the code under test).
 type Expect = { drawer: string[]; segments: string[]; manage: boolean; queue: boolean; exportCatalog: boolean; approve: boolean; handle: boolean };
-const MEMBER: Expect = { drawer: ["Dashboard", INVENTORY_ITEM], segments: ["Katalog", "Peminjaman Saya"], manage: false, queue: false, exportCatalog: false, approve: false, handle: false };
+const MEMBER: Expect = { drawer: ["Dashboard", "Surat Menyurat", INVENTORY_ITEM], segments: ["Katalog", "Peminjaman Saya"], manage: false, queue: false, exportCatalog: false, approve: false, handle: false };
 const BPH: Expect = { ...MEMBER, segments: ["Katalog", "Peminjaman Saya", "Antrean"], queue: true, exportCatalog: true };
 const OPS_STAFF: Expect = { ...MEMBER, segments: ["Katalog", "Peminjaman Saya", "Antrean", "Kelola Barang"], manage: true, queue: true, exportCatalog: true, handle: true };
 const OPS_HEAD: Expect = { ...OPS_STAFF, approve: true };
+// Finance is BPH only (finance.view); Notulensi Rapat is BPH and every Kepala Departemen/Biro (rule D37).
+const HEAD_DRAWER = ["Dashboard", "Data Anggota", "Notulensi Rapat", "Surat Menyurat", INVENTORY_ITEM];
+const BPH_DRAWER = ["Dashboard", "Data Anggota", "Finance", "Notulensi Rapat", "Surat Menyurat", INVENTORY_ITEM];
 const PERSONAS_UI: [PersonaKey, string, Expect][] = [
   ["regular", "regular member (Staff IT)", MEMBER],
   ["pembina", "lecturer (P-LECT)", MEMBER],
   ["admin", "System Admin without a position (P-ADMIN)", MEMBER],
-  ["kabiro", "Kepala Biro Kewirausahaan (head, but not of Operations; sees Data Anggota by D32)", { ...MEMBER, drawer: ["Dashboard", "Data Anggota", INVENTORY_ITEM] }],
-  ["ketum", "BPH, Ketua Umum (P-KETUM)", { ...BPH, drawer: ["Dashboard", "Data Anggota", INVENTORY_ITEM] }],
-  ["bendahara", "BPH, Bendahara Umum 1 (Treasurer)", { ...BPH, drawer: ["Dashboard", "Data Anggota", INVENTORY_ITEM] }],
+  ["kabiro", "Kepala Biro Kewirausahaan (head, but not of Operations; sees Data Anggota by D32)", { ...MEMBER, drawer: HEAD_DRAWER }],
+  ["ketum", "BPH, Ketua Umum (P-KETUM)", { ...BPH, drawer: BPH_DRAWER }],
+  ["bendahara", "BPH, Bendahara Umum 1 (Treasurer)", { ...BPH, drawer: BPH_DRAWER }],
   ["staffOps", "Operations staff (Staff Akomodasi)", OPS_STAFF],
   ["kadivLogistik", "Operations head (Kepala Divisi Logistik)", OPS_HEAD],
-  ["kadep", "Operations head (Kepala Departemen Operasional)", { ...OPS_HEAD, drawer: ["Dashboard", "Data Anggota", INVENTORY_ITEM] }],
+  ["kadep", "Operations head (Kepala Departemen Operasional)", { ...OPS_HEAD, drawer: HEAD_DRAWER }],
 ];
 const DENIED_PAGES = ["/inventaris/antrean", "/inventaris/kelola", "/inventaris/kelola/barang/baru", "/inventaris/kelola/daftar"];
 
@@ -136,10 +139,10 @@ test.describe("IB-03: deactivated, unlinked and anonymous get nothing", () => {
 
 // ---------------------------------------------------------------------------------------------
 test.describe("IB-57, IB-48: permission catalog and row-level security of the module (read-only SELECTs)", () => {
-  test("22 keys, 35 enabled default rules plus 1 retired (D30), D30 stays disabled and listed as retired", () => {
+  test("22 keys, 36 enabled default rules (D37 came with Notulensi) plus 1 retired (D30), D30 stays disabled and listed as retired", () => {
     expect(qn("select count(*) from nexus.permissions")).toBe(22);
-    expect(qn("select count(*) from nexus.access_rules where default_code is not null and is_enabled")).toBe(35);
-    expect(qn("select count(*) from nexus.access_rules where default_code is not null")).toBe(36);
+    expect(qn("select count(*) from nexus.access_rules where default_code is not null and is_enabled")).toBe(36);
+    expect(qn("select count(*) from nexus.access_rules where default_code is not null")).toBe(37);
     expect(q("select is_enabled from nexus.access_rules where default_code = 'D30'")).toBe("f");
     expect(q("select count(*) from nexus.retired_default_rules where default_code = 'D30'")).toBe("1");
     for (const key of ["inventory.view", "inventory.manage", "inventory.export", "borrowing.view_all", "borrowing.approve", "borrowing.handle", "borrowing.export"]) {

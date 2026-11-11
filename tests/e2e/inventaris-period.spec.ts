@@ -168,7 +168,7 @@ test.describe.serial("F11, IB-38, IB-40, AC-42: the period switch changes access
         await ops.page.goto(path);
         await expectForbiddenScreen(ops.page);
       }
-      expect(await drawerItems(ops.page)).toEqual(["Dashboard", INVENTORY_ITEM]); // baseline view stays
+      expect(await drawerItems(ops.page)).toEqual(["Dashboard", "Surat Menyurat", INVENTORY_ITEM]); // baseline view stays
       const denied = await rpcAs("staffOps", "borrowing_request_hand_over", { p_request_id: approved.id, p_version: reqRow(approved.id).version, p_lines: [{ line_id: lineOf(approved.id, item.id), quantity: 1 }] });
       expect(denied.ok).toBe(false);
       expect(denied.hint).toBe("permission_required");
