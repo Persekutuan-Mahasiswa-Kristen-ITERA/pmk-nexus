@@ -35,10 +35,10 @@ export function MinutesList({ rows, caption }: { rows: MinuteRow[]; caption: str
               <th scope="col" className="w-[18%] px-4 py-2.5">
                 {COLUMNS.unit}
               </th>
-              <th scope="col" className="px-4 py-2.5">
+              <th scope="col" className="w-[24%] px-4 py-2.5">
                 {COLUMNS.title}
               </th>
-              <th scope="col" className="w-[28%] px-4 py-2.5">
+              <th scope="col" className="w-[24%] px-4 py-2.5">
                 {COLUMNS.topic}
               </th>
               <th scope="col" className="w-[7.5rem] px-4 py-2.5">
@@ -59,8 +59,8 @@ export function MinutesList({ rows, caption }: { rows: MinuteRow[]; caption: str
                 >
                   <td className="px-4 py-3 text-body-md text-ink-body tabular-nums">{formatDate(row.meetingDate)}</td>
                   <td className="px-4 py-3 text-body-md break-words text-ink">{minuteUnitLabel(row)}</td>
-                  <th scope="row" className="px-4 py-3 font-normal">
-                    <span className="flex flex-col items-start gap-1.5">
+                  <th scope="row" className="min-w-0 px-4 py-3 font-normal">
+                    <span className="flex min-w-0 flex-col items-start gap-1.5">
                       <Link
                         href={minuteHref(row.minuteId)}
                         className={cn(

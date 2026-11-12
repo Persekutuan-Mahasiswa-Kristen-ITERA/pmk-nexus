@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { AppBar } from "./app-bar";
+import { DesktopNav } from "./desktop-nav";
 import type { NavData } from "./nav";
 
 /**
@@ -22,9 +23,12 @@ export function AppFrame({
   return (
     <div className="flex min-h-dvh flex-col">
       <AppBar nav={nav} />
-      <main className="w-full flex-1 px-4 pt-7 pb-6 md:pt-16">
-        <div className={cn("mx-auto w-full", column === "narrow" && "max-w-md")}>{children}</div>
-      </main>
+      <div className="flex min-h-0 flex-1">
+        {nav ? <DesktopNav nav={nav} /> : null}
+        <main className="min-w-0 w-full flex-1 px-4 pt-7 pb-6 md:px-8 md:pt-10 xl:px-10">
+          <div className={cn("mx-auto w-full", column === "narrow" && "max-w-md")}>{children}</div>
+        </main>
+      </div>
       {footer}
     </div>
   );

@@ -79,8 +79,8 @@ export function EntryList({ rows, caption }: { rows: FinanceEntryRow[]; caption:
                 >
                   <td className="px-4 py-3 text-body-md text-ink-body tabular-nums">{formatDate(row.entryDate)}</td>
                   <td className="px-4 py-3 text-body-md text-ink-body tabular-nums">{row.numberText}</td>
-                  <th scope="row" className="px-4 py-3 font-normal">
-                    <span className="flex flex-col items-start gap-1.5">
+                  <th scope="row" className="min-w-0 px-4 py-3 font-normal">
+                    <span className="flex min-w-0 flex-col items-start gap-1.5">
                       <Link
                         href={entryHref(row.entryId)}
                         className={cn(

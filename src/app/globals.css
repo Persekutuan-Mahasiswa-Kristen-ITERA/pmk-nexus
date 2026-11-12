@@ -47,6 +47,21 @@
   --nx-header-fill:
     radial-gradient(120% 110% at 100% 0%, var(--nx-gold-glow), transparent 55%),
     linear-gradient(180deg, var(--nx-gold-tint-top), var(--nx-gold-tint));
+  /* A clear edge and finer padding create the premium header treatment without new colours. */
+  --nx-header-radius: 1rem;
+  --nx-header-pad: 2rem;
+
+  /* Desktop shell and dashboard rhythm: one scale, keeping the Stitch palette intact. */
+  --nx-shell-nav-width: 16rem;
+  --nx-dashboard-max: 72rem;
+  --nx-dashboard-gap: 1.25rem;
+  --nx-dashboard-gap-wide: 1.5rem;
+  --nx-card-radius: 0.75rem;
+  --nx-card-pad: 1.5rem;
+  --nx-card-pad-wide: 1.75rem;
+  --nx-card-hover-lift: -2px;
+  --nx-card-hover-duration: 180ms;
+
 
   /* Fields (D-017: border is Stitch outline, 4.33:1; Stitch #D8CCBA failed 3:1) */
   --nx-field: #FCFBF8;
@@ -199,6 +214,17 @@
   --radius-2xl: 16px;
   --radius-3xl: 24px;
   --radius-4xl: 32px;
+
+  /* Map shell sizing and card rhythm to Tailwind utilities without duplicating magic values. */
+  --width-shell-nav: var(--nx-shell-nav-width);
+  --width-dashboard: var(--nx-dashboard-max);
+  --gap-dashboard: var(--nx-dashboard-gap);
+  --gap-dashboard-wide: var(--nx-dashboard-gap-wide);
+  --radius-card: var(--nx-card-radius);
+  --padding-card: var(--nx-card-pad);
+  --padding-card-wide: var(--nx-card-pad-wide);
+  --translate-y-card-hover: var(--nx-card-hover-lift);
+  --duration-card-hover: var(--nx-card-hover-duration);
 }
 
 /* Stitch type scale: text-display-sm, text-body-md, ... (size, line height, tracking, weight). */

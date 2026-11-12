@@ -29,7 +29,7 @@ export function DashboardCard({
   return (
     <section
       aria-labelledby={titleId}
-      className={`nx-rise nx-lift ${DELAY[Math.min(slot, DELAY.length - 1)]} flex flex-col gap-4 rounded-xl border border-surface-line bg-surface p-5 shadow-elevation-1 hover:border-gold-tint-line md:p-6`}
+      className={`nx-rise nx-lift ${DELAY[Math.min(slot, DELAY.length - 1)]} flex flex-col gap-5 rounded-card border border-surface-line bg-surface p-5 shadow-elevation-1 transition-[transform,border-color,box-shadow] duration-card-hover hover:-translate-y-card-hover hover:border-gold-tint-line hover:shadow-elevation-2 focus-within:border-gold-tint-line md:gap-6 md:p-card-wide`}
     >
       <div className="flex items-center gap-3">
         <span

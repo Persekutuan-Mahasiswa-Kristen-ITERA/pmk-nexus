@@ -23,13 +23,16 @@ export function PageHeaderCard({
   children?: ReactNode;
 }) {
   return (
-    <div className="nx-header-card nx-rise flex flex-col gap-3 rounded-xl border border-gold-tint-line p-5 shadow-elevation-1 md:p-7">
-      {periodLabel ? <PeriodPill label={periodLabel} /> : null}
-      <div className="flex items-end justify-between gap-4">
-        <h1 className="min-w-0 font-heading text-display-lg text-balance break-words text-title">{title}</h1>
+    <div className="nx-header-card nx-rise relative flex flex-col gap-4 overflow-hidden rounded-[var(--nx-header-radius)] border border-gold-tint-line p-5 shadow-elevation-1 md:p-[var(--nx-header-pad)]">
+      <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1 bg-gold" />
+      <div className="relative flex items-end justify-between gap-4">
+        <div className="flex min-w-0 flex-col gap-3">
+          {periodLabel ? <PeriodPill label={periodLabel} /> : null}
+          <h1 className="min-w-0 font-heading text-display-lg text-balance break-words text-title">{title}</h1>
+        </div>
         {aside}
       </div>
-      {children}
+      {children ? <div className="relative max-w-3xl border-t border-gold-tint-line/70 pt-3">{children}</div> : null}
     </div>
   );
 }

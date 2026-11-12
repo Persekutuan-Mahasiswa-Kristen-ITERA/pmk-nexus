@@ -60,7 +60,7 @@ export default async function DashboardPage() {
     (inventory.canViewCatalog ? 1 : 0) + (members.canView ? 1 : 0) + (showFinance ? 1 : 0) + (showMinutes ? 1 : 0) + (showLetters ? 1 : 0);
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col gap-5 md:max-w-3xl md:gap-6">
+    <div className="mx-auto flex w-full max-w-md flex-col gap-5 md:max-w-3xl md:gap-dashboard xl:max-w-dashboard xl:gap-dashboard-wide">
       <PageHeaderCard periodLabel={activePeriodLabel} title={`Shalom, ${firstName(fullName)}!`}>
         <div className="flex flex-col gap-1">
           <p className="text-body-lg text-ink">Kamu masuk sebagai {fullName}.</p>
@@ -81,7 +81,7 @@ export default async function DashboardPage() {
 
       {cardCount > 0 ? (
         // Each card loads on its own, so one slow module never holds the others back (design 16.2).
-        <div className={cardCount > 1 ? "grid gap-4 md:grid-cols-2" : "grid gap-4"}>
+        <div className={cardGridClass(cardCount)}>
           {inventory.canViewCatalog ? (
             <Suspense fallback={<InventoryStatusSkeleton />}>
               <InventoryStatus canApprove={inventory.canApprove} />
@@ -115,6 +115,13 @@ export default async function DashboardPage() {
 }
 
 /** "Shalom, Grace!": the first word of the PI-CORE name; a one-word name is used whole. */
+function cardGridClass(count: number): string {
+  if (count <= 1) return "grid gap-4";
+  if (count === 2) return "grid gap-4 md:grid-cols-2";
+  if (count === 3) return "grid gap-4 md:grid-cols-2 xl:grid-cols-3";
+  return "grid gap-4 md:grid-cols-2 xl:grid-cols-3";
+}
+
 function firstName(fullName: string): string {
   return fullName.trim().split(/\s+/)[0] || fullName;
 }
