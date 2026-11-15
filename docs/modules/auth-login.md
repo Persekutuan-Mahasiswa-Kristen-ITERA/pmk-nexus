@@ -40,7 +40,7 @@ Repo: `/home/fycode/Documents/pi-core-v2` (D-005 [ASSUMPTION] that this is the s
 | P11 | Logout is a Server Action calling `signOut({ scope: "local" })`, then redirect to `/login`. | `src/app/actions/auth.ts` |
 | P12 | PI-CORE treats "signed in but no active member row" (unlinked OR inactive) as one state `no-member` and sends it to `/login?reason=inactive` with "Akun ini tidak aktif. Hubungi admin PMK ITERA." and drops the local session. | `src/lib/auth.ts` (`getSessionState`, `requireMember`), `login-form.tsx` |
 | P13 | Auth settings in the repo (local only): `jwt_expiry = 3600`, refresh-token rotation on, `minimum_password_length = 8`, `password_requirements = letters_digits`, `sign_in_sign_ups = 30` per 5 minutes per IP. Session `timebox` and `inactivity_timeout` are commented out (not used). | `supabase/config.toml` `[auth]`, `[auth.rate_limit]`, `[auth.sessions]` |
-| P14 | Hosted project: only three Auth keys were ever pushed (`enable_signup = false`, `minimum_password_length = 8`, `password_requirements = letters_digits`), the rest left at hosted defaults. Site URL = `https://pi-core-v2.vercel.app`. PI-CORE sends no email, so redirect URLs are not used yet. | `docs/OPERATIONS.md` 2026-11-01 and 2026-11-02 entries |
+| P14 | Hosted project: only three Auth keys were ever pushed (`enable_signup = false`, `minimum_password_length = 8`, `password_requirements = letters_digits`), the rest left at hosted defaults. Site URL = `https://core.pmkitera.web.id` (changed by the owner 2026-11-15, was `https://pi-core-v2.vercel.app`). Redirect URLs (2026-11-15): `https://core.pmkitera.web.id/**`, `https://nexus.pmkitera.web.id/**`, plus the old `https://pi-core-v2.vercel.app/` and `http://localhost:3001`. | `docs/OPERATIONS.md` 2026-11-01 and 2026-11-02 entries |
 | P15 | Changing a member's email in PI-CORE also updates the Auth login email (rolls back if Auth refuses). | `src/app/(app)/members/actions.ts` lines 127-138 |
 | P16 | Login page also shows a disabled "Masuk dengan Google / Segera hadir" row. | `src/app/login/page.tsx` |
 
@@ -377,7 +377,7 @@ Also appended to `docs/OPEN_QUESTIONS.md`, section E. One short question each.
 | Id | Assumption |
 |---|---|
 | A-AUTH-1 | NEXUS login is Indonesian only (E5). |
-| A-AUTH-2 | The PI-CORE address for "Buka PI-CORE" is `https://pi-core-v2.vercel.app` (from `docs/OPERATIONS.md`) and the change page is `/change-password`. Kept in one configuration value because a custom domain may replace it. PI-CORE keeps `next=/change-password` through its own login (P9, P10), so this deep link works for a person who is not signed in there. |
+| A-AUTH-2 | The PI-CORE address for "Buka PI-CORE" is `https://core.pmkitera.web.id` (custom domain since 2026-11-15; was `https://pi-core-v2.vercel.app`) and the change page is `/change-password`. Kept in one configuration value because a custom domain may replace it. PI-CORE keeps `next=/change-password` through its own login (P9, P10), so this deep link works for a person who is not signed in there. |
 | A-AUTH-3 | NEXUS re-issues auth cookies from the server after login, like PI-CORE (P1), to avoid iOS PWA logout after 7 days. |
 | A-AUTH-4 | No CAPTCHA and no own throttling in Phase 1; Supabase's per-IP limit is enough. |
 | A-AUTH-5 | The "Ganti kata sandi" link in the menu points to PI-CORE's profile page; the path is not verified here. |

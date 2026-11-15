@@ -98,7 +98,7 @@ Run on the hosted preview or production-like deployment before go-live. Tick and
 
 ### 6.4 PI-CORE round trip on the hosted app (AUTH-19, AUTH-21, AUTH-28, E6)
 - [ ] Ask a PI-CORE admin to create a test member (temporary password). Sign in to NEXUS: "Ganti kata sandi dulu" appears.
-- [ ] "Buka PI-CORE" opens `https://pi-core-v2.vercel.app/change-password` in a NEW tab; if not signed in there, PI-CORE asks for login and then lands on the change page.
+- [ ] "Buka PI-CORE" opens `https://core.pmkitera.web.id/change-password` in a NEW tab; if not signed in there, PI-CORE asks for login and then lands on the change page.
 - [ ] Change the password in PI-CORE, return to the NEXUS tab, press "Sudah ganti? Muat ulang": the Dashboard opens without a new login.
 - [ ] Sign out of NEXUS: PI-CORE stays signed in (AUTH-28).
 - [ ] Ask a PI-CORE admin to deactivate the test member while signed in to NEXUS: the next click shows "Belum ada akses" (AUTH-33). Reactivate: sign in works again (AUTH-35).
