@@ -96,7 +96,7 @@ test.describe("F8, R3, R6, L7, L8: a new period moves the access by itself, old 
       const assignmentId = q(
         `insert into public.assignments(member_id, org_unit_id, position_id, period_id)
          select (select id from public.members where email = '${emailOf("regular")}'),
-                (select id from public.org_units where name = 'BPH PMK ITERA'),
+                (select id from public.org_units where name = 'Kesekjenan'),
                 (select id from public.positions where name = 'Bendahara Umum 1'),
                 (select id from public.periods where label = '${OLD}')
          returning id`,

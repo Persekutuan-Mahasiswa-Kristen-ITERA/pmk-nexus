@@ -145,7 +145,7 @@ describe("XLSX: text cells are never formulas (MD-10 safety, D-020)", () => {
 const rows: MemberRow[] = [
   { rowNo: 1, memberId: "a", fullName: "Alfa Staff", isLecturer: false, isActive: true, unitName: "Logistik", parentUnitName: "Departemen Operasional", positionName: "Staff" },
   { rowNo: 2, memberId: "b", fullName: "Dr. Pembina, M.Si.", isLecturer: true, isActive: true, unitName: null, parentUnitName: null, positionName: null },
-  { rowNo: 3, memberId: "c", fullName: "=Evil Name", isLecturer: false, isActive: false, unitName: "BPH PMK ITERA", parentUnitName: null, positionName: "Ketua Umum" },
+  { rowNo: 3, memberId: "c", fullName: "=Evil Name", isLecturer: false, isActive: false, unitName: "Kesekjenan", parentUnitName: null, positionName: "Ketua Umum" },
   { rowNo: 4, memberId: "d", fullName: 'Quote "Q" Name', isLecturer: false, isActive: true, unitName: null, parentUnitName: null, positionName: null },
 ];
 const meta = { periodLabel: "2026/2027", exportedAt: new Date("2026-11-06T17:00:00Z") };
@@ -159,7 +159,7 @@ describe("buildMemberExportFile: CSV", () => {
     expect(lines[0]).toBe("No,Nama Lengkap,Pembina,Unit,Jabatan,Status");
     expect(lines[1]).toBe("1,Alfa Staff,,Departemen Operasional · Logistik,Staff,Aktif");
     expect(lines[2]).toBe('2,"Dr. Pembina, M.Si.",Ya,-,-,Aktif'); // lecturer: marker, '-' for no assignment (MD-24, R10)
-    expect(lines[3]).toBe("3,'=Evil Name,,BPH PMK ITERA,Ketua Umum,Nonaktif");
+    expect(lines[3]).toBe("3,'=Evil Name,,Kesekjenan,Ketua Umum,Nonaktif");
     expect(lines[4]).toBe('4,"Quote ""Q"" Name",,-,-,Aktif');
     expect(lines[5]).toBe(""); // trailing CRLF
     expect(lines).toHaveLength(6);

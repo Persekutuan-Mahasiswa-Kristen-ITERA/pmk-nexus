@@ -197,19 +197,19 @@ update public.periods set is_active = true where id = nexus_test.period(2);
 insert into public.assignments (member_id, org_unit_id, position_id, period_id)
 select nexus_test.mid(v.n), nexus_test.unit(v.unit_name), nexus_test.pos(v.unit_type, v.position_name), nexus_test.period(v.p)
 from (values
-  ( 3, 'BPH PMK ITERA',               'bph',        'Ketua Umum',            2),
-  ( 4, 'BPH PMK ITERA',               'bph',        'Sekretaris Jenderal',   2),
-  ( 5, 'BPH PMK ITERA',               'bph',        'Bendahara Umum 1',      2),
+  ( 3, 'Kesekjenan',               'bph',        'Ketua Umum',            2),
+  ( 4, 'Kesekjenan',               'bph',        'Sekretaris Jenderal',   2),
+  ( 5, 'Kesekjenan',               'bph',        'Bendahara Umum 1',      2),
   ( 6, 'Departemen Internal',         'department', 'Sekretaris Departemen', 2),
   ( 7, 'Departemen Operasional',      'department', 'Kepala Departemen',     2),
   ( 8, 'Logistik',                    'division',   'Staff',                 2),
   ( 9, 'Akomodasi',                   'division',   'Staff',                 2),
   (10, 'Pubdok',                      'division',   'Staff',                 2),
-  (12, 'BPH PMK ITERA',               'bph',        'Bendahara Umum 2',      2),
+  (12, 'Kesekjenan',               'bph',        'Bendahara Umum 2',      2),
   (12, 'Departemen Talenta',          'department', 'Sekretaris Departemen', 2),
   (13, 'Logistik',                    'division',   'Staff',                 2),
-  (13, 'BPH PMK ITERA',               'bph',        'Sekretaris Umum 2',     2),
-  (14, 'BPH PMK ITERA',               'bph',        'Sekretaris Jenderal',   1),
+  (13, 'Kesekjenan',               'bph',        'Sekretaris Umum 2',     2),
+  (14, 'Kesekjenan',               'bph',        'Sekretaris Jenderal',   1),
   (15, 'Departemen Eksternal',        'department', 'Kepala Departemen',     2),
   (18, 'Departemen Pelayanan Khusus', 'department', 'Sekretaris Departemen', 2),
   (18, 'Biro Kewirausahaan',          'bureau',     'Sekretaris Biro',       2),
@@ -463,13 +463,13 @@ select is(nexus_test.ids('select * from nexus.member_data_list(p_status => ''all
 select is((select array_agg(row_no order by row_no) from nexus.member_data_list(p_status => 'all', p_page_size => 50)),
           (select array_agg(g::bigint order by g) from generate_series(1, 19) g), 'row_no is the running number 1..N');
 
-select is(nexus_test.row_of(3), array['BPH PMK ITERA', 'bph', null, 'Ketua Umum']::text[],
-  'MD-18: Ketua Umum shows BPH PMK ITERA / Ketua Umum');
+select is(nexus_test.row_of(3), array['Kesekjenan', 'bph', null, 'Ketua Umum']::text[],
+  'MD-18: Ketua Umum shows Kesekjenan / Ketua Umum');
 select is(nexus_test.row_of(8), array['Logistik', 'division', 'Departemen Operasional', 'Staff']::text[],
   'MD-18: a division assignment carries its department (Departemen Operasional · Logistik / Staff)');
 select is(nexus_test.row_of(19), array['Biro Kewirausahaan', 'bureau', null, 'Kepala Biro']::text[],
   'MD-18: Kepala Biro shows Biro Kewirausahaan / Kepala Biro');
-select is(nexus_test.row_of(13), array['BPH PMK ITERA', 'bph', null, 'Sekretaris Umum 2']::text[],
+select is(nexus_test.row_of(13), array['Kesekjenan', 'bph', null, 'Sekretaris Umum 2']::text[],
   'M3: primary = lowest rank (Sekretaris Umum 2, 30) over Staff in Logistik (70)');
 select is(nexus_test.row_of(20), array['Departemen CMIT', 'department', null, 'Sekretaris Departemen']::text[],
   'MD-16: Sekretaris Departemen (50) beats Staff (70)');
@@ -498,15 +498,15 @@ update public.org_units set sort_order = 90 where id = nexus_test.unit('Biro Kew
 -- Level 3: same unit, equal rank (30) -> position name A-Z. Renaming proves it is the name, not
 -- insertion order, and that renames show at once (R7, MD-21).
 insert into public.assignments (member_id, org_unit_id, position_id, period_id)
-values (nexus_test.mid(12), nexus_test.unit('BPH PMK ITERA'), nexus_test.pos('bph', 'Sekretaris Umum 1'), nexus_test.period(2));
+values (nexus_test.mid(12), nexus_test.unit('Kesekjenan'), nexus_test.pos('bph', 'Sekretaris Umum 1'), nexus_test.period(2));
 select nexus_test.login_as(3);
-select is(nexus_test.row_of(12), array['BPH PMK ITERA', 'bph', null, 'Bendahara Umum 2']::text[],
+select is(nexus_test.row_of(12), array['Kesekjenan', 'bph', null, 'Bendahara Umum 2']::text[],
   'MD-17: same unit and rank -> position name A-Z (Bendahara Umum 2 before Sekretaris Umum 1)');
 select is(nexus_test.row_of(12), nexus_test.row_of(12), 'MD-17: the same primary on every request');
 reset role; select nexus_test.logout();
 update public.positions set name = 'Zz Bendahara Umum 2' where id = nexus_test.pos('bph', 'Bendahara Umum 2');
 select nexus_test.login_as(3);
-select is(nexus_test.row_of(12), array['BPH PMK ITERA', 'bph', null, 'Sekretaris Umum 1']::text[],
+select is(nexus_test.row_of(12), array['Kesekjenan', 'bph', null, 'Sekretaris Umum 1']::text[],
   'MD-17/R7: after a rename the position name decides again, at once');
 reset role; select nexus_test.logout();
 update public.positions set name = 'Bendahara Umum 2' where name = 'Zz Bendahara Umum 2' and unit_type = 'bph';
@@ -585,7 +585,7 @@ select is(nexus_test.ids(format('select * from nexus.member_data_list(p_unit_id 
           array[18, 20], 'MD-22: Pelayanan Khusus includes P-MULTI through a non-primary division assignment (Musik)');
 select is((select count(*)::int from nexus.member_data_list(p_status => 'all', p_page_size => 50) where member_id = nexus_test.mid(20)), 1,
   'MD-22: P-MULTI appears under two unit filters and once in the full list');
-select is(nexus_test.ids(format('select * from nexus.member_data_list(p_unit_id => %L)', nexus_test.unit('BPH PMK ITERA'))),
+select is(nexus_test.ids(format('select * from nexus.member_data_list(p_unit_id => %L)', nexus_test.unit('Kesekjenan'))),
           array[12, 13, 3, 4, 5], 'MD-22: BPH filter = active-period BPH holders only (not P-OLD)');
 select is(nexus_test.ids(format('select * from nexus.member_data_list(p_unit_id => %L)', nexus_test.unit('Biro Kewirausahaan'))),
           array[18, 19], 'MD-22: bureau filter');
@@ -600,7 +600,7 @@ select is(nexus_test.hint_of(format('select * from nexus.member_data_list(p_unit
 
 -- MD-21 / R5 / A-MD4 unit options.
 select is((select array_agg(name order by sort_order) from nexus.member_data_unit_options()),
-          array['BPH PMK ITERA', 'Departemen Internal', 'Departemen Eksternal', 'Departemen Pelayanan Khusus',
+          array['Kesekjenan', 'Departemen Internal', 'Departemen Eksternal', 'Departemen Pelayanan Khusus',
                 'Departemen Talenta', 'Departemen Operasional', 'Departemen CMIT', 'Departemen Pembinaan Rohani',
                 'Biro Kewirausahaan'],
   'MD-21/R5: options = live bph/department/bureau units in PI-CORE order; no root, no divisions');
@@ -709,7 +709,7 @@ update public.periods set is_active = false where is_active;
 update public.periods set is_active = true where id = nexus_test.period(1);
 select nexus_test.login_as(14);
 select is(nexus_test.matrix(), array['ok', 'ok', 'ok', 'ok', 'ok'], 'MD-07: P-OLD gets the module when their period is active');
-select is(nexus_test.row_of(14), array['BPH PMK ITERA', 'bph', null, 'Sekretaris Jenderal']::text[],
+select is(nexus_test.row_of(14), array['Kesekjenan', 'bph', null, 'Sekretaris Jenderal']::text[],
   'MD-07/F7: the list shows the newly active period''s assignments');
 select is(nexus_test.row_of(3), array[null, null, null, null]::text[], 'MD-07: P-KETUM has no assignment in that period');
 select ok((select l.exporter_member_id = nexus_test.mid(14) and l.period_id = nexus_test.period(1) from nexus_test.last_log() l),

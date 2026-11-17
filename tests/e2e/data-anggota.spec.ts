@@ -596,10 +596,10 @@ test.describe("Row content (MD-16, MD-18, MD-19, MD-20, MD-24)", () => {
     const { context, page } = await signedInContext(browser, "ketum");
     try {
       await openList(page, "?q=Test");
-      expect(await rowText(page, "Test Ketua Umum")).toContain("BPH PMK ITERA Ketua Umum");
+      expect(await rowText(page, "Test Ketua Umum")).toContain("Kesekjenan Ketua Umum");
       expect(await rowText(page, "Test Kepala Biro")).toContain("Biro Kewirausahaan Kepala Biro");
       expect(await rowText(page, "Test Kepala Departemen")).toContain("Departemen Operasional Kepala Departemen");
-      expect(await rowText(page, "Test Bendahara Umum 1")).toContain("BPH PMK ITERA Bendahara Umum 1");
+      expect(await rowText(page, "Test Bendahara Umum 1")).toContain("Kesekjenan Bendahara Umum 1");
       expect(await rowText(page, "Test Anggota Biasa")).toContain("Departemen CMIT · IT Staff");
 
       // Bulk 11: Staff in Musik AND Staff in Logistik (same rank): Musik wins the tie-break (A-MD8), the same on every request

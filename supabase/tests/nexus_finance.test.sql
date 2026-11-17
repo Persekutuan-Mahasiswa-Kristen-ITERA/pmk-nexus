@@ -264,18 +264,18 @@ update public.periods set is_active = true where id = nexus_test.period(1);
 insert into public.assignments (member_id, org_unit_id, position_id, period_id)
 select nexus_test.mid(v.n), nexus_test.unit(v.unit_name), nexus_test.pos(v.unit_type, v.position_name), nexus_test.period(v.p)
 from (values
-  ( 3, 'BPH PMK ITERA',          'bph',        'Ketua Umum',            2),
-  ( 4, 'BPH PMK ITERA',          'bph',        'Sekretaris Jenderal',   2),
-  ( 5, 'BPH PMK ITERA',          'bph',        'Bendahara Umum 1',      2),
+  ( 3, 'Kesekjenan',          'bph',        'Ketua Umum',            2),
+  ( 4, 'Kesekjenan',          'bph',        'Sekretaris Jenderal',   2),
+  ( 5, 'Kesekjenan',          'bph',        'Bendahara Umum 1',      2),
   ( 6, 'Departemen Internal',    'department', 'Sekretaris Departemen', 2),
   ( 7, 'Departemen Operasional', 'department', 'Kepala Departemen',     2),
   ( 8, 'Logistik',               'division',   'Staff',                 2),
   (10, 'Pubdok',                 'division',   'Staff',                 2),
-  (12, 'BPH PMK ITERA',          'bph',        'Bendahara Umum 2',      2),
+  (12, 'Kesekjenan',          'bph',        'Bendahara Umum 2',      2),
   (12, 'Departemen Talenta',     'department', 'Sekretaris Departemen', 2),
-  (14, 'BPH PMK ITERA',          'bph',        'Bendahara Umum 1',      1),
-  (15, 'BPH PMK ITERA',          'bph',        'Sekretaris Umum 2',     2),
-  (19, 'BPH PMK ITERA',          'bph',        'Sekretaris Umum 1',     2),
+  (14, 'Kesekjenan',          'bph',        'Bendahara Umum 1',      1),
+  (15, 'Kesekjenan',          'bph',        'Sekretaris Umum 2',     2),
+  (19, 'Kesekjenan',          'bph',        'Sekretaris Umum 1',     2),
   (20, 'Logistik',               'division',   'Kepala Divisi',         2)
 ) as v(n, unit_name, unit_type, position_name, p);
 update public.members set is_active = false where id = nexus_test.mid(15);
@@ -1130,8 +1130,8 @@ select nexus_test.sto($$update storage.buckets set public = false where id = 'ne
 update public.periods set is_active = false where is_active;
 update public.periods set is_active = true where id = nexus_test.period(3);
 insert into public.assignments (member_id, org_unit_id, position_id, period_id) values
-  (nexus_test.mid(11), nexus_test.unit('BPH PMK ITERA'), nexus_test.pos('bph', 'Bendahara Umum 1'), nexus_test.period(3)),
-  (nexus_test.mid(3),  nexus_test.unit('BPH PMK ITERA'), nexus_test.pos('bph', 'Ketua Umum'),       nexus_test.period(3));
+  (nexus_test.mid(11), nexus_test.unit('Kesekjenan'), nexus_test.pos('bph', 'Bendahara Umum 1'), nexus_test.period(3)),
+  (nexus_test.mid(3),  nexus_test.unit('Kesekjenan'), nexus_test.pos('bph', 'Ketua Umum'),       nexus_test.period(3));
 select nexus_test.login_as(11);
 select is(nexus_test.keys(), 'view | manage | export', 'FN-23/AC-39: the new Treasurer holds Finance on the first request');
 select ok((select not has_opening and previous_period_label = '2091/2092' and previous_closing_balance = 2050001 and entry_count = 0

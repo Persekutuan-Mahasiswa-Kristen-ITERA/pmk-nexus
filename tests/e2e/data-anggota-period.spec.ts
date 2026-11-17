@@ -134,7 +134,7 @@ test.describe("MD-07, MD-20, F7: period switch changes access by itself; old ass
       await regular.page.goto(LIST_PATH);
       await expect(regular.page.getByText("Tidak punya akses", { exact: true })).toBeVisible();
       await ketum.page.goto(`${LIST_PATH}?q=Test+Ketua`);
-      await expect(tableRows(ketum.page).first().locator("td").nth(2)).toContainText("BPH PMK ITERA");
+      await expect(tableRows(ketum.page).first().locator("td").nth(2)).toContainText("Kesekjenan");
     } finally {
       setActivePeriod("2026/2027");
       if (assignmentId) removeAssignment(assignmentId);
