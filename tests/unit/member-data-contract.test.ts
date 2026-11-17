@@ -223,7 +223,7 @@ describe("memberDataCapabilities (drawer, button, page gate)", () => {
 describe("formatMemberUnit (R4)", () => {
   it("division -> 'Parent · Unit'; others -> own name; none -> null", () => {
     expect(formatMemberUnit({ unitName: "Logistik", parentUnitName: "Departemen Operasional" })).toBe("Departemen Operasional · Logistik");
-    expect(formatMemberUnit({ unitName: "BPH PMK ITERA", parentUnitName: null })).toBe("BPH PMK ITERA");
+    expect(formatMemberUnit({ unitName: "Kesekjenan", parentUnitName: null })).toBe("Kesekjenan");
     expect(formatMemberUnit({ unitName: null, parentUnitName: null })).toBeNull();
   });
 });

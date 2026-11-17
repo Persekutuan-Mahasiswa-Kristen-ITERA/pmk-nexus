@@ -135,7 +135,7 @@ test.describe.serial("F9, LT-30, LT-04, R15: a new period moves the access by it
       assignmentId = q(
         `insert into public.assignments(member_id, org_unit_id, position_id, period_id)
          select (select id from public.members where email = 'member.regular@nexus.test'),
-                (select id from public.org_units where name = 'BPH PMK ITERA'),
+                (select id from public.org_units where name = 'Kesekjenan'),
                 (select id from public.positions where name = 'Sekretaris Jenderal'),
                 (select id from public.periods where label = '${OLD}')
          returning id`,

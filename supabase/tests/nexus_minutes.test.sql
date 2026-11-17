@@ -245,20 +245,20 @@ update public.periods set is_active = true where id = nexus_test.period(2);
 insert into public.assignments (member_id, org_unit_id, position_id, period_id)
 select nexus_test.mid(v.n), nexus_test.unit(v.unit_name), nexus_test.pos(v.unit_type, v.position_name), nexus_test.period(v.p)
 from (values
-  ( 3, 'BPH PMK ITERA',               'bph',        'Ketua Umum',            2),
-  ( 4, 'BPH PMK ITERA',               'bph',        'Sekretaris Jenderal',   2),
-  ( 5, 'BPH PMK ITERA',               'bph',        'Bendahara Umum 1',      2),
+  ( 3, 'Kesekjenan',               'bph',        'Ketua Umum',            2),
+  ( 4, 'Kesekjenan',               'bph',        'Sekretaris Jenderal',   2),
+  ( 5, 'Kesekjenan',               'bph',        'Bendahara Umum 1',      2),
   ( 6, 'Departemen Internal',         'department', 'Sekretaris Departemen', 2),
   ( 7, 'Departemen Operasional',      'department', 'Kepala Departemen',     2),
   ( 8, 'Logistik',                    'division',   'Staff',                 2),
   (10, 'Pubdok',                      'division',   'Staff',                 2),
-  (12, 'BPH PMK ITERA',               'bph',        'Bendahara Umum 2',      2),
+  (12, 'Kesekjenan',               'bph',        'Bendahara Umum 2',      2),
   (12, 'Departemen Talenta',          'department', 'Sekretaris Departemen', 2),
-  (14, 'BPH PMK ITERA',               'bph',        'Sekretaris Jenderal',   1),
+  (14, 'Kesekjenan',               'bph',        'Sekretaris Jenderal',   1),
   (15, 'Departemen Eksternal',        'department', 'Kepala Departemen',     2),
   (18, 'Departemen Pelayanan Khusus', 'department', 'Sekretaris Departemen', 2),
   (18, 'Biro Kewirausahaan',          'bureau',     'Sekretaris Biro',       2),
-  (19, 'BPH PMK ITERA',               'bph',        'Sekretaris Umum 1',     2),
+  (19, 'Kesekjenan',               'bph',        'Sekretaris Umum 1',     2),
   (21, 'Departemen Internal',         'department', 'Kepala Departemen',     2),
   (22, 'Biro Kewirausahaan',          'bureau',     'Kepala Biro',           2),
   (23, 'Logistik',                    'division',   'Kepala Divisi',         2)
@@ -418,9 +418,9 @@ select is(nexus_test.hint_of('select * from nexus.minute_unit_options()'), 'perm
 -- 4. Record (F3, MN-01, MN-02, MN-09, R1, R2, R9, R10, A-MN2, A-MN3)
 -- =============================================================================================
 reset role; select nexus_test.login_as(4);
-select nexus_test.put('m_bph', minute_id) from nexus.minute_record(nexus_test.unit('BPH PMK ITERA'), nexus_test.d(0),
+select nexus_test.put('m_bph', minute_id) from nexus.minute_record(nexus_test.unit('Kesekjenan'), nexus_test.d(0),
   '  Rapat   koordinasi   BPH ', 'Persiapan kegiatan', E'Poin 1\r\nPoin 2\n\n', '   ');
-select ok((select org_unit_id = nexus_test.unit('BPH PMK ITERA') and period_id = nexus_test.period(2) and created_by = nexus_test.mid(4)
+select ok((select org_unit_id = nexus_test.unit('Kesekjenan') and period_id = nexus_test.period(2) and created_by = nexus_test.mid(4)
                   and status = 'active' and version = 1 and meeting_date = nexus_test.d(0)
            from nexus.minutes where id = nexus_test.id('m_bph')),
   'MN-09: saved Aktif, unit as chosen, period = active period, creator from the session');
@@ -435,27 +435,27 @@ select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit
   'A-MN18/M1: a division is refused');
 select is(nexus_test.hint_of($$select * from nexus.minute_record(null, nexus_test.d(0), 'x', 'y', 'z')$$), 'invalid_unit', 'a unit is required');
 select is(nexus_test.hint_of($$select * from nexus.minute_record(gen_random_uuid(), nexus_test.d(0), 'x', 'y', 'z')$$), 'invalid_unit', 'an unknown unit is refused');
-select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('BPH PMK ITERA'), nexus_test.d(1), 'x', 'y', 'z')$$), 'date_in_future',
+select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('Kesekjenan'), nexus_test.d(1), 'x', 'y', 'z')$$), 'date_in_future',
   'R9/A-MN5: the meeting date cannot be in the future (Jakarta)');
-select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('BPH PMK ITERA'), null, 'x', 'y', 'z')$$), 'date_required', 'the meeting date is required');
-select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('BPH PMK ITERA'), date '1999-12-31', 'x', 'y', 'z')$$), 'invalid_dates', 'dates before 2000 are refused');
-select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('BPH PMK ITERA'), 'infinity'::date, 'x', 'y', 'z')$$), 'invalid_dates', 'infinity is refused');
-select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('BPH PMK ITERA'), nexus_test.d(0), '  ', 'y', 'z')$$), 'text_required', 'the title is required');
-select is(nexus_test.detail_of($$select * from nexus.minute_record(nexus_test.unit('BPH PMK ITERA'), nexus_test.d(0), 'x', '', 'z')$$), 'topic', 'the topic is required');
-select is(nexus_test.detail_of($$select * from nexus.minute_record(nexus_test.unit('BPH PMK ITERA'), nexus_test.d(0), 'x', 'y', E' \n ')$$), 'content', 'the content is required');
-select is(nexus_test.hint_of(format('select * from nexus.minute_record(nexus_test.unit(%L), nexus_test.d(0), %L, %L, %L)', 'BPH PMK ITERA', repeat('t', 151), 'y', 'z')),
+select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('Kesekjenan'), null, 'x', 'y', 'z')$$), 'date_required', 'the meeting date is required');
+select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('Kesekjenan'), date '1999-12-31', 'x', 'y', 'z')$$), 'invalid_dates', 'dates before 2000 are refused');
+select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('Kesekjenan'), 'infinity'::date, 'x', 'y', 'z')$$), 'invalid_dates', 'infinity is refused');
+select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('Kesekjenan'), nexus_test.d(0), '  ', 'y', 'z')$$), 'text_required', 'the title is required');
+select is(nexus_test.detail_of($$select * from nexus.minute_record(nexus_test.unit('Kesekjenan'), nexus_test.d(0), 'x', '', 'z')$$), 'topic', 'the topic is required');
+select is(nexus_test.detail_of($$select * from nexus.minute_record(nexus_test.unit('Kesekjenan'), nexus_test.d(0), 'x', 'y', E' \n ')$$), 'content', 'the content is required');
+select is(nexus_test.hint_of(format('select * from nexus.minute_record(nexus_test.unit(%L), nexus_test.d(0), %L, %L, %L)', 'Kesekjenan', repeat('t', 151), 'y', 'z')),
   'text_too_long', 'A-MN3: title max 150');
-select is(nexus_test.detail_of(format('select * from nexus.minute_record(nexus_test.unit(%L), nexus_test.d(0), %L, %L, %L)', 'BPH PMK ITERA', 'x', repeat('t', 201), 'z')),
+select is(nexus_test.detail_of(format('select * from nexus.minute_record(nexus_test.unit(%L), nexus_test.d(0), %L, %L, %L)', 'Kesekjenan', 'x', repeat('t', 201), 'z')),
   'topic', 'A-MN3: topic max 200');
-select is(nexus_test.detail_of(format('select * from nexus.minute_record(nexus_test.unit(%L), nexus_test.d(0), %L, %L, %L)', 'BPH PMK ITERA', 'x', 'y', repeat('c', 20001))),
+select is(nexus_test.detail_of(format('select * from nexus.minute_record(nexus_test.unit(%L), nexus_test.d(0), %L, %L, %L)', 'Kesekjenan', 'x', 'y', repeat('c', 20001))),
   'content', 'A-MN3: content max 20000');
 -- Two statements: a row inserted by a function is not visible to another subquery of the SAME statement.
-select nexus_test.put('m_long', minute_id) from nexus.minute_record(nexus_test.unit('BPH PMK ITERA'), nexus_test.d(-3), 'Batas isi', 'Topik', repeat('c', 20000));
+select nexus_test.put('m_long', minute_id) from nexus.minute_record(nexus_test.unit('Kesekjenan'), nexus_test.d(-3), 'Batas isi', 'Topik', repeat('c', 20000));
 select is((select char_length(content) from nexus.minutes where id = nexus_test.id('m_long')), 20000,
   'A-MN3: exactly 20000 characters of content are accepted');
-select is(nexus_test.detail_of(format('select * from nexus.minute_record(nexus_test.unit(%L), nexus_test.d(0), %L, %L, %L, %L)', 'BPH PMK ITERA', 'x', 'y', 'z', repeat('d', 5001))),
+select is(nexus_test.detail_of(format('select * from nexus.minute_record(nexus_test.unit(%L), nexus_test.d(0), %L, %L, %L, %L)', 'Kesekjenan', 'x', 'y', 'z', repeat('d', 5001))),
   'decision', 'A-MN3: decision max 5000');
-select nexus_test.put('m_xss', minute_id) from nexus.minute_record(nexus_test.unit('BPH PMK ITERA'), nexus_test.d(-2),
+select nexus_test.put('m_xss', minute_id) from nexus.minute_record(nexus_test.unit('Kesekjenan'), nexus_test.d(-2),
   '<script>alert(1)</script>', 'Topik <b>tebal</b>', '<img src=x onerror=alert(1)>', '=SUM(A1)');
 select ok((select title = '<script>alert(1)</script>' and content = '<img src=x onerror=alert(1)>' and decision = '=SUM(A1)'
            from nexus.minutes where id = nexus_test.id('m_xss')),
@@ -477,7 +477,7 @@ select is((select count(*)::int from nexus.minute_files where minute_id = nexus_
 select is((select count(*)::int from nexus.minute_history where minute_id = nexus_test.id('m_int1') and kind = 'file_added'), 2, 'one history row per file');
 select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('Departemen Eksternal'), nexus_test.d(0), 'x', 'y', 'z')$$), 'unit_not_allowed',
   'MN-02: a direct call with another unit''s id is refused');
-select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('BPH PMK ITERA'), nexus_test.d(0), 'x', 'y', 'z')$$), 'unit_not_allowed',
+select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('Kesekjenan'), nexus_test.d(0), 'x', 'y', 'z')$$), 'unit_not_allowed',
   'MN-02: ... also for BPH');
 reset role; select nexus_test.login_as(18);
 select nexus_test.rec('m_biro', 'Biro Kewirausahaan', 'Rapat biro');
@@ -486,17 +486,17 @@ select ok(nexus_test.ms('m_biro') = 'active' and nexus_test.ms('m_pk') = 'active
 select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('Departemen Internal'), nexus_test.d(0), 'x', 'y', 'z')$$), 'unit_not_allowed',
   'MN-07: ... and for no other unit');
 reset role; select nexus_test.login_as(12);
-select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('BPH PMK ITERA'), nexus_test.d(0), 'x', 'y', 'z')$$), 'unit_not_allowed',
+select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('Kesekjenan'), nexus_test.d(0), 'x', 'y', 'z')$$), 'unit_not_allowed',
   'R7: viewing all does not mean managing all (P-BEND-SEK, BPH unit)');
 -- Everybody without manage
 reset role; select nexus_test.login_as(3);
-select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('BPH PMK ITERA'), nexus_test.d(0), 'x', 'y', 'z')$$), 'permission_required',
+select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('Kesekjenan'), nexus_test.d(0), 'x', 'y', 'z')$$), 'permission_required',
   'MN-04: P-KETUM cannot record (direct call)');
 reset role; select nexus_test.login_as(21);
 select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('Departemen Internal'), nexus_test.d(0), 'x', 'y', 'z')$$), 'permission_required',
   'MN-05: the Kepala Departemen cannot record');
 reset role; select nexus_test.login_as(1);
-select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('BPH PMK ITERA'), nexus_test.d(0), 'x', 'y', 'z')$$), 'permission_required',
+select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('Kesekjenan'), nexus_test.d(0), 'x', 'y', 'z')$$), 'permission_required',
   'MN-06: P-ADMIN cannot record');
 reset role; select nexus_test.login_as(15);
 select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('Departemen Eksternal'), nexus_test.d(0), 'x', 'y', 'z')$$), 'permission_required',
@@ -610,7 +610,7 @@ reset role; select nexus_test.login_as(3);
 select is(nexus_test.hint_of(format('select * from nexus.minute_update(%L, %s, nexus_test.d(0), %L, %L, %L)', nexus_test.id('m_int1'), nexus_test.mv('m_int1'), 'x', 'y', 'z')),
   'permission_required', 'MN-04: P-KETUM cannot edit');
 reset role; select nexus_test.logout();
-select is(nexus_test.hint_of(format('update nexus.minutes set org_unit_id = %L where id = %L', nexus_test.unit('BPH PMK ITERA'), nexus_test.id('m_int1'))),
+select is(nexus_test.hint_of(format('update nexus.minutes set org_unit_id = %L where id = %L', nexus_test.unit('Kesekjenan'), nexus_test.id('m_int1'))),
   'immutable_column', 'MN-11/A-MN4: the unit never changes, not even by hand');
 select is(nexus_test.hint_of(format('update nexus.minutes set period_id = %L where id = %L', nexus_test.period(1), nexus_test.id('m_int1'))),
   'immutable_column', '... nor the period');
@@ -920,7 +920,7 @@ select nexus_test.sto($$update storage.buckets set public = false where id = 'ne
 update public.periods set is_active = false where is_active;
 update public.periods set is_active = true where id = nexus_test.period(3);
 insert into public.assignments (member_id, org_unit_id, position_id, period_id) values
-  (nexus_test.mid(4),  nexus_test.unit('BPH PMK ITERA'),        nexus_test.pos('bph', 'Sekretaris Jenderal'),          nexus_test.period(3)),
+  (nexus_test.mid(4),  nexus_test.unit('Kesekjenan'),        nexus_test.pos('bph', 'Sekretaris Jenderal'),          nexus_test.period(3)),
   (nexus_test.mid(11), nexus_test.unit('Departemen Internal'),  nexus_test.pos('department', 'Sekretaris Departemen'), nexus_test.period(3)),
   (nexus_test.mid(6),  nexus_test.unit('Departemen Eksternal'), nexus_test.pos('department', 'Sekretaris Departemen'), nexus_test.period(3));
 select nexus_test.login_as(11);
@@ -963,7 +963,7 @@ update public.members set is_active = true where id = nexus_test.mid(6);
 -- MN-10: no active period
 update public.periods set is_active = false where is_active;
 select nexus_test.login_as(4);
-select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('BPH PMK ITERA'), nexus_test.d(0), 'x', 'y', 'z')$$), 'permission_required',
+select is(nexus_test.hint_of($$select * from nexus.minute_record(nexus_test.unit('Kesekjenan'), nexus_test.d(0), 'x', 'y', 'z')$$), 'permission_required',
   'MN-10/R11: without an active period nobody records (officers'' rules match nothing)');
 select is(nexus_test.hint_of('select * from nexus.minute_list()'), 'permission_required', 'MN-10/E4: ... and officers read nothing');
 select ok(not nexus.minute_file_can_upload(nexus_test.mid(4)::text || '/' || gen_random_uuid()::text || '.pdf'), 'no upload without an active period');

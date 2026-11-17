@@ -89,7 +89,7 @@ export const NO_KEY: PersonaKey[] = ["regular", "pembina", "admin", "kadivLogist
 export const unitId = (name: string) => q(`select id from public.org_units where name = '${name}'`);
 export const ROOT_UNIT = () => q("select id from public.org_units where type = 'organization'");
 export const UNITS = {
-  bph: "BPH PMK ITERA",
+  bph: "Kesekjenan",
   internal: "Departemen Internal", // sekdep's unit
   ops: "Departemen Operasional", // kadep's unit
   biro: "Biro Kewirausahaan", // kabiro's unit

@@ -82,8 +82,8 @@ insert into _persona values
   (2, 'member.temppw@nexus.test',   'Test Anggota Sandi Sementara', '123450002', 'member', true,  true,  'Desain',        'division', 'Staff',            false),
   (3, 'member.inactive@nexus.test', 'Test Anggota Nonaktif',     '123450003', 'member', false, true,  'Pubdok',        'division', 'Staff',            true),
   (4, 'unlinked@nexus.test',        'Test Tanpa Data Anggota',   null,        'member', false, false, null,            null,       null,               false),
-  (5, 'ketum@nexus.test',           'Test Ketua Umum',           '123450005', 'member', false, true,  'BPH PMK ITERA', 'bph',      'Ketua Umum',       false),
-  (6, 'bendahara@nexus.test',       'Test Bendahara Umum 1',     '123450006', 'member', false, true,  'BPH PMK ITERA', 'bph',      'Bendahara Umum 1', false),
+  (5, 'ketum@nexus.test',           'Test Ketua Umum',           '123450005', 'member', false, true,  'Kesekjenan', 'bph',      'Ketua Umum',       false),
+  (6, 'bendahara@nexus.test',       'Test Bendahara Umum 1',     '123450006', 'member', false, true,  'Kesekjenan', 'bph',      'Bendahara Umum 1', false),
   (7, 'admin@nexus.test',           'Test System Admin',         '123450007', 'admin',  false, true,  null,            null,       null,               false),
   -- Member Data (docs/modules/member-data.md section 7): department/bureau heads see the list (D32)
   -- but cannot export.
@@ -98,8 +98,8 @@ insert into _persona values
   -- letter_requests.process via D15/D16 and D18/D19), so one secretary's own request (L6) can be
   -- processed by the other, and a department secretary (role sekretaris: no letter key, B17) who only
   -- has "Permohonan Saya".
-  (13, 'sekjen@nexus.test',         'Test Sekretaris Jenderal',   '123450013', 'member', false, true, 'BPH PMK ITERA',       'bph',        'Sekretaris Jenderal',   false),
-  (14, 'sekum1@nexus.test',         'Test Sekretaris Umum 1',     '123450014', 'member', false, true, 'BPH PMK ITERA',       'bph',        'Sekretaris Umum 1',     false),
+  (13, 'sekjen@nexus.test',         'Test Sekretaris Jenderal',   '123450013', 'member', false, true, 'Kesekjenan',       'bph',        'Sekretaris Jenderal',   false),
+  (14, 'sekum1@nexus.test',         'Test Sekretaris Umum 1',     '123450014', 'member', false, true, 'Kesekjenan',       'bph',        'Sekretaris Umum 1',     false),
   (15, 'sekdep@nexus.test',         'Test Sekretaris Departemen', '123450015', 'member', false, true, 'Departemen Internal', 'department', 'Sekretaris Departemen', false);
 -- Lecturer: listed with the "Pembina" marker, no NIM, no assignment (separate insert: different row width).
 insert into _persona values
